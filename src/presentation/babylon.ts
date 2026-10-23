@@ -1,4 +1,5 @@
 export { Engine } from "@babylonjs/core/Engines/engine";
+export { ImportMeshAsync } from "@babylonjs/core/Loading/sceneLoader";
 export { Scene } from "@babylonjs/core/scene";
 export { Matrix, Quaternion, Vector3 } from "@babylonjs/core/Maths/math.vector";
 export { Color3, Color4 } from "@babylonjs/core/Maths/math.color";
@@ -6,6 +7,7 @@ export { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
 export { DirectionalLight } from "@babylonjs/core/Lights/directionalLight";
 export { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 export { SpotLight } from "@babylonjs/core/Lights/spotLight";
+export { PointLight } from "@babylonjs/core/Lights/pointLight";
 export { ShadowGenerator } from "@babylonjs/core/Lights/Shadows/shadowGenerator";
 export { AbstractMesh } from "@babylonjs/core/Meshes/abstractMesh";
 export { Mesh } from "@babylonjs/core/Meshes/mesh";
