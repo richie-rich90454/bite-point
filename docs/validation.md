@@ -25,10 +25,10 @@ The deterministic suite currently covers:
 | Configuration | Valid reference, invalid mass/fields, ratio ordering, bite geometry, provenance |
 | Telemetry | Ring buffer wrapping/order, sample rate, JSON export |
 | Input | Defaults, duplicate detection, layout labels, calibration, pedal ramps, focus-loss safety, repeat timing, rebinding conflicts, recovery hold |
-| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency |
+| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration and the 200 km/h speed limiter |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
-Latest local result after implementation: all deterministic test files pass (87 tests across the matrix above). The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
+Latest local result after implementation: all deterministic test files pass (88 tests across the matrix above). The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
 
 ## What is not yet validated
 
