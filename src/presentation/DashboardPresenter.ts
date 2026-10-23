@@ -1,10 +1,17 @@
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 
-const ACCENT = "#e8b04b";
-const ACCENT_DIM = "rgba(232, 176, 75, 0.28)";
-const TEXT = "#e8e6df";
-const MUTED = "rgba(232, 230, 223, 0.45)";
-const RED = "#e05b4b";
+const GOLD = "#c6a15b";
+const GOLD_BRIGHT = "#e0bd7c";
+const GOLD_DIM = "rgba(198, 161, 91, 0.28)";
+const GOLD_FAINT = "rgba(198, 161, 91, 0.12)";
+const IVORY = "#efe6d4";
+const PARCHMENT = "#d8cab0";
+const MUTED = "rgba(216, 202, 176, 0.46)";
+const RED = "#a84942";
+const SAGE = "#849b7d";
+const DISPLAY = "'Bodoni MT', 'Bodoni 72', Didot, Baskerville, Georgia, serif";
+const UI = "Bahnschrift, 'Aptos Narrow', 'Segoe UI', sans-serif";
+const MONO = "'Cascadia Mono', Consolas, monospace";
 
 export class DashboardPresenter {
   private readonly context: CanvasRenderingContext2D;
@@ -37,169 +44,219 @@ export class DashboardPresenter {
     context.translate((rect.width - 560 * scale) / 2, (rect.height - 200 * scale) / 2);
     context.scale(scale, scale);
 
-    this.drawTachometer(state, 128, 104);
-    this.drawSpeedometer(state, 288, 98);
-    this.drawGear(state, 430, 76, shifterGrabbed);
-    this.drawPedals(state, 450, 130);
-    this.drawShifter(state, 350, 156);
+    this.drawPlaque();
+    this.drawTachometer(state, 122, 106);
+    this.drawSpeedometer(state, 282, 101);
+    this.drawGear(state, 426, 74, shifterGrabbed);
+    this.drawPedals(state, 446, 128);
+    this.drawShifter(state, 347, 160);
 
     context.restore();
   }
 
+  private drawPlaque(): void {
+    const context = this.context;
+    context.fillStyle = "rgba(8, 7, 5, 0.92)";
+    context.fillRect(12, 4, 536, 192);
+    context.strokeStyle = GOLD_DIM;
+    context.lineWidth = 1;
+    context.strokeRect(12.5, 4.5, 535, 191);
+    context.strokeStyle = GOLD_FAINT;
+    context.strokeRect(17.5, 9.5, 525, 181);
+
+    context.strokeStyle = "rgba(198, 161, 91, 0.5)";
+    context.lineWidth = 1;
+    for (const [x, y, dx, dy] of [
+      [23, 15, 10, 0],
+      [23, 15, 0, 7],
+      [517, 15, 10, 0],
+      [527, 15, 0, 7],
+      [23, 185, 10, 0],
+      [23, 178, 0, 7],
+      [517, 185, 10, 0],
+      [527, 178, 0, 7],
+    ] as Array<[number, number, number, number]>) {
+      context.beginPath();
+      context.moveTo(x, y);
+      context.lineTo(x + dx, y + dy);
+      context.stroke();
+    }
+
+    context.fillStyle = GOLD;
+    context.font = `600 7px ${UI}`;
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText("BITE POINT", 280, 17);
+    context.fillStyle = MUTED;
+    context.font = `400 7px ${UI}`;
+    context.fillText("INSTRUMENTS", 280, 27);
+  }
+
   private drawTachometer(state: VehicleRenderState, cx: number, cy: number): void {
     const context = this.context;
-    const radius = 78;
+    const radius = 72;
     const start = Math.PI * 0.75;
     const end = Math.PI * 2.25;
     const fraction = Math.min(1, state.rpm / 7000);
 
     context.beginPath();
     context.arc(cx, cy, radius, start, end);
-    context.lineWidth = 6;
-    context.strokeStyle = "rgba(255,255,255,0.1)";
+    context.lineWidth = 1;
+    context.strokeStyle = "rgba(216, 202, 176, 0.22)";
     context.stroke();
 
     context.beginPath();
-    context.arc(cx, cy, radius, start + (end - start) * 0.93, end);
-    context.lineWidth = 6;
-    context.strokeStyle = "rgba(224, 91, 75, 0.75)";
+    context.arc(cx, cy, radius, start, start + (end - start) * 0.93);
+    context.lineWidth = 2;
+    context.strokeStyle = "rgba(168, 73, 66, 0.62)";
     context.stroke();
 
     context.beginPath();
     context.arc(cx, cy, radius, start, start + (end - start) * fraction);
-    context.lineWidth = 6;
-    context.strokeStyle = state.rpm > 6500 ? RED : ACCENT;
+    context.lineWidth = 2.4;
+    context.strokeStyle = state.rpm > 6500 ? RED : GOLD;
     context.stroke();
 
-    for (let index = 0; index <= 7; index += 1) {
-      const angle = start + (end - start) * (index / 7);
-      const inner = radius - 15;
-      const outer = radius - 7;
+    for (let index = 0; index <= 28; index += 1) {
+      const angle = start + (end - start) * (index / 28);
+      const major = index % 4 === 0;
+      const inner = radius - (major ? 10 : 5);
+      const outer = radius - 1;
       context.beginPath();
       context.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
       context.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
-      context.strokeStyle = index >= 6.5 ? RED : MUTED;
-      context.lineWidth = index % 1 === 0 ? 2 : 1;
+      context.strokeStyle = index / 4 >= 6.5 ? "rgba(168, 73, 66, 0.85)" : major ? PARCHMENT : "rgba(216, 202, 176, 0.3)";
+      context.lineWidth = major ? 1.2 : 0.7;
       context.stroke();
-      context.fillStyle = MUTED;
-      context.font = "10px ui-monospace, monospace";
+    }
+
+    for (let index = 0; index <= 7; index += 1) {
+      const angle = start + (end - start) * (index / 7);
+      context.fillStyle = index >= 7 ? RED : PARCHMENT;
+      context.font = `400 11px ${DISPLAY}`;
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.fillText(String(index), cx + Math.cos(angle) * (radius - 25), cy + Math.sin(angle) * (radius - 25));
+      context.fillText(String(index), cx + Math.cos(angle) * (radius - 22), cy + Math.sin(angle) * (radius - 22));
     }
 
     const needleAngle = start + (end - start) * fraction;
     context.beginPath();
-    context.moveTo(cx, cy);
-    context.lineTo(cx + Math.cos(needleAngle) * (radius - 16), cy + Math.sin(needleAngle) * (radius - 16));
-    context.strokeStyle = state.rpm > 6500 ? RED : ACCENT;
-    context.lineWidth = 2.4;
+    context.moveTo(cx - Math.cos(needleAngle) * 8, cy - Math.sin(needleAngle) * 8);
+    context.lineTo(cx + Math.cos(needleAngle) * (radius - 15), cy + Math.sin(needleAngle) * (radius - 15));
+    context.strokeStyle = state.rpm > 6500 ? RED : GOLD_BRIGHT;
+    context.lineWidth = 1.4;
     context.stroke();
+
     context.beginPath();
-    context.arc(cx, cy, 4.5, 0, Math.PI * 2);
-    context.fillStyle = ACCENT;
+    context.moveTo(cx, cy - 4);
+    context.lineTo(cx + 4, cy);
+    context.lineTo(cx, cy + 4);
+    context.lineTo(cx - 4, cy);
+    context.closePath();
+    context.fillStyle = GOLD;
     context.fill();
 
-    context.fillStyle = TEXT;
-    context.font = "600 15px ui-monospace, monospace";
+    context.fillStyle = IVORY;
+    context.font = `400 17px ${DISPLAY}`;
     context.textAlign = "center";
-    context.fillText(`${Math.max(0, state.rpm).toFixed(0)}`, cx, cy + 34);
+    context.textBaseline = "middle";
+    context.fillText(`${Math.max(0, state.rpm).toFixed(0)}`, cx, cy + 32);
     context.fillStyle = MUTED;
-    context.font = "9px ui-sans-serif, sans-serif";
-    context.fillText("RPM", cx, cy + 48);
+    context.font = `600 7px ${UI}`;
+    context.fillText("RPM", cx, cy + 47);
   }
 
   private drawSpeedometer(state: VehicleRenderState, cx: number, cy: number): void {
     const context = this.context;
+    const speedFraction = Math.min(1, state.speedKph / 200);
     context.beginPath();
-    context.arc(cx, cy, 55, Math.PI * 1.2, Math.PI * 1.8);
-    context.strokeStyle = "rgba(255,255,255,0.08)";
-    context.lineWidth = 3;
+    context.arc(cx, cy - 6, 52, Math.PI * 1.18, Math.PI * 1.82);
+    context.strokeStyle = "rgba(216, 202, 176, 0.17)";
+    context.lineWidth = 1;
     context.stroke();
-    const speedFraction = Math.min(1, state.speedKph / 220);
     context.beginPath();
-    context.arc(cx, cy, 55, Math.PI * 1.2, Math.PI * 1.2 + Math.PI * 0.6 * speedFraction);
-    context.strokeStyle = ACCENT_DIM;
-    context.lineWidth = 3;
+    context.arc(cx, cy - 6, 52, Math.PI * 1.18, Math.PI * 1.18 + Math.PI * 0.64 * speedFraction);
+    context.strokeStyle = GOLD_DIM;
+    context.lineWidth = 2;
     context.stroke();
 
-    context.fillStyle = TEXT;
-    context.font = "700 34px ui-monospace, monospace";
+    context.fillStyle = IVORY;
+    context.font = `400 46px ${DISPLAY}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(state.speedKph.toFixed(0), cx, cy - 4);
+    context.fillText(state.speedKph.toFixed(0), cx, cy + 2);
     context.fillStyle = MUTED;
-    context.font = "10px ui-sans-serif, sans-serif";
-    context.fillText("km/h", cx, cy + 24);
+    context.font = `600 8px ${UI}`;
+    context.fillText("KM/H", cx, cy + 31);
 
-    context.font = "11px ui-monospace, monospace";
-    context.textAlign = "center";
     const surface = state.sessionSurfaceMu < 0.8 ? "WET" : "DRY";
-    context.fillStyle = state.sessionSurfaceMu < 0.8 ? "#6fa8d6" : MUTED;
-    context.fillText(surface, cx, cy + 45);
+    context.font = `400 9px ${MONO}`;
+    context.fillStyle = state.sessionSurfaceMu < 0.8 ? "#8ab6cb" : MUTED;
+    context.fillText(surface, cx, cy + 55);
   }
 
   private drawGear(state: VehicleRenderState, x: number, y: number, grabbed: boolean): void {
     const context = this.context;
-    context.fillStyle = grabbed ? "rgba(232,176,75,0.14)" : "rgba(255,255,255,0.04)";
-    this.roundRect(x - 28, y - 42, 56, 74, 10);
-    context.fill();
-    if (grabbed) {
-      context.strokeStyle = ACCENT_DIM;
-      context.lineWidth = 1.5;
-      context.stroke();
-    }
-    context.fillStyle = grabbed ? ACCENT : TEXT;
-    context.font = "700 34px ui-monospace, monospace";
+    context.fillStyle = grabbed ? "rgba(198,161,91,0.10)" : "rgba(216,202,176,0.025)";
+    context.fillRect(x - 27, y - 39, 54, 70);
+    context.strokeStyle = grabbed ? GOLD : GOLD_DIM;
+    context.lineWidth = 1;
+    context.strokeRect(x - 26.5, y - 38.5, 53, 69);
+    context.strokeStyle = GOLD_FAINT;
+    context.strokeRect(x - 22.5, y - 34.5, 45, 61);
+
+    context.fillStyle = grabbed ? GOLD_BRIGHT : IVORY;
+    context.font = `400 40px ${DISPLAY}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
-    context.fillText(state.gearLabel, x, y - 4);
+    context.fillText(state.gearLabel, x, y - 2);
     context.fillStyle = MUTED;
-    context.font = "8px ui-sans-serif, sans-serif";
-    context.fillText(grabbed ? "LEVER" : "GEAR", x, y + 22);
+    context.font = `600 7px ${UI}`;
+    context.fillText(grabbed ? "LEVER" : "GEAR", x, y + 23);
   }
 
   private drawPedals(state: VehicleRenderState, x: number, y: number): void {
     const context = this.context;
     const bars: Array<[string, number, string]> = [
-      ["C", state.clutchPedal, ACCENT],
+      ["C", state.clutchPedal, GOLD],
       ["B", state.brake, RED],
-      ["T", state.throttle, "#7fbf8a"],
+      ["T", state.throttle, SAGE],
     ];
+    const low = state.clutchBitePedal - state.clutchEngagementWidth / 2;
+    const high = state.clutchBitePedal + state.clutchEngagementWidth / 2;
     for (let index = 0; index < bars.length; index += 1) {
       const [label, value, color] = bars[index]!;
-      const bx = x + index * 24;
-      context.fillStyle = "rgba(255,255,255,0.06)";
-      this.roundRect(bx, y, 14, 52, 4);
-      context.fill();
+      const bx = x + index * 26;
+      context.fillStyle = "rgba(216,202,176,0.05)";
+      context.fillRect(bx, y, 13, 50);
+      context.strokeStyle = GOLD_FAINT;
+      context.lineWidth = 1;
+      context.strokeRect(bx + 0.5, y + 0.5, 12, 49);
+
       if (index === 0) {
-        const low = state.clutchBitePedal - state.clutchEngagementWidth / 2;
-        const high = state.clutchBitePedal + state.clutchEngagementWidth / 2;
-        context.fillStyle = "rgba(232,176,75,0.14)";
-        this.roundRect(bx, y + 52 - high * 48, 14, (high - low) * 48, 3);
-        context.fill();
-        context.strokeStyle = "rgba(232,176,75,0.5)";
-        context.lineWidth = 1;
+        context.fillStyle = "rgba(198,161,91,0.11)";
+        context.fillRect(bx + 1, y + 50 - high * 48, 11, (high - low) * 48);
+        context.strokeStyle = GOLD_DIM;
         context.beginPath();
-        context.moveTo(bx - 2, y + 52 - high * 48);
-        context.lineTo(bx + 16, y + 52 - high * 48);
+        context.moveTo(bx - 2, y + 50 - high * 48);
+        context.lineTo(bx + 15, y + 50 - high * 48);
         context.stroke();
       }
-      context.fillStyle = color;
+
       const height = Math.max(0, Math.min(1, value)) * 48;
-      this.roundRect(bx, y + 52 - height, 14, height, 4);
-      context.fill();
-      context.fillStyle = index === 0 && value > state.clutchBitePedal - state.clutchEngagementWidth / 2 && value < state.clutchBitePedal + state.clutchEngagementWidth / 2 ? ACCENT : MUTED;
-      context.font = "8px ui-sans-serif, sans-serif";
+      context.fillStyle = color;
+      context.fillRect(bx + 2, y + 50 - height, 9, height);
+      context.fillStyle = label === "C" && value > low && value < high ? GOLD_BRIGHT : MUTED;
+      context.font = `600 7px ${UI}`;
       context.textAlign = "center";
-      context.fillText(label, bx + 7, y + 64);
+      context.fillText(label, bx + 6.5, y + 61);
     }
   }
 
   private drawShifter(state: VehicleRenderState, x: number, y: number): void {
     const context = this.context;
-    const gateSpacing = 17;
-    const slotHeight = 11;
+    const gateSpacing = 16;
+    const slotHeight = 10;
     const positions: Array<[number, number, string, number]> = [
       [0, -1, "1", 1],
       [0, 1, "2", 2],
@@ -209,8 +266,8 @@ export class DashboardPresenter {
       [2, 1, "6", 6],
       [3, -1, "R", -1],
     ];
-    context.strokeStyle = "rgba(255,255,255,0.18)";
-    context.lineWidth = 1.4;
+    context.strokeStyle = "rgba(216,202,176,0.22)";
+    context.lineWidth = 1;
     for (let gate = 0; gate < 4; gate += 1) {
       const gx = x + (gate - 1) * gateSpacing;
       context.beginPath();
@@ -226,33 +283,22 @@ export class DashboardPresenter {
     for (const [gate, slot, label, gear] of positions) {
       const gx = x + (gate - 1) * gateSpacing;
       const gy = y + slot * slotHeight;
-      context.fillStyle = state.gear === gear ? ACCENT : MUTED;
-      context.font = "8px ui-monospace, monospace";
+      context.fillStyle = state.gear === gear ? GOLD_BRIGHT : MUTED;
+      context.font = `400 10px ${DISPLAY}`;
       context.textAlign = "center";
       context.textBaseline = "middle";
-      context.fillText(label, gx + 8, gy);
+      context.fillText(label, gx + 7, gy);
     }
 
     const leverX = x + (state.shifterGate - 1) * gateSpacing;
     const leverY = y + state.shifterSlot * slotHeight;
     context.beginPath();
-    context.arc(leverX, leverY, 4.2, 0, Math.PI * 2);
-    context.fillStyle = state.shifterGrabbed ? ACCENT : TEXT;
-    context.fill();
-    context.strokeStyle = "rgba(0,0,0,0.5)";
-    context.lineWidth = 1;
-    context.stroke();
-  }
-
-  private roundRect(x: number, y: number, width: number, height: number, radius: number): void {
-    const context = this.context;
-    const r = Math.min(radius, width / 2, height / 2);
-    context.beginPath();
-    context.moveTo(x + r, y);
-    context.arcTo(x + width, y, x + width, y + height, r);
-    context.arcTo(x + width, y + height, x, y + height, r);
-    context.arcTo(x, y + height, x, y, r);
-    context.arcTo(x, y, x + width, y, r);
+    context.moveTo(leverX, leverY - 3.4);
+    context.lineTo(leverX + 3.4, leverY);
+    context.lineTo(leverX, leverY + 3.4);
+    context.lineTo(leverX - 3.4, leverY);
     context.closePath();
+    context.fillStyle = state.shifterGrabbed ? GOLD_BRIGHT : PARCHMENT;
+    context.fill();
   }
 }
