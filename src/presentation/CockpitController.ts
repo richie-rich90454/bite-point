@@ -11,9 +11,9 @@ export class CockpitController {
   mode: CameraMode = "cockpit";
   lookYaw = 0;
   lookPitch = 0;
-  private baseFovDegrees = 68;
+  private baseFovDegrees = 62;
   private chasePosition: Vector3 | null = null;
-  private readonly eyeLocal = new Vector3(-0.36, 1.32, -0.45);
+  private readonly eyeLocal = new Vector3(-0.36, 1.26, -0.58);
   private readonly hoodLocal = new Vector3(0, 1.14, 1.55);
   private readonly forward = new Vector3(0, 0, 1);
 
@@ -73,15 +73,15 @@ export class CockpitController {
       const forward = new Vector3(Math.sin(heading), 0, Math.cos(heading));
       const right = new Vector3(Math.cos(heading), 0, -Math.sin(heading));
       const desired = carPosition
-        .subtract(forward.scale(6.4))
-        .add(right.scale(2.1))
-        .add(new Vector3(0, 2.55, 0));
+        .subtract(forward.scale(5.65))
+        .add(right.scale(1.9))
+        .add(new Vector3(0, 2.05, 0));
       if (!this.chasePosition) this.chasePosition = desired.clone();
       const smoothing = 1 - Math.exp(-5 * dt);
       this.chasePosition = Vector3.Lerp(this.chasePosition, desired, smoothing);
       this.camera.position.copyFrom(this.chasePosition);
       this.camera.upVector.set(0, 1, 0);
-      this.camera.setTarget(carPosition.add(new Vector3(0, 0.7, 0)));
+      this.camera.setTarget(carPosition.add(new Vector3(0, 0.66, 0)));
       return;
     }
 
