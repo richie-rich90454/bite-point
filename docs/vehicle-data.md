@@ -12,7 +12,7 @@ The initial vehicle is a generic reference-based compact car, not a replica of a
 - independent front suspension with a reference-based rear suspension;
 - no modelled electronic driver aids.
 
-The rendered car is an original Golf-class hatchback approximation built from procedural geometry. No Volkswagen logos, model files or copyrighted assets are included.
+The rendered car is an original CC0 1990s five-door hatchback from Grab3D, adapted with a metallic finish, animated wheel pivots and a custom cockpit. No Volkswagen logos, model files or copyrighted assets are included. The licence and source URL are recorded in `src/assets/LICENSE-hatchback.txt`.
 
 The configuration lives in `src/data/reference-compact.json` and is loaded and validated at application start. A future calibration should select a real reference vehicle and replace estimates with measured data, then record the measurement conditions.
 
