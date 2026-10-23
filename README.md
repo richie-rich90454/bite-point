@@ -34,6 +34,7 @@ pnpm exec playwright install chromium
 - H-pattern shifter state machine driven by `Enter` and the arrow keys. No numpad and no simultaneous arrow combinations are required. Gears are not engaged until the lever is released.
 - Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
 - Cockpit, hood and exterior cameras, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
+- CC0 five-door hatchback exterior with animated wheel pivots, a detailed cockpit interior and a 200 km/h (124 mph) calibrated speed limiter.
 - Web Audio engine, intake, wind, tire, starter, gearbox and stall sounds. Audio is synthesised; no unlicensed samples are bundled.
 - Lessons for moving off, hill starts, upshifts, braking and reverse parking; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
 - Telemetry recording at 20 Hz, a live graph, JSON export and replay of the last 20 seconds.
@@ -90,7 +91,7 @@ Architecture and physics details are in [docs/architecture.md](docs/architecture
 
 ## Vehicle data and realism
 
-The bundled car is a Golf-class reference hatchback with a naturally aspirated four-cylinder, front-wheel drive, six-speed manual and open differential. It is an original, code-built approximation intended to evoke a compact European hatchback; it is not a licensed or exact replica of any production Volkswagen and contains no manufacturer logos or copyrighted assets. Every major parameter group carries a provenance tag in `src/data/reference-compact.json` (`measured`, `documented`, `estimated` or `unvalidated`). The configuration validator rejects invalid units, missing fields, non-monotonic ratios and impossible clamp geometry at startup with a readable error instead of starting a broken simulation.
+The bundled car is a Golf-class reference hatchback with a naturally aspirated four-cylinder, front-wheel drive, six-speed manual and open differential. The exterior is an original CC0 1990s five-door hatchback model from Grab3D (source and licence text are in `src/assets/LICENSE-hatchback.txt`), adapted with a metallic finish, animated wheel pivots and a full cockpit. It is not a licensed or exact replica of any production Volkswagen and contains no manufacturer logos or copyrighted assets. Every major parameter group carries a provenance tag in `src/data/reference-compact.json` (`measured`, `documented`, `estimated` or `unvalidated`). The configuration validator rejects invalid units, missing fields, non-monotonic ratios and impossible clamp geometry at startup with a readable error instead of starting a broken simulation.
 
 The current tire, suspension and road-contact models are deliberately transparent approximations. They are calibratable and tested, but they are not a substitute for measured vehicle data. Known approximations and release gaps are listed in the physics and validation documents.
 
@@ -98,11 +99,11 @@ The current tire, suspension and road-contact models are deliberately transparen
 
 The test suite covers torque-curve interpolation, idle and stall behavior, clutch slip and heat, H-pattern movement, synchronizers and reverse lockout, driveline ratios, tire limits, suspension and steering, simulation-clock catch-up, configuration validation, telemetry buffers, keyboard safety and rebinding, deterministic simulation, hill rollback, hill holding, launches, braking, reverse and wet-surface stopping. Numerical tests repeat launches at 1/120, 1/250 and 1/500 second steps and check for finite state and bounded spread. A Playwright smoke test boots the production build, starts a session, selects first, launches and shifts to second.
 
-Run `pnpm test` for the 87 deterministic tests and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md).
+Run `pnpm test` for the 88 deterministic tests and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md).
 
 ## Performance
 
-The physics loop is fixed at 1/250 s with bounded catch-up (up to 120 steps per frame, with adaptive render quality when the frame rate falls). Rendering interpolation prevents render-frame timing from changing the model. Physics paths avoid per-step allocation; telemetry samples are allocated only at 20 Hz. Babylon.js is imported through granular modules and dedicated mesh builders, reducing the production bundle from roughly 7 MB to 1.4 MB minified (about 354 KB gzip). The diagnostics panel reports frame rate, physics cost, catch-up and clutch state. Overload warnings appear only after sustained overload rather than for a single slow frame.
+The physics loop is fixed at 1/250 s with bounded catch-up (up to 120 steps per frame, with adaptive render quality when the frame rate falls). Rendering interpolation prevents render-frame timing from changing the model. Physics paths avoid per-step allocation; telemetry samples are allocated only at 20 Hz. The application bundle is about 1.15 MB minified (274 KB gzip) and streams a separate 1.16 MB CC0 car GLB only when the app boots. Babylon.js core is imported through granular modules and dedicated mesh builders rather than the monolithic entry point. The diagnostics panel reports frame rate, physics cost, catch-up and clutch state. Overload warnings appear only after sustained overload rather than for a single slow frame.
 
 ## Assets and licenses
 
