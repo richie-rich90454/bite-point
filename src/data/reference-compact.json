@@ -68,7 +68,7 @@
     "peakSlip": 0.11,
     "peakSlipAngleRad": 0.13,
     "loadSensitivity": 0.16,
-    "rollingResistance": 0.012,
+    "rollingResistance": 0.01,
     "lateralStiffnessFactor": 1.15
   },
   "steering": {
@@ -92,8 +92,9 @@
     "bumpStopRateNm": 160000
   },
   "aero": {
-    "dragAreaCdA": 0.68,
-    "airDensity": 1.2
+    "dragAreaCdA": 0.64,
+    "airDensity": 1.2,
+    "maxSpeedKph": 200
   },
   "provenance": {
     "massKg": "estimated",
@@ -130,6 +131,7 @@
     "brakes.rearTorqueNm": "estimated",
     "suspension.springRateFrontNm": "estimated",
     "suspension.springRateRearNm": "estimated",
-    "aero.dragAreaCdA": "estimated"
+    "aero.dragAreaCdA": "estimated",
+    "aero.maxSpeedKph": "documented"
   }
 }
