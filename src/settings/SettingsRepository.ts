@@ -22,7 +22,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   audioEnabled: true,
   shadows: true,
   renderScale: 1,
-  fovDegrees: 68,
+  fovDegrees: 62,
   instructorEnabled: true,
   quickSelectMode: false,
   showDiagnostics: false,
