@@ -1,0 +1,11 @@
+1990s Hatchback by Grab3D
+Source: https://grab3d.com/models/vehicles/1990s-hatchback/
+License: CC0 1.0 Universal (public domain dedication)
+https://creativecommons.org/publicdomain/zero/1.0/
+
+Downloaded from:
+https://grab3d.com/dl/1990s-hatchback/1990s-hatchback.glb
+
+No attribution is required. The asset is included here to provide a
+realistic, original hatchback body for the simulator. It contains no
+manufacturer logos or branding.
