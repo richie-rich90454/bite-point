@@ -77,6 +77,7 @@ export interface SuspensionConfig {
 export interface AeroConfig {
   dragAreaCdA: number;
   airDensity: number;
+  maxSpeedKph: number;
 }
 
 export interface VehicleConfig {
@@ -316,6 +317,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
   else {
     num("aero.dragAreaCdA", 0.1, 3);
     num("aero.airDensity", 0.5, 2);
+    num("aero.maxSpeedKph", 50, 400);
   }
 
   if (bias > 0 && wheelbase > 0 && mass > 0) {
