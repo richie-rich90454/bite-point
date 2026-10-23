@@ -350,18 +350,27 @@ export class AppUI {
       <section class="overlay start-overlay">
         <div class="start-shell">
           <div class="start-copy">
-            <div class="brand-mark"><span></span><span></span><span></span></div>
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.1">
+                <path d="M24 2.5 45.5 24 24 45.5 2.5 24 24 2.5Z" />
+                <path d="M16.5 12.5v23M31.5 12.5v23M16.5 24h15" />
+                <circle cx="16.5" cy="12.5" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="31.5" cy="12.5" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="16.5" cy="35.5" r="1.6" fill="currentColor" stroke="none" />
+                <circle cx="31.5" cy="35.5" r="1.6" fill="currentColor" stroke="none" />
+              </svg>
+            </div>
             <p class="eyebrow">MANUAL TRANSMISSION SIMULATOR</p>
             <h1>BITE<br><em>POINT</em></h1>
-            <p class="start-lead">Learn the clutch, the gates and the hill start in a physically grounded six-speed manual. No numpad. No simultaneous arrow keys. Just you, the bite point and gravity.</p>
+            <p class="start-lead">A six-speed manual modelled at 250 Hz. Learn the bite point, the gate and the hill start in a machine that answers honestly.</p>
             <div class="start-actions">
               <button class="button primary" data-ui="start">Enter the training lot</button>
               <button class="button ghost" data-ui="help-start">Controls</button>
             </div>
-            <div class="start-footnote">GOLF-CLASS 1.6 MT · 250 Hz VEHICLE SIMULATION · PROCEDURAL ASSETS</div>
+            <div class="start-footnote">GOLF-CLASS 1.6 MT · 250 HZ VEHICLE SIMULATION</div>
           </div>
           <div class="start-select">
-            <div class="panel-label">CHOOSE A SESSION</div>
+            <div class="panel-label">THE TRAINING LEDGER</div>
             <div class="scenario-grid"></div>
             <div class="start-hints">
               <span><b>I</b> ignition</span>
@@ -471,6 +480,7 @@ export class AppUI {
   private renderHud(data: UIUpdate): void {
     const state = data.state;
     this.cameraLabel.textContent = `${data.cameraLabel} · ${data.headlights ? "LIGHTS" : "LIGHTS OFF"} · WIPERS ${data.wipers}`;
+    this.hud.classList.toggle("view-exterior", data.cameraLabel !== "Cockpit");
     const lights: Array<[string, boolean, string]> = [
       ["IGN", state.ignition, state.ignition ? "on" : "off"],
       ["OIL", state.engineRunning, state.engineRunning ? "ok" : "warn"],
@@ -491,6 +501,7 @@ export class AppUI {
     if (state.clutchMode === "slipping" && state.clutchEngagement > 0.6 && state.speedMps < 1.5) warnings.push("BITE POINT");
     if (state.slopeForward > 0.02 && state.pose.vx < -0.2) warnings.push("ROLLING BACK");
     if (state.gear === 0 && state.speedMps > 0.5) warnings.push("NEUTRAL");
+    if (state.speedKph > 198) warnings.push("200 KM/H LIMITER");
     this.warnings.textContent = warnings.join("  ·  ");
     this.warnings.classList.toggle("visible", warnings.length > 0);
 
