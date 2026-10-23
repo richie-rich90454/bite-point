@@ -180,10 +180,10 @@ export class EnvironmentBuilder {
     const asphalt = this.createAsphaltTexture();
     const material = new PBRMaterial("asphalt-material", this.scene);
     material.albedoTexture = asphalt;
-    material.albedoColor = new Color3(0.8, 0.8, 0.82);
+    material.albedoColor = new Color3(0.62, 0.6, 0.57);
     material.metallic = 0.02;
-    material.roughness = 0.88;
-    material.environmentIntensity = 0.8;
+    material.roughness = 0.9;
+    material.environmentIntensity = 0.6;
     ground.material = material;
     return ground;
   }
@@ -192,7 +192,7 @@ export class EnvironmentBuilder {
     const size = 1024;
     const texture = new DynamicTexture("asphalt-diffuse", { width: size, height: size }, this.scene, true);
     const context = texture.getContext();
-    context.fillStyle = "#46484a";
+    context.fillStyle = "#373733";
     context.fillRect(0, 0, size, size);
     let seed = 1234567;
     const random = (): number => {
@@ -200,7 +200,7 @@ export class EnvironmentBuilder {
       return seed / 4294967296;
     };
     for (let i = 0; i < 70000; i += 1) {
-      const value = 52 + Math.floor(random() * 58);
+      const value = 38 + Math.floor(random() * 58);
       context.fillStyle = `rgba(${value},${value},${value + 2},${0.18 + random() * 0.4})`;
       const radius = 0.4 + random() * 2.1;
       context.fillRect(random() * size, random() * size, radius, radius);
@@ -237,9 +237,13 @@ export class EnvironmentBuilder {
 
     const sun = new DirectionalLight("sun", new Vector3(-0.45, -0.85, 0.28), this.scene);
     sun.position = new Vector3(60, 95, -40);
-    sun.intensity = 2.55;
-    sun.diffuse = new Color3(1, 0.95, 0.86);
+    sun.intensity = 2.85;
+    sun.diffuse = new Color3(1, 0.94, 0.84);
     sun.specular = new Color3(1, 0.97, 0.9);
+    const fill = new DirectionalLight("rim-fill", new Vector3(0.24, -0.5, 0.84), this.scene);
+    fill.intensity = 0.62;
+    fill.diffuse = new Color3(1, 0.78, 0.6);
+    fill.specular = new Color3(1, 0.82, 0.64);
     return sun;
   }
 
@@ -594,27 +598,25 @@ export class EnvironmentBuilder {
       context.fillRect(0, 0, 1024, 320);
       context.fillStyle = "#e8b04b";
       context.fillRect(0, 0, 18, 320);
-      context.save();
-      context.translate(1024, 0);
-      context.scale(-1, 1);
       context.fillStyle = "#ede8dc";
-      context.font = "700 96px Segoe UI, sans-serif";
+      context.font = "700 96px Georgia, serif";
       context.fillText(title, 52, 152);
       context.fillStyle = "rgba(232,176,75,0.85)";
-      context.font = "600 42px ui-monospace, monospace";
+      context.font = "600 42px Consolas, monospace";
       context.fillText(subtitle, 54, 236);
-      context.restore();
       texture.update(false);
       const material = new StandardMaterial(`${name}-material`, this.scene);
       material.emissiveTexture = texture;
       material.diffuseTexture = texture;
       material.emissiveColor = new Color3(0.22, 0.22, 0.22);
       material.specularColor = Color3.Black();
-      material.backFaceCulling = false;
-      const plane = CreatePlane(name, { width, height }, this.scene);
-      plane.position = simToBabylon(x, y, z);
-      plane.rotation.y = Math.PI;
-      plane.material = material;
+      material.backFaceCulling = true;
+      for (const facing of [0, Math.PI]) {
+        const plane = CreatePlane(`${name}-${facing}`, { width, height }, this.scene);
+        plane.position = simToBabylon(x, y, z);
+        plane.rotation.y = facing;
+        plane.material = material;
+      }
       const postMaterial = new StandardMaterial(`${name}-post`, this.scene);
       postMaterial.diffuseColor = new Color3(0.25, 0.27, 0.28);
       const postHeight = z;
