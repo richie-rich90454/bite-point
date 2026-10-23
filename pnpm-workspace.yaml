@@ -1,0 +1,4 @@
+minimumReleaseAgeExclude:
+  - '@babylonjs/core@9.32.0'
+onlyBuiltDependencies:
+  - esbuild
