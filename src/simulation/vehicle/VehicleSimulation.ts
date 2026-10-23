@@ -360,6 +360,13 @@ export class VehicleSimulation {
       slopeLateral,
       steerAngleRad: steerAngle,
     });
+    const speedLimitMps = this.config.aero.maxSpeedKph / 3.6;
+    if (this.body.state.vx > speedLimitMps) {
+      this.body.state.vx = speedLimitMps;
+    }
+    if (this.body.state.vx < -this.config.gearbox.reverseMaxSpeedMps) {
+      this.body.state.vx = -this.config.gearbox.reverseMaxSpeedMps;
+    }
 
     const pose = this.wheelPositions();
     const finalHeights = pose.map((position) => this.road.heightAt(position.x, position.y));
