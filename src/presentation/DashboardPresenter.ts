@@ -9,7 +9,7 @@ const PARCHMENT = "#d8cab0";
 const MUTED = "rgba(216, 202, 176, 0.46)";
 const RED = "#a84942";
 const SAGE = "#849b7d";
-const DISPLAY = "'Bodoni MT', 'Bodoni 72', Didot, Baskerville, Georgia, serif";
+const DISPLAY = "Bahnschrift, 'Segoe UI', Arial, sans-serif";
 const UI = "Bahnschrift, 'Aptos Narrow', 'Segoe UI', sans-serif";
 const MONO = "'Cascadia Mono', Consolas, monospace";
 

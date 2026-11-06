@@ -4,7 +4,24 @@
   "version": "1.0.0",
   "type": "module",
   "packageManager": "pnpm@12.14.0",
-  "description": "Browser-based manual transmission driving simulator",
+  "description": "Open-source six-speed manual driving simulator with 250 Hz vehicle physics, clutch simulation and a 6 km proving straight",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/richie-rich90454/bite-point.git"
+  },
+  "bugs": {
+    "url": "https://github.com/richie-rich90454/bite-point/issues"
+  },
+  "homepage": "https://github.com/richie-rich90454/bite-point#readme",
+  "keywords": [
+    "driving-simulator",
+    "manual-transmission",
+    "vehicle-physics",
+    "babylonjs",
+    "typescript",
+    "webgl"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

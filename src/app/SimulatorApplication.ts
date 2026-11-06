@@ -47,6 +47,7 @@ export class SimulatorApplication {
   private lastOverloadToastAt = 0;
   private overloadSinceMs = 0;
   private lowFpsSinceMs = 0;
+  private qualityRecoverySinceMs = 0;
   private adaptiveLevel = 0;
   private wasPointerLocked = false;
   private headlights = false;
@@ -211,10 +212,12 @@ export class SimulatorApplication {
   private updateAdaptiveQuality(nowMs: number): void {
     if (!this.started || this.isModal() || this.replay) {
       this.lowFpsSinceMs = 0;
+      this.qualityRecoverySinceMs = 0;
       return;
     }
     const fps = this.renderer.getFps();
     if (fps < 24) {
+      this.qualityRecoverySinceMs = 0;
       if (this.lowFpsSinceMs === 0) this.lowFpsSinceMs = nowMs;
       if (nowMs - this.lowFpsSinceMs > 4000 && this.adaptiveLevel < 2) {
         this.adaptiveLevel += 1;
@@ -224,8 +227,18 @@ export class SimulatorApplication {
         }
         this.lowFpsSinceMs = nowMs;
       }
-    } else if (fps > 52) {
+    } else {
       this.lowFpsSinceMs = 0;
+      if (fps > 55 && this.adaptiveLevel > 0) {
+        if (this.qualityRecoverySinceMs === 0) this.qualityRecoverySinceMs = nowMs;
+        if (nowMs - this.qualityRecoverySinceMs > 12000) {
+          this.adaptiveLevel -= 1;
+          this.renderer.setAdaptiveLevel(this.adaptiveLevel);
+          this.qualityRecoverySinceMs = 0;
+        }
+      } else {
+        this.qualityRecoverySinceMs = 0;
+      }
     }
   }
 

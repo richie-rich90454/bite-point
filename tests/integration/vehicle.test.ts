@@ -127,7 +127,7 @@ describe("vehicle integration", () => {
 
   it("holds the configured two-hundred-kilometre speed limit in sixth", () => {
     const sim = makeSimulation();
-    startWarm(sim, { gear: 6 });
+    startWarm(sim, { gear: 6, y: -114.5 });
     stepFor(sim, 0.2, () => ({ ...baseControls(), throttle: 0, clutchPedal: 1 }));
     for (const wheel of sim.wheels) wheel.omega = 174;
     sim.body.state.vx = 55;

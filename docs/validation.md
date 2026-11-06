@@ -28,7 +28,7 @@ The deterministic suite currently covers:
 | Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration and the 200 km/h speed limiter |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
-Latest local result after implementation: all deterministic test files pass (88 tests across the matrix above). The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
+Latest local result after implementation: all 93 deterministic tests pass across 18 files. The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
 
 ## What is not yet validated
 
@@ -72,3 +72,13 @@ Reports should be archived in `docs/validation/` and converted into permanent re
 - `Tab` hidden pauses simulation and audio; returning requires an explicit resume.
 - Rebinding a duplicate key is rejected; reset defaults restores the documented layout.
 - Diagnostics report frame rate, physics cost, overload/dropped time and clutch state.
+
+## Proving straight regression
+
+`tests/integration/proving-run.test.ts` verifies a complete launch from rest to 200 km/h with clutch-operated shifts and enough remaining course length to stop. It also checks that neutral coast speed falls in both directions. The scene adds a 6 km closed straight, but roadside props remain decorative; driving through a guardrail does not model an impact. See the vehicle-data document for the estimated gearing and aerodynamic calibration.
+
+## Graphics and browser checks
+
+The production build is checked in Chromium at 1024 × 600 for H-pattern launch and shifting, focus/modal controls, input testing, settings, telemetry export/replay, proving-course selection and exterior instrument visibility. Two browser tests pass. A High-quality 1440 × 900 capture is included in `docs/images/proving-ground.png`.
+
+Graphics use a bundled CC0 photographic HDR sky, scanned asphalt maps, preserved authored car textures, alpha-tested foliage, stabilized cascaded shadows where supported, High-quality MSAA and FXAA at every preset. Hardware performance varies; software-rendered headless Chromium is a functional check, not a GPU performance benchmark. Asset provenance is recorded in `src/assets/LICENSE-environment.md`.

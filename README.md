@@ -1,10 +1,19 @@
 # Bite Point
 
-A browser-based manual-transmission driving simulator built around a custom, testable vehicle simulation. The first release is one carefully modelled compact car, a training lot, two hill grades and a set of manual-driving lessons. Babylon.js renders the scene; TypeScript and Vite run the application; the powertrain, tires and chassis are simulated independently of the renderer.
+[![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
+
+**Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, hill-start lessons and a six-kilometre proving straight.
+
+[Report a bug](https://github.com/richie-rich90454/bite-point/issues/new/choose) · [Contribute](CONTRIBUTING.md) · [Physics](docs/physics.md) · [Validation](docs/validation.md)
+
+A browser-based manual-transmission driving simulator built around a custom, testable vehicle simulation. Drive one reference compact car across a training lot, two hill grades and a closed high-speed proving straight. Babylon.js renders the scene; TypeScript and Vite run the application; the powertrain, tires and chassis are simulated independently of the renderer.
+
+![Bite Point on the closed proving straight](docs/images/proving-ground.png)
 
 ## Requirements
 
-- Node.js 20.19 or newer
+- Node.js 24 (the CI reference runtime)
 - pnpm 12 (the repository uses a pnpm lockfile)
 
 ## Quick start
@@ -33,10 +42,13 @@ pnpm exec playwright install chromium
 - Clutch capacity from pedal position, clamp force, temperature and wear; slip torque, bounded coupling, slip energy, heating and cooling.
 - H-pattern shifter state machine driven by `Enter` and the arrow keys. No numpad and no simultaneous arrow combinations are required. Gears are not engaged until the lever is released.
 - Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
-- Cockpit, hood and exterior cameras, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
+- Photographic HDR sky and image-based lighting, plus scanned PBR asphalt with normal and packed occlusion/roughness maps. CC0 assets from Poly Haven are bundled locally.
+- Four-sample MSAA on High quality, FXAA at every quality level, device-pixel-aware render resolution, 16× road texture filtering and stabilized cascaded shadows on supported hardware. Authored vehicle textures are preserved.
+- Six-kilometre proving straight with lane markings, shoulders, guardrails, distance boards, textured vegetation and continuous ridgelines. Static roadside meshes are batched by material.
+- Cockpit, hood and exterior cameras, a dedicated exterior speed/gear/RPM/shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
 - CC0 five-door hatchback exterior with animated wheel pivots, a detailed cockpit interior and a 200 km/h (124 mph) calibrated speed limiter.
 - Web Audio engine, intake, wind, tire, starter, gearbox and stall sounds. Audio is synthesised; no unlicensed samples are bundled.
-- Lessons for moving off, hill starts, upshifts, braking and reverse parking; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
+- Lessons for moving off, hill starts, upshifts, braking, reverse parking and a launch-to-200-to-stop challenge; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
 - Telemetry recording at 20 Hz, a live graph, JSON export and replay of the last 20 seconds.
 - Pause menu with lessons, settings, rebinding, input testing and diagnostics (frame rate, physics cost, catch-up, clutch state, wheel loads and surface).
 
@@ -99,15 +111,15 @@ The current tire, suspension and road-contact models are deliberately transparen
 
 The test suite covers torque-curve interpolation, idle and stall behavior, clutch slip and heat, H-pattern movement, synchronizers and reverse lockout, driveline ratios, tire limits, suspension and steering, simulation-clock catch-up, configuration validation, telemetry buffers, keyboard safety and rebinding, deterministic simulation, hill rollback, hill holding, launches, braking, reverse and wet-surface stopping. Numerical tests repeat launches at 1/120, 1/250 and 1/500 second steps and check for finite state and bounded spread. A Playwright smoke test boots the production build, starts a session, selects first, launches and shifts to second.
 
-Run `pnpm test` for the 88 deterministic tests and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md).
+Run `pnpm test` for the deterministic tests, including a full launch-to-200 km/h run with clutch-operated upshifts and braking within the proving straight, and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md).
 
 ## Performance
 
-The physics loop is fixed at 1/250 s with bounded catch-up (up to 120 steps per frame, with adaptive render quality when the frame rate falls). Rendering interpolation prevents render-frame timing from changing the model. Physics paths avoid per-step allocation; telemetry samples are allocated only at 20 Hz. The application bundle is about 1.15 MB minified (274 KB gzip) and streams a separate 1.16 MB CC0 car GLB only when the app boots. Babylon.js core is imported through granular modules and dedicated mesh builders rather than the monolithic entry point. The diagnostics panel reports frame rate, physics cost, catch-up and clutch state. Overload warnings appear only after sustained overload rather than for a single slow frame.
+The physics loop is fixed at 1/250 s with bounded catch-up (up to 120 steps per frame, with adaptive render quality when the frame rate falls). Rendering interpolation prevents render-frame timing from changing the model. Physics paths avoid per-step allocation; telemetry samples are allocated only at 20 Hz. The application streams local CC0 assets: a 1.16 MB car GLB, a 5.45 MB photographic HDR sky and about 2.27 MB of scanned road maps. The HDR environment is converted into a 512-pixel cubemap for lighting and reflections. Babylon.js core is imported through granular modules and dedicated mesh builders rather than the monolithic entry point. The diagnostics panel reports frame rate, physics cost, catch-up and clutch state. Overload warnings appear only after sustained overload rather than for a single slow frame.
 
 ## Assets and licenses
 
-All scene geometry, materials, textures, sounds and UI artwork are generated at runtime from code. No third-party models, textures or audio recordings are bundled. Runtime dependencies are open source: Babylon.js (Apache-2.0), Vite and Vitest (MIT), TypeScript (Apache-2.0), Playwright (Apache-2.0), ESLint (MIT), Prettier (MIT) and jsdom (MIT). Review their license files in `node_modules` when distributing a build.
+Project code is licensed under [MIT](LICENSE). The bundled hatchback model and its textures are CC0; see [the asset source and license](src/assets/LICENSE-hatchback.txt). The photographic HDR sky and scanned asphalt maps are also CC0; see [environment asset credits](src/assets/LICENSE-environment.md). The remaining environment geometry, textures, sounds and UI artwork are generated locally from code. No third-party audio recordings are bundled. Runtime dependencies are open source: Babylon.js (Apache-2.0), Vite and Vitest (MIT), TypeScript (Apache-2.0), Playwright (Apache-2.0), ESLint (MIT), Prettier (MIT) and jsdom (MIT). Review their license files in `node_modules` when distributing a build.
 
 ## Current limitations
 
@@ -116,3 +128,15 @@ All scene geometry, materials, textures, sounds and UI artwork are generated at 
 - Tire forces use a smooth tanh slip curve with a friction ellipse; tire temperature and wear are not yet modelled.
 - Audio is parametric synthesis, not reference-vehicle recordings.
 - Reference-vehicle calibration against measured time-series data is pending; treat aggressive handling and absolute acceleration claims as approximations until a measurement report replaces the estimated provenance tags.
+
+## Graphics settings
+
+High quality combines up to 4× MSAA (where WebGL2 hardware supports it), FXAA and native display density capped at 2×. Render scale can raise resolution further. Medium and Low retain FXAA; sustained overload lowers resolution and disables expensive effects to preserve driving responsiveness. Quality recovers one step after 12 seconds above 55 FPS. Open **Pause → Settings** to adjust quality, shadows and render scale. No motion blur obscures the road or instruments.
+
+## Community
+
+Start with [contributing](CONTRIBUTING.md), follow the [community guidelines](CODE_OF_CONDUCT.md), and report vulnerabilities according to [SECURITY.md](SECURITY.md). Bug and feature templates collect useful reproduction details; pull requests run lint, simulation tests, production compilation and Chromium driving checks.
+
+Suggested repository topics: `driving-simulator`, `manual-transmission`, `vehicle-physics`, `babylonjs`, `typescript`, `webgl`, `racing`, `driver-training`, `open-source`.
+
+The project is a learning and simulation tool. Its approximations are documented; it has not been certified for driver training or validated against a measured production vehicle. Photorealism, full collision geometry and measured handling calibration remain active development goals.

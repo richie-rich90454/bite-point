@@ -68,6 +68,33 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
   },
   {
+    id: "proving-run",
+    title: "Six gears · 200 km/h",
+    description: "A 6 km closed proving straight. Launch, shift through all six gears, reach 200 km/h, then brake to a stop.",
+    instructions: [
+      "First gear is selected. Add throttle and feed the clutch in with X.",
+      "Shift up near 5,500–6,000 rpm; lift W and depress Z before each shift.",
+      "Keep straight. Reach 200 km/h, then brake with S and depress the clutch before stopping.",
+      "The distance boards mark the braking space. This is a closed course.",
+    ],
+    start: { x: -200, y: -114.5, heading: 0, gear: 1, engineRunning: true },
+    update: (context) => {
+      const failed = failOnStall(context);
+      if (failed) return failed;
+      if (context.state.pose.x > 5950 && context.state.speedKph > 5) {
+        return { status: "failed", message: "End of the proving straight. Brake earlier and leave room to stop." };
+      }
+      if (context.stats.maxSpeedMps * 3.6 >= 199.5 && context.state.speedKph < 0.5 && context.state.gear === 0) {
+        return { status: "success", message: "200 km/h reached. Stopped and secured in neutral." };
+      }
+      return {
+        status: "running",
+        progress: Math.min(0.9, context.stats.maxSpeedMps * 3.6 / 200 * 0.9),
+        message: context.stats.maxSpeedMps * 3.6 >= 199.5 ? "Target reached. Lift, brake progressively, clutch in and stop in neutral." : undefined,
+      };
+    },
+  },
+  {
     id: "move-off",
     title: "Move off smoothly",
     description: "Find the bite point and pull away in first gear without stalling or slipping excessively.",
@@ -115,14 +142,14 @@ export const SCENARIOS: ScenarioDefinition[] = [
   {
     id: "shift-through",
     title: "Shift through the gears",
-    description: "Use the clutch and the H-pattern to reach fifth gear without stalling or over-revving.",
+    description: "Use the clutch and the H-pattern on the proving straight to reach fifth gear without stalling.",
     instructions: [
       "Start in first gear with the clutch depressed.",
       "For each upshift: press Z, Enter, move the lever, Enter, release X.",
       "Remember the neutral corridor between gears.",
       "Reach 5th gear and 60 km/h without stalling.",
     ],
-    start: { x: -25, y: -25, heading: 0, gear: 1, engineRunning: true },
+    start: { x: -200, y: -114.5, heading: 0, gear: 1, engineRunning: true },
     update: (context) => {
       const failed = failOnStall(context);
       if (failed) return failed;

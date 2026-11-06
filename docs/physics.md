@@ -133,3 +133,9 @@ Drag is `0.5 * ρ * CdA * v * |v|`. Rolling resistance is proportional to normal
 - No aerodynamics beyond longitudinal drag, no yaw/roll aero.
 - No ABS, traction control or stability control (the reference car is treated as having none modelled).
 - No road mesh collision or closed-loop validation against measured vehicle data yet.
+
+## Paved and off-road surfaces
+
+The training lot, access apron and proving straight share boundaries defined in `simulation/road/RoadLayout.ts`. Outside those bounds the analytic surface uses a 0.62 grip scale and 3.2× rolling resistance, both estimated. These are surface approximations, not deformable terrain or a grass tire model. Wet training areas retain their existing friction reduction.
+
+Reverse engagement is blocked above the gearbox lockout threshold. That threshold does not cap backwards driving speed: reverse road speed follows gearing, engine limits and road forces. Rolling resistance always opposes motion.

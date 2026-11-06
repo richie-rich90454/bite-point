@@ -11,7 +11,7 @@
   "wheelInertiaKgM2": 1.1,
   "finalDriveRatio": 3.9,
   "drivetrainEfficiency": 0.92,
-  "gearRatios": [3.54, 2.13, 1.46, 1.13, 0.92, 0.76],
+  "gearRatios": [3.54, 2.13, 1.46, 1.13, 0.92, 0.84],
   "reverseRatio": -3.33,
   "engine": {
     "idleRpm": 820,
@@ -92,7 +92,7 @@
     "bumpStopRateNm": 160000
   },
   "aero": {
-    "dragAreaCdA": 0.64,
+    "dragAreaCdA": 0.58,
     "airDensity": 1.2,
     "maxSpeedKph": 200
   },
@@ -106,7 +106,7 @@
     "wheelInertiaKgM2": "estimated",
     "finalDriveRatio": "documented",
     "drivetrainEfficiency": "estimated",
-    "gearRatios": "documented",
+    "gearRatios": "estimated",
     "reverseRatio": "documented",
     "engine.torqueCurve": "estimated",
     "engine.idleRpm": "documented",

@@ -1,4 +1,6 @@
 import {
+  BackgroundMaterial,
+  CascadedShadowGenerator,
   Color3,
   CreateBox,
   CreateCylinder,
@@ -10,6 +12,7 @@ import {
   DynamicTexture,
   EquiRectangularCubeTexture,
   HemisphericLight,
+  HDRCubeTexture,
   Mesh,
   PBRMaterial,
   Scene,
@@ -21,6 +24,9 @@ import {
   VertexBuffer,
   VertexData,
 } from "./babylon";
+import photographicSkyUrl from "../assets/proving-sky.hdr?url";
+import { createRoadMaterial } from "./RoadMaterial";
+import { ProvingGround } from "./ProvingGround";
 import type { RoadContactProvider } from "../simulation/road/RoadContactProvider";
 
 function simToBabylon(x: number, y: number, z: number): Vector3 {
@@ -41,14 +47,62 @@ export class EnvironmentBuilder {
     this.ground = this.createTerrain();
     this.sun = this.createLights();
     this.createEnvironmentTexture();
-    this.shadows = new ShadowGenerator(2048, this.sun);
-    this.shadows.useBlurExponentialShadowMap = true;
+    this.shadows = CascadedShadowGenerator.IsSupported
+      ? new CascadedShadowGenerator(2048, this.sun)
+      : new ShadowGenerator(2048, this.sun);
+    if (this.shadows instanceof CascadedShadowGenerator) {
+      this.shadows.numCascades = 3;
+      this.shadows.shadowMaxZ = 180;
+      this.shadows.stabilizeCascades = true;
+      this.shadows.cascadeBlendPercentage = 0.12;
+      this.shadows.lambda = 0.75;
+    }
+    this.shadows.usePercentageCloserFiltering = true;
+    this.shadows.filteringQuality = ShadowGenerator.QUALITY_HIGH;
+    this.shadows.bias = 0.0004;
+    this.shadows.normalBias = 0.025;
     this.shadows.blurKernel = 24;
     this.shadows.darkness = 0.25;
     this.createMarkings();
     this.createProps();
     this.createWetPad();
     this.createSignage();
+    new ProvingGround(this.scene, this.shadows);
+    this.loadPhotographicSky();
+  }
+
+  private loadPhotographicSky(): void {
+    const environment = new HDRCubeTexture(
+      photographicSkyUrl,
+      this.scene,
+      512,
+      false,
+      true,
+      false,
+      true,
+      () => {
+        if (this.scene.isDisposed) return;
+        const previous = this.scene.environmentTexture;
+        this.scene.environmentTexture = environment;
+        this.scene.environmentIntensity = 0.7;
+        previous?.dispose();
+        const skyTexture = environment.clone();
+        skyTexture.coordinatesMode = Texture.SKYBOX_MODE;
+        const material = new BackgroundMaterial("photographic-sky-material", this.scene);
+        material.reflectionTexture = skyTexture;
+        material.backFaceCulling = false;
+        material.disableDepthWrite = true;
+        const sky = CreateBox("photographic-sky", { size: 16000 }, this.scene);
+        sky.infiniteDistance = true;
+        sky.isPickable = false;
+        sky.applyFog = false;
+        sky.material = material;
+        this.sky.setEnabled(false);
+      },
+      () => {
+        /* Keep the locally generated fallback if HDR decoding is unavailable. */
+      },
+    );
   }
 
   addShadowCaster(mesh: Mesh): void {
@@ -76,14 +130,14 @@ export class EnvironmentBuilder {
       const cy = 140 + random() * 340;
       const rx = 100 + random() * 260;
       const ry = 20 + random() * 48;
-      const cloudGradient = context.createRadialGradient(cx, cy, 0, cx, cy, rx);
+      context.save();
+      context.translate(cx, cy);
+      context.scale(1, ry / rx);
+      const cloudGradient = context.createRadialGradient(0, 0, 0, 0, 0, rx);
       cloudGradient.addColorStop(0, `rgba(255,255,255,${0.16 + random() * 0.22})`);
       cloudGradient.addColorStop(0.55, "rgba(255,255,255,0.1)");
       cloudGradient.addColorStop(1, "rgba(255,255,255,0)");
       context.fillStyle = cloudGradient;
-      context.save();
-      context.translate(cx, cy);
-      context.scale(1, ry / rx);
       context.beginPath();
       context.arc(0, 0, rx, 0, Math.PI * 2);
       context.fill();
@@ -102,11 +156,12 @@ export class EnvironmentBuilder {
     const material = new StandardMaterial("sky-material", this.scene);
     material.backFaceCulling = false;
     material.disableLighting = true;
+    material.disableDepthWrite = true;
     material.emissiveTexture = texture;
     material.diffuseColor = Color3.Black();
     material.specularColor = Color3.Black();
 
-    const sky = CreateSphere("sky", { diameter: 400, segments: 32, sideOrientation: Mesh.BACKSIDE }, this.scene);
+    const sky = CreateSphere("sky", { diameter: 24000, segments: 32, sideOrientation: Mesh.BACKSIDE }, this.scene);
     sky.material = material;
     sky.infiniteDistance = true;
     sky.isPickable = false;
@@ -177,71 +232,23 @@ export class EnvironmentBuilder {
     ground.refreshBoundingInfo();
     ground.receiveShadows = true;
 
-    const asphalt = this.createAsphaltTexture();
-    const material = new PBRMaterial("asphalt-material", this.scene);
-    material.albedoTexture = asphalt;
-    material.albedoColor = new Color3(0.62, 0.6, 0.57);
-    material.metallic = 0.02;
-    material.roughness = 0.9;
-    material.environmentIntensity = 0.6;
-    ground.material = material;
+    ground.material = createRoadMaterial(this.scene, "training-asphalt", size, size);
     return ground;
-  }
-
-  private createAsphaltTexture(): DynamicTexture {
-    const size = 1024;
-    const texture = new DynamicTexture("asphalt-diffuse", { width: size, height: size }, this.scene, true);
-    const context = texture.getContext();
-    context.fillStyle = "#373733";
-    context.fillRect(0, 0, size, size);
-    let seed = 1234567;
-    const random = (): number => {
-      seed = (seed * 1664525 + 1013904223) >>> 0;
-      return seed / 4294967296;
-    };
-    for (let i = 0; i < 70000; i += 1) {
-      const value = 38 + Math.floor(random() * 58);
-      context.fillStyle = `rgba(${value},${value},${value + 2},${0.18 + random() * 0.4})`;
-      const radius = 0.4 + random() * 2.1;
-      context.fillRect(random() * size, random() * size, radius, radius);
-    }
-    for (let i = 0; i < 26; i += 1) {
-      context.fillStyle = `rgba(20,22,24,${0.04 + random() * 0.06})`;
-      const canvasContext = context as unknown as CanvasRenderingContext2D;
-      canvasContext.beginPath();
-      canvasContext.ellipse(
-        random() * size,
-        random() * size,
-        12 + random() * 60,
-        6 + random() * 30,
-        random() * Math.PI,
-        0,
-        Math.PI * 2,
-      );
-      canvasContext.fill();
-    }
-    texture.wrapU = Texture.WRAP_ADDRESSMODE;
-    texture.wrapV = Texture.WRAP_ADDRESSMODE;
-    texture.uScale = 22;
-    texture.vScale = 22;
-    texture.anisotropicFilteringLevel = 8;
-    texture.update(false);
-    return texture;
   }
 
   private createLights(): DirectionalLight {
     const ambient = new HemisphericLight("sky-light", new Vector3(0.2, 1, 0.1), this.scene);
-    ambient.intensity = 0.55;
+    ambient.intensity = 0.4;
     ambient.diffuse = new Color3(0.82, 0.9, 1);
     ambient.groundColor = new Color3(0.2, 0.2, 0.18);
 
     const sun = new DirectionalLight("sun", new Vector3(-0.45, -0.85, 0.28), this.scene);
     sun.position = new Vector3(60, 95, -40);
-    sun.intensity = 2.85;
+    sun.intensity = 2.1;
     sun.diffuse = new Color3(1, 0.94, 0.84);
     sun.specular = new Color3(1, 0.97, 0.9);
     const fill = new DirectionalLight("rim-fill", new Vector3(0.24, -0.5, 0.84), this.scene);
-    fill.intensity = 0.62;
+    fill.intensity = 0.22;
     fill.diffuse = new Color3(1, 0.78, 0.6);
     fill.specular = new Color3(1, 0.82, 0.64);
     return sun;
@@ -383,7 +390,8 @@ export class EnvironmentBuilder {
     );
   }
 
-  private createWetPad(): void {    const wet = CreateGround("wet-pad", { width: 16, height: 48 }, this.scene);
+  private createWetPad(): void {
+    const wet = CreateGround("wet-pad", { width: 16, height: 48 }, this.scene);
     wet.position = simToBabylon(-6, 32, 0.012);
     const material = new PBRMaterial("wet-material", this.scene);
     material.albedoColor = new Color3(0.08, 0.1, 0.12);
@@ -423,12 +431,20 @@ export class EnvironmentBuilder {
     ];
     for (const [x, y] of conePositions) {
       const height = this.road.heightAt(x, y);
-      const cone = CreateCylinder("cone", { diameterTop: 0.05, diameterBottom: 0.42, height: 0.62, tessellation: 14 }, this.scene);
+      const cone = CreateCylinder(
+        "cone",
+        { diameterTop: 0.05, diameterBottom: 0.42, height: 0.62, tessellation: 14 },
+        this.scene,
+      );
       cone.position = simToBabylon(x, y, height + 0.31);
       cone.material = orange;
       cone.isPickable = false;
       this.shadows.addShadowCaster(cone, true);
-      const stripe = CreateCylinder("cone-stripe", { diameterTop: 0.18, diameterBottom: 0.28, height: 0.12, tessellation: 14 }, this.scene);
+      const stripe = CreateCylinder(
+        "cone-stripe",
+        { diameterTop: 0.18, diameterBottom: 0.28, height: 0.12, tessellation: 14 },
+        this.scene,
+      );
       stripe.position = simToBabylon(x, y, height + 0.36);
       stripe.material = white;
       const base = CreateBox("cone-base", { width: 0.46, height: 0.035, depth: 0.46 }, this.scene);
@@ -481,52 +497,6 @@ export class EnvironmentBuilder {
       entranceMaterial.diffuseColor = new Color3(0.08, 0.12, 0.15);
       entranceMaterial.specularColor = new Color3(0.5, 0.55, 0.6);
       entrance.material = entranceMaterial;
-    }
-
-    const treePositions: Array<[number, number]> = [
-      [-50, 30],
-      [-40, 42],
-      [40, 40],
-      [54, -30],
-      [72, -30],
-      [88, 8],
-      [-70, -40],
-      [20, 50],
-      [36, 60],
-    ];
-    const trunkMaterial = new StandardMaterial("trunk", this.scene);
-    trunkMaterial.diffuseColor = new Color3(0.27, 0.19, 0.12);
-    const foliageMaterial = new StandardMaterial("foliage", this.scene);
-    foliageMaterial.diffuseColor = new Color3(0.18, 0.3, 0.16);
-    for (const [x, y] of treePositions) {
-      const trunk = CreateCylinder("trunk", { diameter: 0.35, height: 3.2, tessellation: 10 }, this.scene);
-      trunk.position = simToBabylon(x, y, 1.6);
-      trunk.material = trunkMaterial;
-      const crown = CreateSphere("crown", { diameter: 4, segments: 10 }, this.scene);
-      crown.position = simToBabylon(x, y, 4.2);
-      crown.scaling = new Vector3(1, 0.9, 1);
-      crown.material = foliageMaterial;
-      for (const [dx, dz, scale] of [
-        [-0.9, 0.4, 0.65],
-        [0.9, -0.2, 0.6],
-        [0.1, -0.9, 0.7],
-      ] as Array<[number, number, number]>) {
-        const clump = CreateSphere("crown-clump", { diameter: 4 * scale, segments: 8 }, this.scene);
-        clump.position = simToBabylon(x + dx, y + dz, 3.9 + scale);
-        clump.material = foliageMaterial;
-      }
-    }
-
-    for (let index = 0; index < 9; index += 1) {
-      const angle = (index / 9) * Math.PI * 2;
-      const radius = 100;
-      const hill = CreateSphere("distant-hill", { diameter: 26 + (index % 3) * 10, segments: 10 }, this.scene);
-      hill.position = simToBabylon(Math.cos(angle) * radius, Math.sin(angle) * radius, -4);
-      hill.scaling.y = 0.32;
-      const material = new StandardMaterial("hill-material", this.scene);
-      material.diffuseColor = new Color3(0.22, 0.3, 0.29);
-      material.specularColor = Color3.Black();
-      hill.material = material;
     }
 
     const lampMaterial = new StandardMaterial("lamp", this.scene);
@@ -599,12 +569,12 @@ export class EnvironmentBuilder {
       context.fillStyle = "#e8b04b";
       context.fillRect(0, 0, 18, 320);
       context.fillStyle = "#ede8dc";
-      context.font = "700 96px Georgia, serif";
+      context.font = "700 96px Bahnschrift, Arial, sans-serif";
       context.fillText(title, 52, 152);
       context.fillStyle = "rgba(232,176,75,0.85)";
       context.font = "600 42px Consolas, monospace";
       context.fillText(subtitle, 54, 236);
-      texture.update(false);
+      texture.update();
       const material = new StandardMaterial(`${name}-material`, this.scene);
       material.emissiveTexture = texture;
       material.diffuseTexture = texture;
@@ -621,7 +591,11 @@ export class EnvironmentBuilder {
       postMaterial.diffuseColor = new Color3(0.25, 0.27, 0.28);
       const postHeight = z;
       for (const offset of [-width / 2 + 0.2, width / 2 - 0.2]) {
-        const post = CreateCylinder(`${name}-post-mesh`, { diameter: 0.12, height: postHeight, tessellation: 8 }, this.scene);
+        const post = CreateCylinder(
+          `${name}-post-mesh`,
+          { diameter: 0.12, height: postHeight, tessellation: 8 },
+          this.scene,
+        );
         post.position = simToBabylon(x, y + offset, postHeight / 2);
         post.material = postMaterial;
       }

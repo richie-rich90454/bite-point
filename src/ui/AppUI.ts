@@ -265,7 +265,7 @@ export class AppUI {
 
   update(data: UIUpdate): void {
     if (!this.startOpen) {
-      this.dashboard.draw(data.state, data.state.shifterGrabbed);
+      if (data.cameraLabel !== "Exterior") this.dashboard.draw(data.state, data.state.shifterGrabbed);
       this.renderScenario(data);
       this.renderHud(data);
       this.renderInstructor(data);
@@ -325,6 +325,16 @@ export class AppUI {
         <div class="dashboard-panel">
           <canvas id="dashboard-canvas" aria-label="Instrument cluster"></canvas>
         </div>
+        <section class="exterior-instruments" aria-label="Driving instruments">
+          <div class="exterior-speed"><b data-exterior-speed>0</b><span>km/h</span><strong data-exterior-gear>N</strong></div>
+          <div class="exterior-rpm"><span data-exterior-revs></span></div>
+          <div class="exterior-rev-label"><span data-exterior-rpm>0 rpm</span><b class="shift-cue">SHIFT ↑</b></div>
+          <div class="exterior-pedals">
+            <div><span>Clutch</span><i><b data-exterior-clutch></b></i></div>
+            <div><span>Throttle</span><i><b data-exterior-throttle></b></i></div>
+            <div><span>Brake</span><i><b data-exterior-brake></b></i></div>
+          </div>
+        </section>
 
         <button class="pause-button" data-ui="pause" aria-label="Pause">II</button>
         <div class="toast-stack"></div>
@@ -362,15 +372,15 @@ export class AppUI {
             </div>
             <p class="eyebrow">MANUAL TRANSMISSION SIMULATOR</p>
             <h1>BITE<br><em>POINT</em></h1>
-            <p class="start-lead">A six-speed manual modelled at 250 Hz. Learn the bite point, the gate and the hill start in a machine that answers honestly.</p>
+            <p class="start-lead">Feel the bite. Nail the shift. Build from your first hill start to a 200 km/h run on the closed proving straight.</p>
             <div class="start-actions">
-              <button class="button primary" data-ui="start">Enter the training lot</button>
+              <button class="button primary" data-ui="start">Start driving</button>
               <button class="button ghost" data-ui="help-start">Controls</button>
             </div>
-            <div class="start-footnote">GOLF-CLASS 1.6 MT · 250 HZ VEHICLE SIMULATION</div>
+            <div class="start-footnote">SIX SPEEDS · 250 HZ PHYSICS · 6 KM PROVING STRAIGHT</div>
           </div>
           <div class="start-select">
-            <div class="panel-label">THE TRAINING LEDGER</div>
+            <div class="panel-label">CHOOSE YOUR SESSION</div>
             <div class="scenario-grid"></div>
             <div class="start-hints">
               <span><b>I</b> ignition</span>
@@ -506,6 +516,14 @@ export class AppUI {
     this.warnings.classList.toggle("visible", warnings.length > 0);
 
     this.prompt.textContent = this.promptFor(state);
+    const instruments = this.query(".exterior-instruments");
+    instruments.classList.toggle("shift-ready", state.rpm > 5700 && state.gear > 0 && state.gear < 6);
+    this.query("[data-exterior-speed]").textContent = state.speedKph.toFixed(0);
+    this.query("[data-exterior-gear]").textContent = state.gearLabel;
+    this.query("[data-exterior-rpm]").textContent = `${state.rpm.toFixed(0)} rpm`;
+    for (const [name, value] of [["revs", state.rpm / 7000], ["clutch", state.clutchPedal], ["throttle", state.throttle], ["brake", state.brake]] as const) {
+      this.query(`[data-exterior-${name}]`).style.transform = `scaleX(${Math.max(0, Math.min(1, value))})`;
+    }
     this.liveStatus.textContent = `${state.gearLabel} · ${state.speedKph.toFixed(0)} km/h · ${state.engineRunning ? "RUNNING" : "ENGINE OFF"}`;
     const fps = Number.isFinite(data.fps) ? data.fps : 0;
     const fpsElement = this.root.querySelector('[data-diag="fps"]');
@@ -918,6 +936,13 @@ export class AppUI {
   }
 
   private promptFor(state: VehicleRenderState): string {
+    const key = (action: InputAction): string => this.callbacks.getBindingLabel(action);
+    if (state.engineRunning && state.gear > 0 && state.gear < 6 && state.rpm > 5700 && state.clutchPedal < 0.2) {
+      return `Shift up: lift ${key("accelerator")}, depress ${key("clutchDepress")}, select ${state.gear + 1}, then release ${key("clutchRelease")}.`;
+    }
+    if (state.engineRunning && state.gear > 1 && state.rpm < 1400 && state.throttle > 0.4 && state.clutchPedal < 0.2) {
+      return "Engine is labouring. Depress the clutch and select a lower gear before accelerating.";
+    }
     if (!state.ignition) return "Press I to switch on the ignition, then hold K to start the engine.";
     if (!state.engineRunning && !state.cranking) return "Hold K to crank the starter. Keep the clutch depressed with Z.";
     if (state.shifterGrabbed) return "Arrow keys move the lever · Enter releases and engages · Esc cancels.";

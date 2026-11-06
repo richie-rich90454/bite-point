@@ -1,13 +1,13 @@
 :root {
-  --ink: #070605;
-  --ink-2: #0c0a08;
-  --panel: #100e0b;
-  --panel-2: #15110d;
-  --ivory: #efe6d4;
-  --parchment: #d8cab0;
-  --muted: #9b8e79;
+  --ink: #0c1114;
+  --ink-2: #11171b;
+  --panel: #131b20;
+  --panel-2: #1a242a;
+  --ivory: #edf1f0;
+  --parchment: #c8d1d2;
+  --muted: #9caeb5;
   --faint: #6e6454;
-  --gold: #c6a15b;
+  --gold: #dfa85d;
   --gold-bright: #e0bd7c;
   --gold-dim: rgba(198, 161, 91, 0.28);
   --gold-soft: rgba(198, 161, 91, 0.09);
@@ -17,8 +17,8 @@
   --danger: #b24d43;
   --success: #7f9d79;
   --blue: #7d98a8;
-  --display: "Bodoni MT", "Bodoni 72", "Didot", "Baskerville", "Georgia", serif;
-  --body: "Palatino Linotype", "Book Antiqua", "Baskerville", Georgia, serif;
+  --display: "Bahnschrift", "Aptos Display", "Segoe UI", sans-serif;
+  --body: "Segoe UI", Arial, sans-serif;
   --ui: "Bahnschrift", "Aptos Narrow", "Segoe UI", sans-serif;
   --mono: "Cascadia Mono", Consolas, "Courier New", monospace;
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -874,7 +874,7 @@ select:focus-visible,
 }
 
 .scenario-option::before {
-  content: counter(session, upper-roman);
+  content: counter(session, decimal-leading-zero);
   grid-row: 1 / span 2;
   font-family: var(--display);
   font-size: 17px;
@@ -1579,4 +1579,46 @@ select:focus-visible,
     flex-direction: column;
     gap: 14px;
   }
+}
+
+/* Purpose-built driving instruments: clear type, compact panels, open road. */
+.start-copy h1 { font-weight: 800; line-height: .86; letter-spacing: -.065em; }
+.start-copy h1 em { font-style: normal; font-weight: 800; }
+.start-select { background: rgba(15, 23, 28, .94); border: 1px solid rgba(182, 204, 214, .2); box-shadow: 0 24px 80px #080c10a0; }
+.start-select::before, .start-select::after, .panel::before, .start-copy h1::after { display: none; }
+.start-overlay { background: linear-gradient(90deg, #0c1114ed, #0c11146b 55%, #0c1114c9); }
+.scenario-option.selected { background: #dfa85d12; border-left: 2px solid var(--gold); }
+.scenario-option-title { font-size: 18px; font-weight: 600; }
+.scenario-option-description { font-size: 12px; }
+.panel-label, .kicker { font-size: 10px; letter-spacing: .16em; }
+.panel { background: rgba(15, 23, 28, .94); border-color: #a9c2cf30; box-shadow: 0 8px 24px #05090d45; }
+.scenario-card { width: 320px; padding: 16px 18px; }
+.scenario-title { font-weight: 600; }
+.start-lead { font-size: 16px; }
+.button { transition: background 160ms, transform 160ms; }
+.button:active { transform: translateY(1px); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+.exterior-instruments { display: none; position: absolute; right: 30px; bottom: 78px; width: 246px; padding: 18px 20px; background: #0d161cec; border-left: 2px solid var(--gold); font-variant-numeric: tabular-nums; }
+.view-exterior .exterior-instruments { display: block; }
+.exterior-speed { display: flex; align-items: baseline; gap: 10px; }
+.exterior-speed b { font-family: var(--display); font-size: 64px; line-height: 1; font-weight: 700; letter-spacing: -.055em; }
+.exterior-speed span { color: var(--muted); font-size: 12px; }
+.exterior-speed strong { margin-left: auto; color: var(--gold); font-size: 40px; font-weight: 600; }
+.exterior-rpm { height: 4px; margin-top: 16px; background: #e6eef11c; overflow: hidden; }
+.exterior-rpm > span { display: block; height: 100%; background: var(--gold); transform-origin: left; }
+.exterior-rev-label { display: flex; justify-content: space-between; margin: 7px 0 16px; font-size: 11px; color: var(--muted); }
+.shift-cue { visibility: hidden; color: #b6d3ab; letter-spacing: .1em; }
+.shift-ready .shift-cue { visibility: visible; }
+.shift-ready .exterior-rpm > span { background: #b6d3ab; }
+.exterior-pedals { display: grid; gap: 7px; }
+.exterior-pedals > div { display: grid; grid-template-columns: 60px 1fr; align-items: center; font-size: 11px; color: #b4c2c9; }
+.exterior-pedals i { height: 5px; background: #e6eef11c; }
+.exterior-pedals b { display: block; height: 100%; background: #b9ccd2; transform-origin: left; }
+.exterior-pedals [data-exterior-brake] { background: #dc8e7d; }
+.hud.view-exterior .prompt { bottom: 24px; left: 26px; transform: none; max-width: calc(100vw - 350px); }
+@media (max-width: 900px) {
+  .exterior-instruments { right: 16px; bottom: 74px; width: 210px; padding: 14px 16px; }
+  .exterior-speed b { font-size: 50px; }
+  .hud.view-exterior .prompt { left: 16px; max-width: calc(100vw - 100px); }
 }

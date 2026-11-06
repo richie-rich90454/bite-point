@@ -1,4 +1,5 @@
 import { smoothstep } from "../core/MathUtils";
+import { isPavedSurface } from "./RoadLayout";
 
 export interface TerrainRamp {
   id: string;
@@ -67,13 +68,17 @@ export class RoadContactProvider {
   }
 
   surfaceMuAt(x: number, y: number): number {
-    let mu = 1;
+    let mu = isPavedSurface(x, y) ? 1 : 0.62;
     for (const area of this.wetAreas) {
       if (x >= area.xMin && x <= area.xMax && y >= area.yMin && y <= area.yMax) {
         mu = Math.min(mu, area.muScale);
       }
     }
     return mu;
+  }
+
+  rollingResistanceScaleAt(x: number, y: number): number {
+    return isPavedSurface(x, y) ? 1 : 3.2;
   }
 
   sample(x: number, y: number): RoadSample {

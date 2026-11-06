@@ -91,9 +91,10 @@ export class VehicleRenderer {
     this.scene.clearColor = Color4.FromHexString("#a9c0d2ff");
     this.scene.ambientColor = new Color3(0.3, 0.32, 0.35);
     this.scene.fogMode = Scene.FOGMODE_EXP2;
-    this.scene.fogDensity = 0.0038;
+    this.scene.fogDensity = 0.00085;
     this.scene.fogColor = new Color3(0.72, 0.8, 0.86);
     this.scene.imageProcessingConfiguration.toneMappingEnabled = true;
+    this.scene.imageProcessingConfiguration.toneMappingType = 1;
     this.scene.imageProcessingConfiguration.exposure = 0.84;
     this.scene.imageProcessingConfiguration.contrast = 1.14;
 
@@ -151,11 +152,13 @@ export class VehicleRenderer {
   applySettings(settings: UserSettings): void {
     this.lastSettings = settings;
     const adaptiveScale = this.adaptiveLevel === 0 ? 1 : this.adaptiveLevel === 1 ? 0.82 : 0.65;
-    this.engine.setHardwareScalingLevel(1 / (settings.renderScale * adaptiveScale));
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    this.engine.setHardwareScalingLevel(1 / (pixelRatio * settings.renderScale * adaptiveScale));
     this.scene.shadowsEnabled = settings.shadows && this.adaptiveLevel < 2;
     if (this.pipeline) {
       this.pipeline.bloomEnabled = settings.quality !== "low" && this.adaptiveLevel < 2;
-      this.pipeline.fxaaEnabled = settings.quality !== "low";
+      this.pipeline.fxaaEnabled = true;
+      this.pipeline.samples = settings.quality === "high" && this.adaptiveLevel === 0 ? 4 : 1;
     }
     this.cockpit.setFov(settings.fovDegrees);
   }
@@ -703,15 +706,14 @@ export class VehicleRenderer {
         for (const material of materials) {
           const name = material.name.toLowerCase();
           if (name.includes("body_pbr")) {
-            material.albedoTexture = null;
-            material.metallicTexture = null;
-            material.albedoColor = Color3.FromHexString("#4f585e");
-            material.metallic = 0.73;
-            material.roughness = 0.27;
+            // Preserve the authored panel, trim and roughness detail in the GLB.
+            material.albedoColor = Color3.White();
+            material.metallic = 1;
+            material.roughness = 1;
             material.clearCoat.isEnabled = true;
-            material.clearCoat.intensity = 0.9;
-            material.clearCoat.roughness = 0.16;
-            material.environmentIntensity = 1.15;
+            material.clearCoat.intensity = 0.45;
+            material.clearCoat.roughness = 0.24;
+            material.environmentIntensity = 0.9;
           } else if (name.includes("window_glass")) {
             material.albedoColor = new Color3(0.018, 0.028, 0.034);
             material.metallic = 0.08;

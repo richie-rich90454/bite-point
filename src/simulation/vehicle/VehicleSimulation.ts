@@ -347,7 +347,8 @@ export class VehicleSimulation {
     const dragN = 0.5 * this.config.aero.airDensity * this.config.aero.dragAreaCdA * this.body.state.vx * speedMagnitude;
     const rollingResistanceN =
       speedMagnitude > 0.05
-        ? -Math.sign(this.body.state.vx) * this.config.tires.rollingResistance * weight
+        ? Math.sign(this.body.state.vx) * this.config.tires.rollingResistance * weight *
+          this.road.rollingResistanceScaleAt(this.body.state.x, this.body.state.y)
         : 0;
 
     this.body.step(dt, {
@@ -364,9 +365,8 @@ export class VehicleSimulation {
     if (this.body.state.vx > speedLimitMps) {
       this.body.state.vx = speedLimitMps;
     }
-    if (this.body.state.vx < -this.config.gearbox.reverseMaxSpeedMps) {
-      this.body.state.vx = -this.config.gearbox.reverseMaxSpeedMps;
-    }
+    // reverseMaxSpeedMps is the engagement lockout threshold, not a driving
+    // speed limiter. Reverse road speed follows its ratio and the engine limit.
 
     const pose = this.wheelPositions();
     const finalHeights = pose.map((position) => this.road.heightAt(position.x, position.y));

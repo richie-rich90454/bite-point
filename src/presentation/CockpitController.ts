@@ -24,7 +24,7 @@ export class CockpitController {
   ) {
     this.camera = new FreeCamera("driver-camera", new Vector3(0, 2, -6), scene);
     this.camera.minZ = 0.04;
-    this.camera.maxZ = 500;
+    this.camera.maxZ = 20000;
     this.camera.fov = (this.baseFovDegrees * Math.PI) / 180;
     this.camera.inputs.clear();
     scene.activeCamera = this.camera;
@@ -73,15 +73,15 @@ export class CockpitController {
       const forward = new Vector3(Math.sin(heading), 0, Math.cos(heading));
       const right = new Vector3(Math.cos(heading), 0, -Math.sin(heading));
       const desired = carPosition
-        .subtract(forward.scale(5.65))
-        .add(right.scale(1.9))
-        .add(new Vector3(0, 2.05, 0));
+        .subtract(forward.scale(7.2))
+        .add(right.scale(1.25))
+        .add(new Vector3(0, 2.6, 0));
       if (!this.chasePosition) this.chasePosition = desired.clone();
       const smoothing = 1 - Math.exp(-5 * dt);
       this.chasePosition = Vector3.Lerp(this.chasePosition, desired, smoothing);
       this.camera.position.copyFrom(this.chasePosition);
       this.camera.upVector.set(0, 1, 0);
-      this.camera.setTarget(carPosition.add(new Vector3(0, 0.66, 0)));
+      this.camera.setTarget(carPosition.add(new Vector3(0, 0.85, 0)).add(forward.scale(1.6)));
       return;
     }
 
