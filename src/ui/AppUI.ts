@@ -383,7 +383,13 @@ const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
             {
                 key: "autoClutch",
                 label: "Automatic clutch",
-                help: "Operate the clutch automatically for a simpler drive.",
+                help: "Handles launches and gear changes without the clutch keys. You can still shift manually.",
+                kind: "toggle",
+            },
+            {
+                key: "stabilityAssist",
+                label: "Stability assist",
+                help: "Damps sideways slides at speed so the car stays predictable.",
                 kind: "toggle",
             },
             {
@@ -774,7 +780,7 @@ export class AppUI {
               <button class="button primary" data-ui="start">Start driving</button>
               <button class="button ghost" data-ui="help-start">Controls</button>
             </div>
-            <div class="start-footnote">Six speeds · 250 Hz physics · endless road</div>
+            <div class="start-footnote">Six speeds, 250 Hz physics, endless road</div>
           </div>
           <div class="start-select">
             <div class="panel-label">Choose your session</div>
@@ -795,7 +801,7 @@ export class AppUI {
             <div class="panel-label">Bite Point</div>
             <h2>Pit stop</h2>
             <div class="pause-tabs"></div>
-            <div class="pause-side-footer">Esc resumes · F1 controls</div>
+            <div class="pause-side-footer">Esc resumes, F1 controls</div>
           </div>
           <div class="pause-main">
             <div class="pause-content"></div>
@@ -893,7 +899,7 @@ export class AppUI {
 
     private renderHud(data: UIUpdate): void {
         const state = data.state;
-        this.cameraLabel.textContent = `${data.cameraLabel} · ${data.headlights ? "lights on" : "lights off"} · wipers ${data.wipers}`;
+        this.cameraLabel.textContent = `${data.cameraLabel}, ${data.headlights ? "lights on" : "lights off"}, wipers ${data.wipers}`;
         this.hud.classList.toggle("view-exterior", data.cameraLabel !== "Cockpit");
         const lights: Array<[string, boolean, string]> = [
             ["Ign", state.ignition, state.ignition ? "on" : "off"],
@@ -925,7 +931,7 @@ export class AppUI {
         if (state.gear === 0 && state.speedMps > 0.5) warnings.push("Neutral");
         if (this.settings.speedLimiterEnabled && state.speedKph > 198)
             warnings.push("Speed limiter");
-        this.warnings.textContent = warnings.join("  ·  ");
+        this.warnings.textContent = warnings.join(", ");
         this.warnings.classList.toggle("visible", warnings.length > 0);
 
         this.prompt.textContent = this.promptFor(state);
@@ -949,7 +955,7 @@ export class AppUI {
             this.query(`[data-exterior-${name}]`).style.transform =
                 `scaleX(${Math.max(0, Math.min(1, value))})`;
         }
-        this.liveStatus.textContent = `${state.gearLabel} · ${this.speedValue(state.speedKph).toFixed(0)} ${this.speedUnit} · ${state.engineRunning ? "running" : "engine off"}`;
+        this.liveStatus.textContent = `${state.gearLabel}, ${this.speedValue(state.speedKph).toFixed(0)} ${this.speedUnit}, ${state.engineRunning ? "running" : "engine off"}`;
         const fps = Number.isFinite(data.fps) ? data.fps : 0;
         const fpsElement = this.root.querySelector<HTMLElement>('[data-diag="fps"]');
         const stepElement = this.root.querySelector<HTMLElement>('[data-diag="step"]');
@@ -1524,7 +1530,7 @@ export class AppUI {
                     data.inputDiagnostics.pressedCodes.length > 0
                         ? data.inputDiagnostics.pressedCodes
                               .map((code) => formatKeyCode(code))
-                              .join("  ·  ")
+                              .join(", ")
                         : "None";
             }
             if (heldActions) {
@@ -1532,7 +1538,7 @@ export class AppUI {
                     data.inputDiagnostics.heldActions.length > 0
                         ? data.inputDiagnostics.heldActions
                               .map((action) => ACTION_LABELS[action])
-                              .join("  ·  ")
+                              .join(", ")
                         : "None";
                 if (data.inputDiagnostics.pressedCodes.length > 5) {
                     heldActions.textContent += "  —  many keys held; rollover may limit detection.";
@@ -1541,7 +1547,7 @@ export class AppUI {
             if (gamepad) {
                 const pad = data.inputDiagnostics.gamepad;
                 gamepad.textContent = pad.connected
-                    ? `${pad.id}${pad.isWheel ? " (wheel mode)" : ""} · steer ${pad.steerAxis.toFixed(2)} · throttle ${pad.throttleAxis.toFixed(2)} · brake ${pad.brakeAxis.toFixed(2)}`
+                    ? `${pad.id}${pad.isWheel ? " (wheel mode)" : ""}, steer ${pad.steerAxis.toFixed(2)}, throttle ${pad.throttleAxis.toFixed(2)}, brake ${pad.brakeAxis.toFixed(2)}`
                     : "No controller detected.";
             }
         }
@@ -1591,9 +1597,9 @@ export class AppUI {
         <div>
           <div class="panel-label">The H-pattern</div>
           <div class="h-pattern-help">
-            <div><b>1</b><span>left · forward</span><b>2</b><span>left · rear</span></div>
-            <div><b>3</b><span>centre · forward</span><b>4</b><span>centre · rear</span></div>
-            <div><b>5</b><span>right · forward</span><b>6</b><span>right · rear</span></div>
+            <div><b>1</b><span>left, forward</span><b>2</b><span>left, rear</span></div>
+            <div><b>3</b><span>centre, forward</span><b>4</b><span>centre, rear</span></div>
+            <div><b>5</b><span>right, forward</span><b>6</b><span>right, rear</span></div>
           </div>
           <ol class="help-steps">
             <li>Press Enter to grab the lever. The HUD highlights it.</li>
@@ -1636,7 +1642,7 @@ export class AppUI {
         if (!state.engineRunning && !state.cranking)
             return "Hold K to crank the starter. Keep the clutch depressed with Z.";
         if (state.shifterGrabbed)
-            return "Arrow keys move the lever · Enter releases and engages · Esc cancels.";
+            return "Arrow keys move the lever, Enter releases and engages, Esc cancels.";
         if (state.gear === 0 && state.engineRunning)
             return "Enter grabs the lever. Arrows move through the gate; press Enter again to engage.";
         if (state.gear > 0 && state.speedMps < 0.2 && state.clutchPedal > 0.45)
@@ -1647,7 +1653,7 @@ export class AppUI {
             return "Rolling back. More clutch bite or hold the brake. Gravity is doing its job.";
         if (state.gear === 0 && state.speedMps > 0.5)
             return "Neutral while rolling. Select a gear or brake to a stop.";
-        return "Z clutch · X release · Space handbrake · C camera · Tab telemetry · F1 help.";
+        return "Z clutch, X release, Space handbrake, C camera, Tab telemetry, F1 help.";
     }
 }
 
