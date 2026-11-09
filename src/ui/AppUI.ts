@@ -11,7 +11,10 @@ import type { ClockStats } from "../simulation/core/SimulationClock";
 import type { TelemetrySample } from "../simulation/telemetry/TelemetryRecorder";
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 import type { InstructorMessage } from "../instructor/DrivingInstructor";
-import { DashboardPresenter } from "../presentation/DashboardPresenter";
+import {
+    DashboardPresenter,
+    type DashboardPresenterOptions,
+} from "../presentation/DashboardPresenter";
 import { ACTION_LABELS, INPUT_ACTIONS, formatKeyCode } from "../input/bindings";
 
 export interface UIScenarioInfo {
@@ -395,7 +398,7 @@ const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
             {
                 key: "speedLimiterEnabled",
                 label: "Speed limiter",
-                help: "Cap top speed. Off by default so the proving straight stays open.",
+                help: "Cap top speed at 500 km/h. Off by default so the full range stays open.",
                 kind: "toggle",
             },
         ],
@@ -453,6 +456,7 @@ export class AppUI {
     private activeTab: PauseTab = "drive";
     private selectedScenario = "endless";
     private readonly dashboard: DashboardPresenter;
+    private maxRpm = 9000;
     private readonly root: HTMLElement;
     private readonly callbacks: AppUICallbacks;
     private settings: UserSettings;
@@ -685,6 +689,11 @@ export class AppUI {
         root.dataset.highContrast = String(this.settings.highContrast);
         root.dataset.colorblind = this.settings.colorblindMode;
         root.style.setProperty("--hud-scale", String(this.settings.hudScale));
+    }
+
+    setDashboardLimits(options: DashboardPresenterOptions): void {
+        if (options.maxRpm) this.maxRpm = options.maxRpm;
+        this.dashboard.setLimits(options);
     }
 
     setScenarioSelection(id: string): void {
@@ -1054,14 +1063,15 @@ export class AppUI {
         const warnings: string[] = [];
         if (!state.engineRunning && !state.cranking) warnings.push("Engine off");
         if (state.cranking) warnings.push("Cranking");
-        if (state.fuelCut) warnings.push("Rev limiter");
+        if (state.fuelCut) warnings.push("Redline");
         if (state.clutchTemperatureC > 320) warnings.push("Clutch hot");
         if (state.wheelLocked) warnings.push("Wheel lock");
         if (state.clutchMode === "slipping" && state.clutchEngagement > 0.6 && state.speedMps < 1.5)
             warnings.push("Bite point");
         if (state.slopeForward > 0.02 && state.pose.vx < -0.2) warnings.push("Rolling back");
         if (state.gear === 0 && state.speedMps > 0.5) warnings.push("Neutral");
-        if (this.settings.speedLimiterEnabled && state.speedKph > 198)
+        if (state.handbrake) warnings.push("Handbrake");
+        if (this.settings.speedLimiterEnabled && state.speedKph > 498)
             warnings.push("Speed limiter");
         this.warnings.textContent = warnings.join(", ");
         this.warnings.classList.toggle("visible", warnings.length > 0);
@@ -1079,7 +1089,7 @@ export class AppUI {
         this.query("[data-exterior-gear]").textContent = state.gearLabel;
         this.query("[data-exterior-rpm]").textContent = `${state.rpm.toFixed(0)} rpm`;
         for (const [name, value] of [
-            ["revs", state.rpm / 7000],
+            ["revs", state.rpm / this.maxRpm],
             ["clutch", state.clutchPedal],
             ["throttle", state.throttle],
             ["brake", state.brake],
@@ -1176,7 +1186,7 @@ export class AppUI {
                 context.stroke();
             };
             drawLine((sample) => (sample.speedMps * 3.6) / maxSpeed, "#e8e6df", 1.6);
-            drawLine((sample) => sample.engineRpm / 7000, "#e8b04b", 1.6);
+            drawLine((sample) => sample.engineRpm / this.maxRpm, "#e8b04b", 1.6);
             drawLine((sample) => Math.abs(sample.clutchSlipRadPerSec) / maxSlip, "#e05b4b", 1.2);
         }
         const latest = samples[samples.length - 1];
