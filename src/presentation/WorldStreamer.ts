@@ -1,3 +1,4 @@
+// Chunk streaming follows the chunked LOD strategy in [R5].
 import { Scene, TransformNode } from "./babylon";
 import type { ShadowGenerator } from "./babylon";
 import type { WorldGenerator } from "../simulation/world/WorldGenerator";
