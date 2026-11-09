@@ -1,9 +1,8 @@
 # Bite Point
 
-[![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
+[![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
 
-**Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, hill-start lessons and a six-kilometre proving straight.
+**Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, an endless procedural highway and no artificial top-speed ceiling.
 
 [Report a bug](https://github.com/richie-rich90454/bite-point/issues/new/choose) · [Contribute](CONTRIBUTING.md) · [Physics](docs/physics.md) · [Validation](docs/validation.md)
 
@@ -31,6 +30,8 @@ pnpm preview     # serve the production build
 pnpm typecheck   # strict TypeScript check
 pnpm test        # Vitest unit, integration and numerical tests
 pnpm lint        # ESLint
+pnpm format:check # oxfmt formatting check
+pnpm assets:check # verify CC0 and third-party asset provenance
 pnpm test:e2e    # Playwright browser smoke test (install Chromium once)
 pnpm exec playwright install chromium
 ```
@@ -44,9 +45,12 @@ pnpm exec playwright install chromium
 - Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
 - Photographic HDR sky and image-based lighting, plus scanned PBR asphalt with normal and packed occlusion/roughness maps. CC0 assets from Poly Haven are bundled locally.
 - Four-sample MSAA on High quality, FXAA at every quality level, device-pixel-aware render resolution, 16× road texture filtering and stabilized cascaded shadows on supported hardware. Authored vehicle textures are preserved.
-- Six-kilometre proving straight with lane markings, shoulders, guardrails, distance boards, textured vegetation and continuous ridgelines. Static roadside meshes are batched by material.
+- Endless procedural highway with clothoid transitions, bounded curvature, elevation, banking, biomes, guardrails, lane markings, vegetation and streamed 160 m chunks. The six-kilometre proving straight remains available as a legacy lesson.
+- Deterministic world seed, O(1) road tracking, bounded chunk caches and a streaming budget designed to hold 60 fps at 1080p on a mid-tier discrete GPU.
 - Cockpit, hood and exterior cameras, a dedicated exterior speed/gear/RPM/shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
-- CC0 five-door hatchback exterior with animated wheel pivots, a detailed cockpit interior and a 200 km/h (124 mph) calibrated speed limiter.
+- CC0 five-door hatchback exterior with animated wheel pivots and a detailed cockpit interior. Top speed is physical, not clamped; an optional 200 km/h limiter is off by default.
+- Real CC0 asphalt, grass, gravel, rock, concrete and metal texture sets with 2K sources, local KTX2 runtime decoding and JPEG fallback.
+- Noto Sans-only interface with a redesigned settings surface, sentence-case labels, per-section resets, units, HUD scale, colorblind and reduced-motion support.
 - Web Audio engine, intake, wind, tire, starter, gearbox and stall sounds. Audio is synthesised; no unlicensed samples are bundled.
 - Lessons for moving off, hill starts, upshifts, braking, reverse parking and a launch-to-200-to-stop challenge; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
 - Telemetry recording at 20 Hz, a live graph, JSON export and replay of the last 20 seconds.
@@ -54,22 +58,22 @@ pnpm exec playwright install chromium
 
 ## Default controls
 
-| Key | Action |
-| --- | --- |
-| `W` / `S` | Accelerator / brake |
-| `A` / `D` | Steer left / right |
-| `Z` / `X` | Depress / release the clutch |
-| `Enter` | Grab or release the gear lever |
-| Arrow keys | Move the lever through the current gate / neutral corridor |
-| `N` / `R` | Request neutral / reverse (reverse remains subject to lockout) |
-| `Space` | Handbrake while held |
-| `I` / `K` | Ignition toggle / starter while held |
-| `C` / `Home` | Cycle camera / recenter view |
-| `F` / `G` | Headlights / wipers |
-| `Tab` / `F1` / `F2` | Telemetry / help / instructor |
-| `Esc` | Cancel lever interaction, close a dialog or pause |
-| Hold `Backspace` | Recover a stopped vehicle to the start of the session |
-| `1`–`6` | Quick-select gears only when enabled in Settings |
+| Key                 | Action                                                         |
+| ------------------- | -------------------------------------------------------------- |
+| `W` / `S`           | Accelerator / brake                                            |
+| `A` / `D`           | Steer left / right                                             |
+| `Z` / `X`           | Depress / release the clutch                                   |
+| `Enter`             | Grab or release the gear lever                                 |
+| Arrow keys          | Move the lever through the current gate / neutral corridor     |
+| `N` / `R`           | Request neutral / reverse (reverse remains subject to lockout) |
+| `Space`             | Handbrake while held                                           |
+| `I` / `K`           | Ignition toggle / starter while held                           |
+| `C` / `Home`        | Cycle camera / recenter view                                   |
+| `F` / `G`           | Headlights / wipers                                            |
+| `Tab` / `F1` / `F2` | Telemetry / help / instructor                                  |
+| `Esc`               | Cancel lever interaction, close a dialog or pause              |
+| Hold `Backspace`    | Recover a stopped vehicle to the start of the session          |
+| `1`–`6`             | Quick-select gears only when enabled in Settings               |
 
 All bindings can be changed in **Pause → Controls**. The H-pattern is the default because it teaches the actual gate layout: `1` is left-forward, `2` left-rear, `3` centre-forward, `4` centre-rear, `5` right-forward and `6` right-rear. Neutral is the horizontal corridor.
 
@@ -111,7 +115,7 @@ The current tire, suspension and road-contact models are deliberately transparen
 
 The test suite covers torque-curve interpolation, idle and stall behavior, clutch slip and heat, H-pattern movement, synchronizers and reverse lockout, driveline ratios, tire limits, suspension and steering, simulation-clock catch-up, configuration validation, telemetry buffers, keyboard safety and rebinding, deterministic simulation, hill rollback, hill holding, launches, braking, reverse and wet-surface stopping. Numerical tests repeat launches at 1/120, 1/250 and 1/500 second steps and check for finite state and bounded spread. A Playwright smoke test boots the production build, starts a session, selects first, launches and shifts to second.
 
-Run `pnpm test` for the deterministic tests, including a full launch-to-200 km/h run with clutch-operated upshifts and braking within the proving straight, and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md).
+Run `pnpm test` for the deterministic tests, including a launch past 200 km/h with clutch-operated upshifts, a high-speed finite-state check and an endless-world stream test, and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md). Asset and algorithm citations are in [docs/references.md](docs/references.md).
 
 ## Performance
 
@@ -119,7 +123,7 @@ The physics loop is fixed at 1/250 s with bounded catch-up (up to 120 steps per 
 
 ## Assets and licenses
 
-Project code is licensed under [MIT](LICENSE). The bundled hatchback model and its textures are CC0; see [the asset source and license](src/assets/LICENSE-hatchback.txt). The photographic HDR sky and scanned asphalt maps are also CC0; see [environment asset credits](src/assets/LICENSE-environment.md). The remaining environment geometry, textures, sounds and UI artwork are generated locally from code. No third-party audio recordings are bundled. Runtime dependencies are open source: Babylon.js (Apache-2.0), Vite and Vitest (MIT), TypeScript (Apache-2.0), Playwright (Apache-2.0), ESLint (MIT), Prettier (MIT) and jsdom (MIT). Review their license files in `node_modules` when distributing a build.
+Project code is licensed under [MIT](LICENSE). The bundled hatchback model and its textures are CC0; see [the asset source and license](src/assets/LICENSE-hatchback.txt). The photographic HDR sky and scanned asphalt maps are CC0; see [environment asset credits](src/assets/LICENSE-environment.md). The terrain, prop and road texture sets are CC0 and recorded in [src/assets/assets.json](src/assets/assets.json) with per-file SHA-256 checks. The local KTX2 decoder is Apache-2.0; see [src/assets/LICENSE-ktx2.md](src/assets/LICENSE-ktx2.md). The remaining environment geometry, sounds and UI artwork are generated locally from code. No third-party audio recordings are bundled. Runtime dependencies are open source: Babylon.js and its KTX2 decoder (Apache-2.0), Vite and Vitest (MIT), TypeScript (Apache-2.0), Playwright (Apache-2.0), ESLint (MIT), oxfmt (MIT) and jsdom (MIT). Review their license files in `node_modules` when distributing a build.
 
 ## Current limitations
 

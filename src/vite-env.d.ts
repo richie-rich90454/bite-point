@@ -1,46 +1,60 @@
 export {};
 
 export interface BitePointSnapshot {
-  started: boolean;
-  scenarioId: string;
-  scenarioStatus: string;
-  gear: number;
-  gearLabel: string;
-  speedKph: number;
-  rpm: number;
-  running: boolean;
-  clutchPedal: number;
-  clutchMode: string;
-  x: number;
-  y: number;
-  shifterGate: number;
-  shifterSlot: number;
-  shifterGrabbed: boolean;
-  pauseOpen: boolean;
-  helpOpen: boolean;
-  telemetryOpen: boolean;
-  replaying: boolean;
-  fps: number;
-  stepsLastFrame: number;
-  simulatedTimeS: number;
-  throttle: number;
-  brake: number;
-  handbrake: boolean;
-  engineTorqueNm: number;
-  wheelOmegas: number[];
-  clutchModeDetail: string;
-  surfaceMu: number;
+    started: boolean;
+    scenarioId: string;
+    scenarioStatus: string;
+    gear: number;
+    gearLabel: string;
+    speedKph: number;
+    rpm: number;
+    running: boolean;
+    clutchPedal: number;
+    clutchMode: string;
+    x: number;
+    y: number;
+    shifterGate: number;
+    shifterSlot: number;
+    shifterGrabbed: boolean;
+    pauseOpen: boolean;
+    helpOpen: boolean;
+    telemetryOpen: boolean;
+    replaying: boolean;
+    worldMode: string;
+    roadDistance: number;
+    activeChunks: number;
+    fps: number;
+    stepsLastFrame: number;
+    simulatedTimeS: number;
+    throttle: number;
+    brake: number;
+    handbrake: boolean;
+    engineTorqueNm: number;
+    wheelOmegas: number[];
+    clutchModeDetail: string;
+    surfaceMu: number;
 }
 
 export interface BitePointDebugApi {
-  snapshot: () => BitePointSnapshot;
-  startScenario: (id: string) => void;
-  pause: () => void;
-  resume: () => void;
+    snapshot: () => BitePointSnapshot;
+    startScenario: (id: string) => void;
+    pause: () => void;
+    resume: () => void;
+    world: () => {
+        material: string | null;
+        albedo: string | null;
+        albedoReady: boolean;
+        textures: number;
+        chunks: number;
+        roadMaterial: string | null;
+        terrainMaterial: string | null;
+        roadVertices: number;
+        terrainVertices: number;
+    };
 }
 
 declare global {
-  interface Window {
-    bitePoint?: BitePointDebugApi;
-  }
+    interface Window {
+        bitePoint?: BitePointDebugApi;
+    }
 }

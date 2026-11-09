@@ -1,366 +1,365 @@
 name: CI and deploy
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
 
 permissions:
-  contents: read
+    contents: read
 
 concurrency:
-  group: pages-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+    group: pages-${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  quality:
-    name: Quality checks
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
+    quality:
+        name: Quality checks
+        runs-on: ubuntu-latest
+        timeout-minutes: 30
 
-    permissions:
-      contents: read
-      pages: read
+        permissions:
+            contents: read
+            pages: read
 
-    steps:
-      # 1. Checkout
-      - name: Checkout repository
-        uses: actions/checkout@v7
+        steps:
+            # 1. Checkout
+            - name: Checkout repository
+              uses: actions/checkout@v7
 
-      # 2. Make CI use pnpm latest, not the repository pin.
-      # This only modifies the temporary CI checkout.
-      - name: Remove package manager pin from CI checkout
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
+            # 2. Make CI use pnpm latest, not the repository pin.
+            # This only modifies the temporary CI checkout.
+            - name: Remove package manager pin from CI checkout
+              shell: bash
+              run: |
+                  python3 - <<'PY'
+                  import json
+                  from pathlib import Path
 
-          path = Path("package.json")
+                  path = Path("package.json")
 
-          if not path.is_file():
-              raise SystemExit("package.json is missing")
+                  if not path.is_file():
+                      raise SystemExit("package.json is missing")
 
-          package = json.loads(path.read_text(encoding="utf-8"))
+                  package = json.loads(path.read_text(encoding="utf-8"))
 
-          if "packageManager" in package:
-              del package["packageManager"]
-              path.write_text(
-                  json.dumps(package, indent=2) + "\n",
-                  encoding="utf-8",
-              )
-          PY
+                  if "packageManager" in package:
+                      del package["packageManager"]
+                      path.write_text(
+                          json.dumps(package, indent=2) + "\n",
+                          encoding="utf-8",
+                      )
+                  PY
 
-      # 3. Install pnpm
-      - name: Install latest pnpm
-        uses: pnpm/setup@v3
-        with:
-          version: latest
-          install: false
+            # 3. Install pnpm
+            - name: Install latest pnpm
+              uses: pnpm/setup@v3
+              with:
+                  version: latest
+                  install: false
 
-      # 4. Install Node.js
-      - name: Install latest Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: latest
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
+            # 4. Install Node.js
+            - name: Install latest Node.js
+              uses: actions/setup-node@v7
+              with:
+                  node-version: latest
+                  cache: pnpm
+                  cache-dependency-path: pnpm-lock.yaml
 
-      # 5. Verify environment
-      - name: Verify toolchain
-        shell: bash
-        run: |
-          set -euo pipefail
+            # 5. Verify environment
+            - name: Verify toolchain
+              shell: bash
+              run: |
+                  set -euo pipefail
 
-          test -s package.json
-          test -s pnpm-lock.yaml
+                  test -s package.json
+                  test -s pnpm-lock.yaml
 
-          echo "Node.js:"
-          node --version
+                  echo "Node.js:"
+                  node --version
 
-          echo "npm:"
-          npm --version
+                  echo "npm:"
+                  npm --version
 
-          echo "pnpm:"
-          pnpm --version
+                  echo "pnpm:"
+                  pnpm --version
 
-      # 6. Configure Pages
-      - name: Configure GitHub Pages
-        id: pages
-        uses: actions/configure-pages@v6
+            # 6. Configure Pages
+            - name: Configure GitHub Pages
+              id: pages
+              uses: actions/configure-pages@v6
 
-      # 7. Install dependencies
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+            # 7. Install dependencies
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
-      # 8. Static checks
-      - name: Typecheck
-        run: pnpm typecheck
+            # 8. Static checks
+            - name: Typecheck
+              run: pnpm typecheck
 
-      - name: Lint
-        run: pnpm lint
+            - name: Lint
+              run: pnpm lint
 
-      # 9. Unit and integration tests
-      - name: Unit and integration tests
-        run: pnpm test
+            # 9. Unit and integration tests
+            - name: Unit and integration tests
+              run: pnpm test
 
-      # 10. Install browser dependencies
-      - name: Install Playwright Chromium
-        run: pnpm exec playwright install --with-deps chromium
+            # 10. Install browser dependencies
+            - name: Install Playwright Chromium
+              run: pnpm exec playwright install --with-deps chromium
 
-      # 11. Build for the existing Playwright preview server.
-      # Playwright currently starts Vite preview at the root URL.
-      - name: Build for end-to-end tests
-        run: |
-          pnpm run build -- --base=/
-          test -s dist/index.html
+            # 11. Build for the existing Playwright preview server.
+            # Playwright currently starts Vite preview at the root URL.
+            - name: Build for end-to-end tests
+              run: |
+                  pnpm run build -- --base=/
+                  test -s dist/index.html
 
-      # 12. Run browser tests against an actual production build.
-      - name: End-to-end tests
-        run: pnpm test:e2e
+            # 12. Run browser tests against an actual production build.
+            - name: End-to-end tests
+              run: pnpm test:e2e
 
-      # 13. Rebuild using the actual GitHub Pages base path.
-      - name: Build for GitHub Pages
-        id: pages-build
-        env:
-          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
-        shell: bash
-        run: |
-          set -euo pipefail
+            # 13. Rebuild using the actual GitHub Pages base path.
+            - name: Build for GitHub Pages
+              id: pages-build
+              env:
+                  PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+              shell: bash
+              run: |
+                  set -euo pipefail
 
-          if [[ -z "$PAGES_BASE_PATH" || "$PAGES_BASE_PATH" == "/" ]]; then
-            BASE_PATH="/"
-          else
-            BASE_PATH="${PAGES_BASE_PATH%/}/"
-          fi
+                  if [[ -z "$PAGES_BASE_PATH" || "$PAGES_BASE_PATH" == "/" ]]; then
+                    BASE_PATH="/"
+                  else
+                    BASE_PATH="${PAGES_BASE_PATH%/}/"
+                  fi
 
-          echo "GitHub Pages base path: $BASE_PATH"
+                  echo "GitHub Pages base path: $BASE_PATH"
 
-          echo "base_path=$BASE_PATH" >> "$GITHUB_OUTPUT"
-          echo "BASE_PATH=$BASE_PATH" >> "$GITHUB_ENV"
+                  echo "base_path=$BASE_PATH" >> "$GITHUB_OUTPUT"
+                  echo "BASE_PATH=$BASE_PATH" >> "$GITHUB_ENV"
 
-          pnpm run build -- --base="$BASE_PATH"
+                  pnpm run build -- --base="$BASE_PATH"
 
-      # 14. Validate the final production artifact.
-      - name: Validate production artifact
-        env:
-          BASE_PATH: ${{ steps.pages-build.outputs.base_path }}
-        run: |
-          node <<'NODE'
-          const fs = require("node:fs");
-          const path = require("node:path");
+            # 14. Validate the final production artifact.
+            - name: Validate production artifact
+              env:
+                  BASE_PATH: ${{ steps.pages-build.outputs.base_path }}
+              run: |
+                  node <<'NODE'
+                  const fs = require("node:fs");
+                  const path = require("node:path");
 
-          const base = process.env.BASE_PATH;
+                  const base = process.env.BASE_PATH;
 
-          if (!base || !base.startsWith("/") || !base.endsWith("/")) {
-              throw new Error(`Invalid base path: ${base}`);
-          }
-
-          if (!fs.existsSync("dist/index.html")) {
-              throw new Error("dist/index.html does not exist");
-          }
-
-          const html = fs.readFileSync("dist/index.html", "utf8");
-
-          if (!html.trim()) {
-              throw new Error("Production index.html is empty");
-          }
-
-          const origin = "https://ci.invalid";
-          const pageUrl = new URL(base, origin);
-
-          const references = [
-              ...html.matchAll(/\b(?:src|href)=["']([^"']+)["']/gi)
-          ].map(match => match[1]);
-
-          let checked = 0;
-
-          for (const reference of references) {
-              const url = new URL(reference, pageUrl);
-
-              if (url.origin !== origin) {
-                  continue;
-              }
-
-              if (!url.pathname.startsWith(base)) {
-                  throw new Error(
-                      `Asset escapes GitHub Pages base path: ${reference}`
-                  );
-              }
-
-              const relative = decodeURIComponent(
-                  url.pathname.slice(base.length)
-              );
-
-              if (!relative) {
-                  continue;
-              }
-
-              const outputPath = path.resolve("dist", relative);
-              const outputRoot = path.resolve("dist") + path.sep;
-
-              if (!outputPath.startsWith(outputRoot)) {
-                  throw new Error(`Invalid asset path: ${reference}`);
-              }
-
-              if (
-                  !fs.existsSync(outputPath) ||
-                  !fs.statSync(outputPath).isFile()
-              ) {
-                  throw new Error(
-                      `Referenced production asset is missing: ${reference}`
-                  );
-              }
-
-              checked++;
-          }
-
-          console.log(`Base path verified: ${base}`);
-          console.log(`Verified ${checked} local HTML asset references.`);
-          console.log("Production artifact validation passed.");
-          NODE
-
-      # 15. Start the final production build at the Pages base path
-      # and verify that its HTML and referenced assets are actually served.
-      - name: Smoke-test GitHub Pages build
-        env:
-          BASE_PATH: ${{ steps.pages-build.outputs.base_path }}
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          pnpm exec vite preview \
-            --host 127.0.0.1 \
-            --port 4174 \
-            --strictPort \
-            --base="$BASE_PATH" \
-            > "$RUNNER_TEMP/vite-preview.log" 2>&1 &
-
-          PREVIEW_PID=$!
-
-          cleanup() {
-            kill "$PREVIEW_PID" 2>/dev/null || true
-            wait "$PREVIEW_PID" 2>/dev/null || true
-          }
-
-          trap cleanup EXIT
-
-          if ! node --input-type=module <<'NODE'
-          const base = process.env.BASE_PATH;
-          const origin = "http://127.0.0.1:4174";
-          const pageUrl = new URL(base, origin);
-
-          let pageResponse = null;
-          let lastError = null;
-
-          for (let attempt = 0; attempt < 60; attempt++) {
-              try {
-                  const response = await fetch(pageUrl);
-
-                  if (response.ok) {
-                      pageResponse = response;
-                      break;
+                  if (!base || !base.startsWith("/") || !base.endsWith("/")) {
+                      throw new Error(`Invalid base path: ${base}`);
                   }
 
-                  lastError = new Error(
-                      `HTTP ${response.status}: ${pageUrl}`
-                  );
-              } catch (error) {
-                  lastError = error;
-              }
+                  if (!fs.existsSync("dist/index.html")) {
+                      throw new Error("dist/index.html does not exist");
+                  }
 
-              await new Promise(resolve => setTimeout(resolve, 500));
-          }
+                  const html = fs.readFileSync("dist/index.html", "utf8");
 
-          if (!pageResponse) {
-              throw lastError ?? new Error("Preview server did not start");
-          }
+                  if (!html.trim()) {
+                      throw new Error("Production index.html is empty");
+                  }
 
-          const html = await pageResponse.text();
+                  const origin = "https://ci.invalid";
+                  const pageUrl = new URL(base, origin);
 
-          if (!/<html[\s>]/i.test(html)) {
-              throw new Error("Preview did not return an HTML document");
-          }
+                  const references = [
+                      ...html.matchAll(/\b(?:src|href)=["']([^"']+)["']/gi)
+                  ].map(match => match[1]);
 
-          const references = [
-              ...html.matchAll(/\b(?:src|href)=["']([^"']+)["']/gi)
-          ].map(match => match[1]);
+                  let checked = 0;
 
-          const checked = new Set();
+                  for (const reference of references) {
+                      const url = new URL(reference, pageUrl);
 
-          for (const reference of references) {
-              const url = new URL(reference, pageUrl);
+                      if (url.origin !== origin) {
+                          continue;
+                      }
 
-              if (url.origin !== origin) {
-                  continue;
-              }
+                      if (!url.pathname.startsWith(base)) {
+                          throw new Error(
+                              `Asset escapes GitHub Pages base path: ${reference}`
+                          );
+                      }
 
-              if (url.pathname === pageUrl.pathname) {
-                  continue;
-              }
+                      const relative = decodeURIComponent(
+                          url.pathname.slice(base.length)
+                      );
 
-              if (!url.pathname.startsWith(base)) {
-                  throw new Error(
-                      `Preview asset uses incorrect base path: ${reference}`
-                  );
-              }
+                      if (!relative) {
+                          continue;
+                      }
 
-              if (checked.has(url.href)) {
-                  continue;
-              }
+                      const outputPath = path.resolve("dist", relative);
+                      const outputRoot = path.resolve("dist") + path.sep;
 
-              const response = await fetch(url);
+                      if (!outputPath.startsWith(outputRoot)) {
+                          throw new Error(`Invalid asset path: ${reference}`);
+                      }
 
-              if (!response.ok) {
-                  throw new Error(
-                      `Asset returned HTTP ${response.status}: ${url}`
-                  );
-              }
+                      if (
+                          !fs.existsSync(outputPath) ||
+                          !fs.statSync(outputPath).isFile()
+                      ) {
+                          throw new Error(
+                              `Referenced production asset is missing: ${reference}`
+                          );
+                      }
 
-              checked.add(url.href);
-          }
+                      checked++;
+                  }
 
-          console.log(`Preview URL: ${pageUrl}`);
-          console.log(`Verified ${checked.size} served assets.`);
-          console.log("GitHub Pages smoke test passed.");
-          NODE
-          then
-            cat "$RUNNER_TEMP/vite-preview.log"
-            exit 1
-          fi
+                  console.log(`Base path verified: ${base}`);
+                  console.log(`Verified ${checked} local HTML asset references.`);
+                  console.log("Production artifact validation passed.");
+                  NODE
 
-      # 16. Upload only the final, validated Pages build.
-      - name: Upload production artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: dist
+            # 15. Start the final production build at the Pages base path
+            # and verify that its HTML and referenced assets are actually served.
+            - name: Smoke-test GitHub Pages build
+              env:
+                  BASE_PATH: ${{ steps.pages-build.outputs.base_path }}
+              shell: bash
+              run: |
+                  set -euo pipefail
 
-  # 17. Deployment is a separate job.
-  deploy:
-    name: Deploy to GitHub Pages
-    needs: quality
+                  pnpm exec vite preview \
+                    --host 127.0.0.1 \
+                    --port 4174 \
+                    --strictPort \
+                    --base="$BASE_PATH" \
+                    > "$RUNNER_TEMP/vite-preview.log" 2>&1 &
 
-    if: >-
-      github.event_name != 'pull_request' &&
-      github.ref == 'refs/heads/main'
+                  PREVIEW_PID=$!
 
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+                  cleanup() {
+                    kill "$PREVIEW_PID" 2>/dev/null || true
+                    wait "$PREVIEW_PID" 2>/dev/null || true
+                  }
 
-    permissions:
-      actions: read
-      pages: write
-      id-token: write
+                  trap cleanup EXIT
 
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+                  if ! node --input-type=module <<'NODE'
+                  const base = process.env.BASE_PATH;
+                  const origin = "http://127.0.0.1:4174";
+                  const pageUrl = new URL(base, origin);
 
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+                  let pageResponse = null;
+                  let lastError = null;
+
+                  for (let attempt = 0; attempt < 60; attempt++) {
+                      try {
+                          const response = await fetch(pageUrl);
+
+                          if (response.ok) {
+                              pageResponse = response;
+                              break;
+                          }
+
+                          lastError = new Error(
+                              `HTTP ${response.status}: ${pageUrl}`
+                          );
+                      } catch (error) {
+                          lastError = error;
+                      }
+
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                  }
+
+                  if (!pageResponse) {
+                      throw lastError ?? new Error("Preview server did not start");
+                  }
+
+                  const html = await pageResponse.text();
+
+                  if (!/<html[\s>]/i.test(html)) {
+                      throw new Error("Preview did not return an HTML document");
+                  }
+
+                  const references = [
+                      ...html.matchAll(/\b(?:src|href)=["']([^"']+)["']/gi)
+                  ].map(match => match[1]);
+
+                  const checked = new Set();
+
+                  for (const reference of references) {
+                      const url = new URL(reference, pageUrl);
+
+                      if (url.origin !== origin) {
+                          continue;
+                      }
+
+                      if (url.pathname === pageUrl.pathname) {
+                          continue;
+                      }
+
+                      if (!url.pathname.startsWith(base)) {
+                          throw new Error(
+                              `Preview asset uses incorrect base path: ${reference}`
+                          );
+                      }
+
+                      if (checked.has(url.href)) {
+                          continue;
+                      }
+
+                      const response = await fetch(url);
+
+                      if (!response.ok) {
+                          throw new Error(
+                              `Asset returned HTTP ${response.status}: ${url}`
+                          );
+                      }
+
+                      checked.add(url.href);
+                  }
+
+                  console.log(`Preview URL: ${pageUrl}`);
+                  console.log(`Verified ${checked.size} served assets.`);
+                  console.log("GitHub Pages smoke test passed.");
+                  NODE
+                  then
+                    cat "$RUNNER_TEMP/vite-preview.log"
+                    exit 1
+                  fi
+
+            # 16. Upload only the final, validated Pages build.
+            - name: Upload production artifact
+              uses: actions/upload-pages-artifact@v5
+              with:
+                  path: dist
+
+    # 17. Deployment is a separate job.
+    deploy:
+        name: Deploy to GitHub Pages
+        needs: quality
+
+        if: >-
+            github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+
+        permissions:
+            actions: read
+            pages: write
+            id-token: write
+
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v5

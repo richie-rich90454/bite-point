@@ -1,21 +1,37 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101418" />
-    <meta name="description" content="Bite Point: an open-source manual driving simulator with six-speed H-pattern shifting, 250 Hz vehicle physics, hill-start lessons and a 6 km proving straight." />
-    <meta property="og:title" content="Bite Point — feel the bite, nail the shift" />
-    <meta property="og:description" content="Learn the clutch, master six gears and take on the 200 km/h closed-course challenge." />
-    <meta property="og:type" content="website" />
-    <title>Bite Point — manual driving simulator</title>
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101418'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23e8b04b' stroke-width='3'/%3E%3Cpath d='M16 7v9l6 4' stroke='%23e8b04b' stroke-width='2.4' fill='none'/%3E%3C/svg%3E" />
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body>
-    <canvas id="render-canvas" aria-label="Bite Point driving view"></canvas>
-    <div id="ui-root"></div>
-    <div id="boot-error" hidden></div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#101418" />
+        <meta
+            name="description"
+            content="Bite Point: an open-source manual driving simulator with six-speed H-pattern shifting, 250 Hz vehicle physics, hill-start lessons and a 6 km proving straight."
+        />
+        <meta property="og:title" content="Bite Point — feel the bite, nail the shift" />
+        <meta
+            property="og:description"
+            content="Learn the clutch, master six gears and take on the 200 km/h closed-course challenge."
+        />
+        <meta property="og:type" content="website" />
+        <title>Bite Point — manual driving simulator</title>
+        <link
+            rel="preload"
+            href="/src/assets/fonts/noto-sans-latin.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="icon"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23101418'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23e8b04b' stroke-width='3'/%3E%3Cpath d='M16 7v9l6 4' stroke='%23e8b04b' stroke-width='2.4' fill='none'/%3E%3C/svg%3E"
+        />
+        <link rel="stylesheet" href="/src/styles.css" />
+    </head>
+    <body>
+        <canvas id="render-canvas" aria-label="Bite Point driving view"></canvas>
+        <div id="ui-root"></div>
+        <div id="boot-error" hidden></div>
+        <script type="module" src="/src/main.ts"></script>
+    </body>
 </html>
