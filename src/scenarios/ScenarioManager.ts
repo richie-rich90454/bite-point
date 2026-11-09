@@ -58,6 +58,31 @@ const failOnStall = (context: ScenarioUpdate): ScenarioResult | null => {
 
 export const SCENARIOS: ScenarioDefinition[] = [
     {
+        id: "endless",
+        title: "Endless run",
+        description:
+            "An endless procedural highway with sweeping curves, changing terrain and no artificial speed ceiling. Build speed, hold a gear and keep driving.",
+        instructions: [
+            "The car starts in first gear on an open road.",
+            "Shift with the clutch and the H-pattern as usual.",
+            "Pick a gear that fits the corner ahead. The road keeps going.",
+            "There is no finish line and no artificial speed cap.",
+        ],
+        start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
+        update: (context) => {
+            const distance = Math.max(0, context.state.pose.x);
+            const speed = context.stats.maxSpeedMps * 3.6;
+            return {
+                status: "running",
+                progress: Math.min(0.99, distance / 50_000),
+                message:
+                    speed > 200
+                        ? `Top speed ${speed.toFixed(0)} km/h. The road is still going.`
+                        : undefined,
+            };
+        },
+    },
+    {
         id: "free-drive",
         title: "Free drive",
         description:
