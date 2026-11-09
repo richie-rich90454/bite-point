@@ -1,7 +1,7 @@
 import { Color3, PBRMaterial, Scene } from "./babylon";
 import { applyTextureSet, TEXTURE_SETS } from "./world/TextureSets";
 
-/** CC0 3 m asphalt scan. Keep texture dimensions in world metres. */
+/** CC0 3 m asphalt scan from Poly Haven [R22]. Keep texture dimensions in world metres. */
 export function createRoadMaterial(
     scene: Scene,
     name: string,
