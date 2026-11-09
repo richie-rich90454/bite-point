@@ -138,6 +138,14 @@ export class InputService {
             this.keyboard.setBindings(this.bindings);
         }
         this.quickSelectMode = settings.quickSelectMode;
+        this.gamepad.setEnabled(settings.gamepadEnabled);
+        this.gamepad.setClutchAxisMode(settings.clutchAxis);
+        this.calibration.update({
+            steeringDeadzone: settings.steeringDeadzone,
+            throttleDeadzone: settings.throttleDeadzone,
+            brakeDeadzone: settings.brakeDeadzone,
+            clutchDeadzone: settings.steeringDeadzone,
+        });
     }
 
     setSuspended(suspended: boolean): void {
@@ -191,7 +199,7 @@ export class InputService {
             this.brakePedal = Math.max(this.brakePedal, pedal);
         }
 
-        if (pad.connected && pad.isWheel && pad.clutchAxis !== null) {
+        if (pad.connected && pad.clutchAxis !== null) {
             this.clutchPedal = this.calibration.clutch(pad.clutchAxis);
         } else {
             const depress = this.held.has("clutchDepress") || pad.clutchButton;
