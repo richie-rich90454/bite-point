@@ -8,6 +8,7 @@ import { assertValidVehicleConfig, type VehicleConfig } from "../simulation/conf
 import rawConfig from "../data/reference-compact.json";
 import { VehicleSimulation, type SimEvent } from "../simulation/vehicle/VehicleSimulation";
 import { RoadContactProvider } from "../simulation/road/RoadContactProvider";
+import { WorldGenerator } from "../simulation/world/WorldGenerator";
 import { SimulationClock } from "../simulation/core/SimulationClock";
 import { VehicleRenderer } from "../presentation/VehicleRenderer";
 import { InputService } from "../input/InputService";
@@ -28,6 +29,7 @@ export class SimulatorApplication {
     private readonly config: VehicleConfig;
     private readonly settingsRepository: SettingsRepository;
     private readonly road: RoadContactProvider;
+    private readonly world = new WorldGenerator(2026);
     private readonly simulation: VehicleSimulation;
     private readonly clock = new SimulationClock(1 / 250, 120);
     private readonly input: InputService;
@@ -70,7 +72,7 @@ export class SimulatorApplication {
             onMessage: (message) => this.ui.showToast(message, "info"),
         });
         this.input.setClutchZone(this.config.clutch.bitePoint, this.config.clutch.engagementWidth);
-        this.renderer = new VehicleRenderer(canvas, this.config, this.road, settings);
+        this.renderer = new VehicleRenderer(canvas, this.config, this.road, settings, this.world);
         this.audio = new AudioDirector(settings.audioEnabled, settings.masterVolume);
 
         const callbacks: AppUICallbacks = {
@@ -95,7 +97,9 @@ export class SimulatorApplication {
         };
         this.ui = new AppUI(uiRoot, this.scenarios.all, settings, callbacks);
 
-        this.scenarios.start("free-drive", this.simulation);
+        this.road.setWorld(this.world);
+        this.renderer.setWorldMode("endless");
+        this.scenarios.start("endless", this.simulation);
         this.input.setIgnition(true);
         this.applySettings(settings);
         this.renderer.showcaseCamera();
@@ -124,6 +128,9 @@ export class SimulatorApplication {
                     helpOpen: this.ui.helpOpen,
                     telemetryOpen: this.ui.telemetryOpen,
                     replaying: this.replay !== null,
+                    worldMode: this.renderer.activeWorldMode,
+                    roadDistance: this.renderer.worldStreamer?.distanceAlongRoad ?? 0,
+                    activeChunks: this.renderer.worldStreamer?.activeChunks ?? 0,
                     fps: this.renderer.getFps(),
                     stepsLastFrame: this.clock.stats().stepsLastFrame,
                     simulatedTimeS: this.clock.stats().simulatedTimeS,
@@ -293,6 +300,10 @@ export class SimulatorApplication {
 
     private startScenario(id: string): void {
         void this.audio.start();
+        const definition = this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
+        const endless = definition.id === "endless";
+        this.road.setWorld(endless ? this.world : null);
+        this.renderer.setWorldMode(endless ? "endless" : "legacy");
         const scenario = this.scenarios.start(id, this.simulation);
         this.started = true;
         this.replay = null;
@@ -358,6 +369,8 @@ export class SimulatorApplication {
 
     private applySettings(settings: UserSettings): void {
         this.renderer.applySettings(settings);
+        const drawDistance = (settings as UserSettings & { drawDistanceM?: number }).drawDistanceM;
+        if (typeof drawDistance === "number") this.renderer.setDrawDistance(drawDistance);
         this.audio.setVolume(settings.masterVolume);
         this.audio.setEnabled(settings.audioEnabled);
         this.input.applySettings(settings);
