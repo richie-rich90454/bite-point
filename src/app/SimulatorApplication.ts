@@ -192,10 +192,6 @@ export class SimulatorApplication {
         if (this.started && !modalNow) {
             const physicsStart = performance.now();
             const controls = this.input.getControls();
-            if (this.settingsRepository.current.autoClutch) {
-                controls.clutchPedal =
-                    this.simulation.speedMps < 2.2 && this.simulation.gear !== 0 ? 0.55 : 0;
-            }
             clockStats = this.clock.advance(delta, (fixedStep) => {
                 this.simulation.step(fixedStep, controls);
             });
@@ -392,6 +388,8 @@ export class SimulatorApplication {
             ? this.config.aero.maxSpeedKph
             : null;
         this.simulation.engine.antiStallAssist = settings.antiStallAssist;
+        this.simulation.autoClutch = settings.autoClutch;
+        this.simulation.stabilityAssist = settings.stabilityAssist;
         this.audio.setVolume(settings.masterVolume);
         this.audio.setEnabled(settings.audioEnabled);
         this.audio.setMix(settings);
@@ -712,7 +710,7 @@ export class SimulatorApplication {
             wipers: this.wipers,
             inputDiagnostics: this.input.getDiagnostics(),
             quickSelectEnabled: this.settingsRepository.current.quickSelectMode,
-            rendererMode: `${this.renderer.cameraMode} · ${this.settingsRepository.current.quality}`,
+            rendererMode: `${this.renderer.cameraMode}, ${this.settingsRepository.current.quality}`,
         };
         this.ui.update(update);
     }
