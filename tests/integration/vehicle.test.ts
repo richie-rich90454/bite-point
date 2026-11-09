@@ -125,7 +125,7 @@ describe("vehicle integration", () => {
         expect(Number.isFinite(sim.body.state.vx)).toBe(true);
     });
 
-    it("holds the configured two-hundred-kilometre speed limit in sixth", () => {
+    it("accelerates past two hundred kilometres per hour in sixth", () => {
         const sim = makeSimulation();
         startWarm(sim, { gear: 6, y: -114.5 });
         stepFor(sim, 0.2, () => ({ ...baseControls(), throttle: 0, clutchPedal: 1 }));
@@ -135,14 +135,18 @@ describe("vehicle integration", () => {
             174 * sim.gearbox.ratioForGear(6) * sim.driveline.finalDriveRatio,
         );
         selectGear(sim, 6);
+        const startX = sim.x;
         let maxSpeed = 0;
-        for (let step = 0; step < 5000; step += 1) {
+        for (let step = 0; step < 25000; step += 1) {
             sim.step(1 / 250, { ...baseControls(), throttle: 1, clutchPedal: 0 });
             maxSpeed = Math.max(maxSpeed, sim.speedMps);
         }
-        expect(sim.speedMps * 3.6).toBeGreaterThan(198);
-        expect(maxSpeed * 3.6).toBeLessThanOrEqual(200.1);
+        expect(sim.speedMps * 3.6).toBeGreaterThan(200);
+        expect(maxSpeed * 3.6).toBeGreaterThan(200);
+        expect(sim.x - startX).toBeLessThan(6000);
         expect(sim.gear).toBe(6);
+        expect(Number.isFinite(sim.body.state.vx)).toBe(true);
+        expect(Number.isFinite(sim.engine.rpm)).toBe(true);
         for (let step = 0; step < 500; step += 1) {
             sim.step(1 / 250, { ...baseControls(), throttle: 1, clutchPedal: 0, steering: 0.12 });
             maxSpeed = Math.max(maxSpeed, sim.speedMps);
@@ -150,7 +154,30 @@ describe("vehicle integration", () => {
         expect(Number.isFinite(sim.body.state.vx)).toBe(true);
         expect(Number.isFinite(sim.body.state.vy)).toBe(true);
         expect(Math.abs(sim.body.state.yawRate)).toBeLessThan(3.6);
-        expect(maxSpeed * 3.6).toBeLessThanOrEqual(200.1);
+        expect(maxSpeed * 3.6).toBeGreaterThan(200);
+    });
+
+    it("keeps forces finite above the reference top speed", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 6, y: -114.5 });
+        const wheelOmega = 90 / sim.config.wheelRadiusM;
+        for (const wheel of sim.wheels) wheel.omega = wheelOmega;
+        sim.body.state.vx = 90;
+        sim.engine.setAngularVelocity(
+            wheelOmega * sim.gearbox.ratioForGear(6) * sim.driveline.finalDriveRatio,
+        );
+        selectGear(sim, 6);
+        for (let step = 0; step < 250; step += 1) {
+            sim.step(1 / 250, { ...baseControls(), throttle: 1, clutchPedal: 0 });
+        }
+        expect(Number.isFinite(sim.body.state.vx)).toBe(true);
+        expect(Number.isFinite(sim.body.state.vy)).toBe(true);
+        expect(Number.isFinite(sim.body.state.yawRate)).toBe(true);
+        expect(Number.isFinite(sim.engine.rpm)).toBe(true);
+        expect(sim.wheels.every((wheel) => Number.isFinite(wheel.omega))).toBe(true);
+        expect(
+            sim.getRenderState(0).wheels.every((wheel) => Number.isFinite(wheel.normalLoadN)),
+        ).toBe(true);
     });
 
     it("keeps engine and wheel speed consistent when the clutch locks", () => {
