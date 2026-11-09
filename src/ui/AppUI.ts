@@ -376,8 +376,8 @@ const SETTINGS_SECTIONS: ReadonlyArray<SettingsSection> = [
             },
             {
                 key: "antiStallAssist",
-                label: "Anti-stall assist",
-                help: "Adds a little throttle when the engine is about to stall.",
+                label: "Extra stall assist",
+                help: "Adds a small throttle kick when the engine drops below idle speed.",
                 kind: "toggle",
             },
             {
