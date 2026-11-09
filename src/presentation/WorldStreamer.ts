@@ -73,7 +73,13 @@ export class WorldStreamer {
         const budget = this.initialized ? 4 : Math.min(missing.length, 6);
         for (let built = 0; built < missing.length && built < budget; built += 1) {
             const index = missing[built]!;
-            const chunk = new WorldChunk(this.scene, this.world, this.materials, index, CHUNK_LENGTH_M);
+            const chunk = new WorldChunk(
+                this.scene,
+                this.world,
+                this.materials,
+                index,
+                CHUNK_LENGTH_M,
+            );
             this.chunks.set(index, chunk);
         }
         this.initialized = true;
