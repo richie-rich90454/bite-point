@@ -31,7 +31,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "oxfmt",
+    "format:check": "oxfmt --check"
   },
   "dependencies": {
     "@babylonjs/core": "^9.35.0",
@@ -42,7 +43,7 @@
     "@types/node": "^26.6.6",
     "eslint": "^10.14.0",
     "jsdom": "^31.0.0",
-    "prettier": "^3.9.10",
+    "oxfmt": "^0.77.0",
     "typescript": "6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.6",
