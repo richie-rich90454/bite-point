@@ -52,7 +52,7 @@ export class WorldChunk {
                 const b = a + 1;
                 const c = a + columns;
                 const d = c + 1;
-                indices.push(a, c, b, b, c, d);
+                indices.push(a, b, c, b, d, c);
             }
         }
         const mesh = this.buildMesh("endless-road", positions, uvs, indices);
@@ -129,7 +129,7 @@ export class WorldChunk {
                 const b = a + 1;
                 const c = a + columns;
                 const d = c + 1;
-                indices.push(a, c, b, b, c, d);
+                indices.push(a, b, c, b, d, c);
             }
         }
         const mesh = this.buildMesh("endless-terrain", positions, uvs, indices);
@@ -222,12 +222,7 @@ export class WorldChunk {
         }
     }
 
-    private buildMesh(
-        name: string,
-        positions: number[],
-        uvs: number[],
-        indices: number[],
-    ): Mesh {
+    private buildMesh(name: string, positions: number[], uvs: number[], indices: number[]): Mesh {
         const mesh = new Mesh(name, this.scene);
         const data = new VertexData();
         data.positions = positions;
