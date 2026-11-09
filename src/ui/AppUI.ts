@@ -445,7 +445,7 @@ export class AppUI {
     helpOpen = false;
     telemetryOpen = false;
     private activeTab: PauseTab = "drive";
-    private selectedScenario = "free-drive";
+    private selectedScenario = "endless";
     private readonly dashboard: DashboardPresenter;
     private readonly root: HTMLElement;
     private readonly callbacks: AppUICallbacks;
@@ -525,7 +525,9 @@ export class AppUI {
         this.telemetryReplayButton = this.query<HTMLButtonElement>('[data-ui="replay"]');
         this.statusLights = this.query(".status-lights");
         this.liveStatus = this.query(".live-status");
-        this.dashboard = new DashboardPresenter(this.dashboardCanvas);
+        this.dashboard = new DashboardPresenter(this.dashboardCanvas, {
+            units: settings.units,
+        });
 
         this.bindStaticEvents();
         this.renderStartScenarios();
@@ -536,8 +538,17 @@ export class AppUI {
 
     updateSettings(settings: UserSettings): void {
         this.settings = settings;
+        this.dashboard.setUnits(settings.units);
         this.applyInterfacePreferences();
         if (this.pauseOpen && this.activeTab === "settings") this.renderPauseTab();
+    }
+
+    private get speedUnit(): string {
+        return this.settings.units === "imperial" ? "mph" : "km/h";
+    }
+
+    private speedValue(kph: number): number {
+        return this.settings.units === "imperial" ? kph * 0.621371 : kph;
     }
 
     private applyInterfacePreferences(): void {
@@ -545,6 +556,7 @@ export class AppUI {
         root.dataset.reducedMotion = String(this.settings.reducedMotion);
         root.dataset.highContrast = String(this.settings.highContrast);
         root.dataset.colorblind = this.settings.colorblindMode;
+        root.style.setProperty("--hud-scale", String(this.settings.hudScale));
     }
 
     setScenarioSelection(id: string): void {
@@ -711,7 +723,7 @@ export class AppUI {
           <canvas id="dashboard-canvas" aria-label="Instrument cluster"></canvas>
         </div>
         <section class="exterior-instruments" aria-label="Driving instruments">
-          <div class="exterior-speed"><b data-exterior-speed>0</b><span>km/h</span><strong data-exterior-gear>N</strong></div>
+          <div class="exterior-speed"><b data-exterior-speed>0</b><span data-exterior-unit>km/h</span><strong data-exterior-gear>N</strong></div>
           <div class="exterior-rpm"><span data-exterior-revs></span></div>
           <div class="exterior-rev-label"><span data-exterior-rpm>0 rpm</span><b class="shift-cue">Shift up</b></div>
           <div class="exterior-pedals">
@@ -757,12 +769,12 @@ export class AppUI {
             </div>
             <p class="eyebrow">Manual transmission simulator</p>
             <h1>Bite<br><em>point</em></h1>
-            <p class="start-lead">Feel the bite. Nail the shift. Build from your first hill start to a 200 km/h run on the closed proving straight.</p>
+            <p class="start-lead">Feel the bite. Nail the shift. Drive an endless procedural highway with a manual gearbox and no artificial speed ceiling.</p>
             <div class="start-actions">
               <button class="button primary" data-ui="start">Start driving</button>
               <button class="button ghost" data-ui="help-start">Controls</button>
             </div>
-            <div class="start-footnote">Six speeds · 250 Hz physics · 6 km proving straight</div>
+            <div class="start-footnote">Six speeds · 250 Hz physics · endless road</div>
           </div>
           <div class="start-select">
             <div class="panel-label">Choose your session</div>
@@ -911,7 +923,8 @@ export class AppUI {
             warnings.push("Bite point");
         if (state.slopeForward > 0.02 && state.pose.vx < -0.2) warnings.push("Rolling back");
         if (state.gear === 0 && state.speedMps > 0.5) warnings.push("Neutral");
-        if (state.speedKph > 198) warnings.push("Speed limiter");
+        if (this.settings.speedLimiterEnabled && state.speedKph > 198)
+            warnings.push("Speed limiter");
         this.warnings.textContent = warnings.join("  ·  ");
         this.warnings.classList.toggle("visible", warnings.length > 0);
 
@@ -921,7 +934,10 @@ export class AppUI {
             "shift-ready",
             state.rpm > 5700 && state.gear > 0 && state.gear < 6,
         );
-        this.query("[data-exterior-speed]").textContent = state.speedKph.toFixed(0);
+        this.query("[data-exterior-speed]").textContent = this.speedValue(state.speedKph).toFixed(
+            0,
+        );
+        this.query("[data-exterior-unit]").textContent = this.speedUnit;
         this.query("[data-exterior-gear]").textContent = state.gearLabel;
         this.query("[data-exterior-rpm]").textContent = `${state.rpm.toFixed(0)} rpm`;
         for (const [name, value] of [
@@ -933,7 +949,7 @@ export class AppUI {
             this.query(`[data-exterior-${name}]`).style.transform =
                 `scaleX(${Math.max(0, Math.min(1, value))})`;
         }
-        this.liveStatus.textContent = `${state.gearLabel} · ${state.speedKph.toFixed(0)} km/h · ${state.engineRunning ? "running" : "engine off"}`;
+        this.liveStatus.textContent = `${state.gearLabel} · ${this.speedValue(state.speedKph).toFixed(0)} ${this.speedUnit} · ${state.engineRunning ? "running" : "engine off"}`;
         const fps = Number.isFinite(data.fps) ? data.fps : 0;
         const fpsElement = this.root.querySelector<HTMLElement>('[data-diag="fps"]');
         const stepElement = this.root.querySelector<HTMLElement>('[data-diag="step"]');
@@ -1029,7 +1045,7 @@ export class AppUI {
         if (latest) {
             const surface = latest.surfaceMu < 0.8 ? "wet" : "dry";
             this.telemetryStats.innerHTML = `
-        <div><span>Speed</span><b>${(latest.speedMps * 3.6).toFixed(0)} km/h</b></div>
+        <div><span>Speed</span><b>${this.speedValue(latest.speedMps * 3.6).toFixed(0)} ${this.speedUnit}</b></div>
         <div><span>RPM</span><b>${latest.engineRpm.toFixed(0)}</b></div>
         <div><span>Gear</span><b>${latest.gear === -1 ? "R" : latest.gear === 0 ? "N" : latest.gear}</b></div>
         <div><span>Clutch</span><b>${latest.clutchTempC.toFixed(0)} °C</b></div>
