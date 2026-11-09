@@ -199,10 +199,6 @@ export class WorldChunk {
             canopy.scaling.z = canopy.scaling.x;
             canopy.rotation.y = random() * Math.PI * 2;
             canopy.parent = this.root;
-            if (index < 3) {
-                this.materials.treeTrunk.receiveShadows = true;
-                this.materials.treeCanopy.receiveShadows = true;
-            }
         }
         const rockCount = 2 + Math.floor(random() * 3);
         for (let index = 0; index < rockCount; index += 1) {
