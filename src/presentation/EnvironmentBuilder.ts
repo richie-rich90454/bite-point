@@ -20,6 +20,7 @@ import {
     SpotLight,
     StandardMaterial,
     Texture,
+    TransformNode,
     Vector3,
     VertexBuffer,
     VertexData,
@@ -38,13 +39,14 @@ export class EnvironmentBuilder {
     readonly ground: Mesh;
     readonly sun: DirectionalLight;
     readonly shadows: ShadowGenerator;
+    readonly legacyRoot: TransformNode;
 
     constructor(
         private readonly scene: Scene,
         private readonly road: RoadContactProvider,
     ) {
+        this.legacyRoot = new TransformNode("legacy-environment", scene);
         this.sky = this.createSky();
-        this.ground = this.createTerrain();
         this.sun = this.createLights();
         this.createEnvironmentTexture();
         this.shadows = CascadedShadowGenerator.IsSupported
@@ -63,12 +65,23 @@ export class EnvironmentBuilder {
         this.shadows.normalBias = 0.025;
         this.shadows.blurKernel = 24;
         this.shadows.darkness = 0.25;
+        const before = new Set(this.scene.meshes);
+        this.ground = this.createTerrain();
         this.createMarkings();
         this.createProps();
         this.createWetPad();
         this.createSignage();
         new ProvingGround(this.scene, this.shadows);
+        for (const mesh of this.scene.meshes) {
+            if (!before.has(mesh) && mesh.name !== "photographic-sky") {
+                mesh.parent = this.legacyRoot;
+            }
+        }
         this.loadPhotographicSky();
+    }
+
+    setLegacyMode(legacy: boolean): void {
+        this.legacyRoot.setEnabled(legacy);
     }
 
     private loadPhotographicSky(): void {
