@@ -1,3 +1,4 @@
+// Aerodynamic load transfer follows Hucho [R11].
 import type { VehicleConfig } from "../config/VehicleConfig";
 import { EngineModel, type EngineResult } from "../engine/EngineModel";
 import { ClutchModel, type ClutchResult } from "../clutch/ClutchModel";
