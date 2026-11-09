@@ -12,6 +12,8 @@ export class CockpitController {
     lookYaw = 0;
     lookPitch = 0;
     private baseFovDegrees = 62;
+    private shakeAmount = 0;
+    private speedFovBoost = 0;
     private chasePosition: Vector3 | null = null;
     private readonly eyeLocal = new Vector3(-0.36, 1.26, -0.58);
     private readonly hoodLocal = new Vector3(0, 1.14, 1.55);
@@ -33,6 +35,10 @@ export class CockpitController {
     setFov(degrees: number): void {
         this.baseFovDegrees = degrees;
         this.updateFov();
+    }
+
+    setShake(amount: number): void {
+        this.shakeAmount = Math.max(0, Math.min(1, amount));
     }
 
     cycle(): CameraMode {
@@ -63,6 +69,8 @@ export class CockpitController {
     }
 
     update(state: VehicleRenderState, dt: number): void {
+        const targetBoost = Math.min(12, Math.max(0, state.speedMps - 20) * 0.12);
+        this.speedFovBoost += (targetBoost - this.speedFovBoost) * (1 - Math.exp(-3 * dt));
         this.updateFov();
         const matrix = this.carRoot.getWorldMatrix();
         const carPosition = new Vector3(matrix.m[12]!, matrix.m[13]!, matrix.m[14]!);
@@ -87,6 +95,13 @@ export class CockpitController {
 
         const localEye = this.mode === "cockpit" ? this.eyeLocal : this.hoodLocal;
         const eye = Vector3.TransformCoordinates(localEye, matrix);
+        const shake = this.shakeAmount * Math.min(1, state.speedMps / 90);
+        if (shake > 0.001) {
+            const time = state.timeS;
+            eye.x += Math.sin(time * 37.1) * 0.004 * shake;
+            eye.y += Math.sin(time * 29.7 + 1.3) * 0.003 * shake;
+            eye.z += Math.sin(time * 43.3 + 2.1) * 0.003 * shake;
+        }
         this.camera.position.copyFrom(eye);
         this.camera.upVector.copyFrom(carUp);
 
@@ -115,9 +130,9 @@ export class CockpitController {
     private updateFov(): void {
         const degrees =
             this.mode === "cockpit"
-                ? this.baseFovDegrees
+                ? this.baseFovDegrees + this.speedFovBoost
                 : this.mode === "hood"
-                  ? this.baseFovDegrees + 6
+                  ? this.baseFovDegrees + 6 + this.speedFovBoost
                   : 54;
         this.camera.fov = (degrees * Math.PI) / 180;
     }
