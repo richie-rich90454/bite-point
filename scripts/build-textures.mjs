@@ -30,7 +30,12 @@ const ENCODE = {
 
 function roleOptions(role) {
     if (role === "normal") {
-        return { ...ENCODE, isNormalMap: true, isPerceptual: false, isSetKTX2SRGBTransferFunc: false };
+        return {
+            ...ENCODE,
+            isNormalMap: true,
+            isPerceptual: false,
+            isSetKTX2SRGBTransferFunc: false,
+        };
     }
     if (role === "arm") {
         return { ...ENCODE, isPerceptual: false, isSetKTX2SRGBTransferFunc: false };
@@ -103,13 +108,19 @@ for (const source of sources) {
             failed += 1;
             continue;
         }
-        console.log(`OK ${relative(root, target)} ${width}x${height} ${existing.byteLength} B ${actual}`);
+        console.log(
+            `OK ${relative(root, target)} ${width}x${height} ${existing.byteLength} B ${actual}`,
+        );
     } else {
         await writeFile(target, output);
-        console.log(`WROTE ${relative(root, target)} ${width}x${height} ${output.byteLength} B ${sha256(output)}`);
+        console.log(
+            `WROTE ${relative(root, target)} ${width}x${height} ${output.byteLength} B ${sha256(output)}`,
+        );
         encoded += 1;
     }
 }
 
-console.log(`\n${sources.length} source maps: ${encoded} encoded, ${skipped} up-to-date, ${failed} failed.`);
+console.log(
+    `\n${sources.length} source maps: ${encoded} encoded, ${skipped} up-to-date, ${failed} failed.`,
+);
 if (failed > 0) process.exit(1);
