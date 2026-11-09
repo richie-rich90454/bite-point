@@ -146,6 +146,7 @@ export class SimulatorApplication {
             startScenario: (id) => this.startScenario(id),
             pause: () => this.ui.openPause("drive"),
             resume: () => this.resume(),
+            world: () => this.renderer.worldDiagnostics,
         };
     }
 
@@ -191,6 +192,10 @@ export class SimulatorApplication {
         if (this.started && !modalNow) {
             const physicsStart = performance.now();
             const controls = this.input.getControls();
+            if (this.settingsRepository.current.autoClutch) {
+                controls.clutchPedal =
+                    this.simulation.speedMps < 2.2 && this.simulation.gear !== 0 ? 0.55 : 0;
+            }
             clockStats = this.clock.advance(delta, (fixedStep) => {
                 this.simulation.step(fixedStep, controls);
             });
@@ -300,7 +305,8 @@ export class SimulatorApplication {
 
     private startScenario(id: string): void {
         void this.audio.start();
-        const definition = this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
+        const definition =
+            this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
         const endless = definition.id === "endless";
         this.road.setWorld(endless ? this.world : null);
         this.renderer.setWorldMode(endless ? "endless" : "legacy");
@@ -354,12 +360,24 @@ export class SimulatorApplication {
             if (partial.quality === "low") {
                 merged.shadows = false;
                 merged.renderScale = 0.75;
+                merged.drawDistance = 0.7;
+                merged.textureQuality = "low";
+                merged.motionBlur = false;
+                merged.bloom = false;
             } else if (partial.quality === "medium") {
                 merged.shadows = true;
                 merged.renderScale = 0.95;
+                merged.drawDistance = 1;
+                merged.textureQuality = "medium";
+                merged.motionBlur = false;
+                merged.bloom = true;
             } else {
                 merged.shadows = true;
                 merged.renderScale = 1.1;
+                merged.drawDistance = 1.4;
+                merged.textureQuality = "high";
+                merged.motionBlur = true;
+                merged.bloom = true;
             }
         }
         const saved = this.settingsRepository.save(merged);
@@ -369,10 +387,14 @@ export class SimulatorApplication {
 
     private applySettings(settings: UserSettings): void {
         this.renderer.applySettings(settings);
-        const drawDistance = (settings as UserSettings & { drawDistanceM?: number }).drawDistanceM;
-        if (typeof drawDistance === "number") this.renderer.setDrawDistance(drawDistance);
+        this.renderer.setDrawDistance(settings.drawDistance * 1400);
+        this.simulation.speedLimitKph = settings.speedLimiterEnabled
+            ? this.config.aero.maxSpeedKph
+            : null;
+        this.simulation.engine.antiStallAssist = settings.antiStallAssist;
         this.audio.setVolume(settings.masterVolume);
         this.audio.setEnabled(settings.audioEnabled);
+        this.audio.setMix(settings);
         this.input.applySettings(settings);
         this.instructor.enabled = settings.instructorEnabled;
     }
