@@ -1,3 +1,4 @@
+// Engine losses and idle behavior follow Heywood [R9].
 import { clamp, moveTowards, rpmToRadPerSec } from "../core/MathUtils";
 
 export class IdleController {
