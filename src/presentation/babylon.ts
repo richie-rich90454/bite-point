@@ -23,6 +23,7 @@ export { EquiRectangularCubeTexture } from "@babylonjs/core/Materials/Textures/e
 export { HDRCubeTexture } from "@babylonjs/core/Materials/Textures/hdrCubeTexture";
 export { BackgroundMaterial } from "@babylonjs/core/Materials/Background/backgroundMaterial";
 export { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
+export { MotionBlurPostProcess } from "@babylonjs/core/PostProcesses/motionBlurPostProcess";
 export { CreateBox } from "@babylonjs/core/Meshes/Builders/boxBuilder";
 export { CreateCylinder } from "@babylonjs/core/Meshes/Builders/cylinderBuilder";
 export { CreateTorus } from "@babylonjs/core/Meshes/Builders/torusBuilder";
