@@ -72,6 +72,10 @@ export class RoadContactProvider {
         this.hintS = 0;
     }
 
+    syncHint(x: number, y: number): void {
+        if (this.world) this.hintS = this.world.project(x, y).s;
+    }
+
     get endless(): boolean {
         return this.world !== null;
     }
