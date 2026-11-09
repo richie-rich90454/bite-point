@@ -45,4 +45,28 @@ describe("vehicle configuration", () => {
         expect(result.valid).toBe(true);
         expect(result.warnings.length).toBeGreaterThan(0);
     });
+
+    it("accepts aero configurations without the optional coefficients", () => {
+        const partial = clone();
+        const aero = partial.aero as Record<string, unknown>;
+        delete aero.downforceCoefficient;
+        delete aero.frontLiftCoefficient;
+        delete aero.rearLiftCoefficient;
+        const result = validateVehicleConfig(partial);
+        expect(result.errors).toEqual([]);
+        expect(result.valid).toBe(true);
+    });
+
+    it("rejects out-of-range aero coefficients", () => {
+        const broken = clone();
+        const aero = broken.aero as Record<string, unknown>;
+        aero.downforceCoefficient = 6;
+        aero.frontLiftCoefficient = -3;
+        aero.rearLiftCoefficient = 3;
+        const result = validateVehicleConfig(broken);
+        expect(result.valid).toBe(false);
+        expect(result.errors.some((error) => error.includes("downforceCoefficient"))).toBe(true);
+        expect(result.errors.some((error) => error.includes("frontLiftCoefficient"))).toBe(true);
+        expect(result.errors.some((error) => error.includes("rearLiftCoefficient"))).toBe(true);
+    });
 });
