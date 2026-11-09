@@ -4,9 +4,12 @@ import { WorldGenerator } from "../../src/simulation/world/WorldGenerator";
 import { VehicleSimulation } from "../../src/simulation/vehicle/VehicleSimulation";
 import { vehicleConfig, baseControls, launch, stepFor } from "../support/simulation";
 
-function makeEndlessSimulation(): { sim: VehicleSimulation; road: RoadContactProvider } {
+function makeEndlessSimulation(routeMode: "curved" | "straight" = "curved"): {
+    sim: VehicleSimulation;
+    road: RoadContactProvider;
+} {
     const road = new RoadContactProvider();
-    const world = new WorldGenerator(2026);
+    const world = new WorldGenerator(2026, routeMode);
     road.setWorld(world);
     const sim = new VehicleSimulation(vehicleConfig, road);
     sim.reset({ x: 0, y: 0, heading: 0, gear: 0, engineRunning: true, ignition: true });
@@ -82,6 +85,49 @@ describe("endless world driving", () => {
         expect(Math.abs(sim.body.state.vy)).toBeLessThan(6);
         expect(Number.isFinite(sim.body.state.yawRate)).toBe(true);
         expect(Number.isFinite(sim.body.state.vy)).toBe(true);
+    });
+
+    it("reaches beyond 500 km/h on the endless straight", () => {
+        const { sim } = makeEndlessSimulation("straight");
+        sim.autoClutch = true;
+        sim.selectGearDirect(1);
+        let elapsed = 0;
+        let maximum = 0;
+        while (elapsed < 180 && maximum < 510) {
+            if (sim.engine.rpm > 8500 && sim.gear > 0 && sim.gear < 6) {
+                sim.selectGearDirect(sim.gear + 1);
+            }
+            sim.step(1 / 250, { ...baseControls(), throttle: 1 });
+            maximum = Math.max(maximum, sim.speedMps * 3.6);
+            elapsed += 1 / 250;
+        }
+        expect(sim.engine.running).toBe(true);
+        expect(maximum).toBeGreaterThan(500);
+        expect(Number.isFinite(sim.body.state.vx)).toBe(true);
+    });
+
+    it("runs 0-100 km/h in benchmark time", () => {
+        const { sim } = makeEndlessSimulation("straight");
+        sim.autoClutch = true;
+        sim.selectGearDirect(1);
+        let elapsed = 0;
+        while (elapsed < 10 && sim.speedMps * 3.6 < 100) {
+            sim.step(1 / 250, { ...baseControls(), throttle: 1 });
+            elapsed += 1 / 250;
+        }
+        expect(sim.speedMps * 3.6).toBeGreaterThanOrEqual(100);
+        expect(elapsed).toBeLessThan(5);
+    });
+
+    it("slows the car with the handbrake", () => {
+        const { sim } = makeEndlessSimulation();
+        sim.body.state.vx = 20;
+        sim.wheels.forEach((wheel) => {
+            wheel.omega = 20 / sim.config.wheelRadiusM;
+        });
+        stepFor(sim, 0.8, () => ({ ...baseControls(), handbrake: true }));
+        expect(sim.speedMps).toBeLessThan(19);
+        expect(sim.wheels.some((wheel) => wheel.lockup)).toBe(true);
     });
 
     it("pushes the car back inside the guardrails", () => {
