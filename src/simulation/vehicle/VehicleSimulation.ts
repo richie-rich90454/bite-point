@@ -81,6 +81,7 @@ export class VehicleSimulation {
     readonly road: RoadContactProvider;
     readonly recorder: TelemetryRecorder;
     controls: VehicleControls = { ...DEFAULT_CONTROLS };
+    speedLimitKph: number | null = null;
     timeS = 0;
     lastEngineResult: EngineResult;
     lastClutchResult: ClutchResult;
@@ -416,8 +417,13 @@ export class VehicleSimulation {
             slopeLateral,
             steerAngleRad: steerAngle,
         });
-        // No explicit top-speed clamp: maximum road speed emerges from engine power,
-        // aerodynamic drag, gearing, rolling resistance and the rev limiter.
+        // No default top-speed clamp: maximum road speed emerges from engine power,
+        // aerodynamic drag, gearing, rolling resistance and the rev limiter. The
+        // optional limiter exists only for players who explicitly enable it.
+        if (this.speedLimitKph !== null) {
+            const limitMps = this.speedLimitKph / 3.6;
+            if (this.body.state.vx > limitMps) this.body.state.vx = limitMps;
+        }
         // reverseMaxSpeedMps is the engagement lockout threshold, not a driving
         // speed limiter. Reverse road speed follows its ratio and the engine limit.
 
