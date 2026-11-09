@@ -1114,10 +1114,10 @@ export class VehicleRenderer {
         const badgeContext = badgeTexture.getContext() as unknown as CanvasRenderingContext2D;
         badgeContext.clearRect(0, 0, 512, 128);
         badgeContext.fillStyle = "#c9d0d4";
-        badgeContext.font = "700 92px Segoe UI, sans-serif";
+        badgeContext.font = '700 92px "Noto Sans", sans-serif';
         badgeContext.textAlign = "center";
         badgeContext.textBaseline = "middle";
-        badgeContext.fillText("GOLF", 256, 66);
+        badgeContext.fillText("Golf", 256, 66);
         badgeTexture.update(false);
         badgeTexture.hasAlpha = true;
         const badgeMaterial = new StandardMaterial("golf-badge-material", this.scene);
