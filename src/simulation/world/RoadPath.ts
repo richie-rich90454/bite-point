@@ -1,3 +1,4 @@
+// Chunked centerline sampling follows the chunked LOD strategy in [R5].
 import type { RoutePlan } from "./RoutePlan";
 
 const CHUNK_LENGTH_M = 2000;
