@@ -1,5 +1,9 @@
 import "@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader";
+import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { PBRMaterial, Scene, Texture } from "../babylon";
+import decoderModuleUrl from "../../assets/ktx2/babylon.ktx2Decoder.js?url";
+import mscTranscoderJsUrl from "../../assets/ktx2/msc_basis_transcoder.js?url";
+import mscTranscoderWasmUrl from "../../assets/ktx2/msc_basis_transcoder.wasm?url";
 import asphaltArmJpg from "../../assets/textures/asphalt/asphalt-arm.jpg?url";
 import asphaltArmKtx from "../../assets/textures/asphalt/asphalt-arm.ktx2?url";
 import asphaltColorJpg from "../../assets/textures/asphalt/asphalt-color.jpg?url";
@@ -36,6 +40,10 @@ import rockColorJpg from "../../assets/textures/rock/rock-color.jpg?url";
 import rockColorKtx from "../../assets/textures/rock/rock-color.ktx2?url";
 import rockNormalJpg from "../../assets/textures/rock/rock-normal.jpg?url";
 import rockNormalKtx from "../../assets/textures/rock/rock-normal.ktx2?url";
+
+KhronosTextureContainer2.URLConfig.jsDecoderModule = decoderModuleUrl;
+KhronosTextureContainer2.URLConfig.jsMSCTranscoder = mscTranscoderJsUrl;
+KhronosTextureContainer2.URLConfig.wasmMSCTranscoder = mscTranscoderWasmUrl;
 
 export interface TextureSet {
     colorKtx: string;
@@ -104,45 +112,53 @@ export function applyTextureSet(
     uScale = 1,
     vScale = 1,
 ): void {
-    const load = (ktx: string, jpg: string, linear: boolean): Texture => {
-        const configure = (texture: Texture): void => {
-            texture.uScale = uScale;
-            texture.vScale = vScale;
-            texture.wrapU = Texture.WRAP_ADDRESSMODE;
-            texture.wrapV = Texture.WRAP_ADDRESSMODE;
-            texture.anisotropicFilteringLevel = 8;
-            texture.gammaSpace = !linear;
-        };
-        const texture = new Texture(
+    const configure = (texture: Texture, linear: boolean): void => {
+        texture.uScale = uScale;
+        texture.vScale = vScale;
+        texture.wrapU = Texture.WRAP_ADDRESSMODE;
+        texture.wrapV = Texture.WRAP_ADDRESSMODE;
+        texture.anisotropicFilteringLevel = 8;
+        texture.gammaSpace = !linear;
+    };
+    const load = (
+        ktx: string,
+        jpg: string,
+        linear: boolean,
+        assign: (texture: Texture) => void,
+    ): void => {
+        const fallback = new Texture(jpg, scene, false, false, Texture.TRILINEAR_SAMPLINGMODE);
+        configure(fallback, linear);
+        assign(fallback);
+        let upgraded: Texture | null = null;
+        upgraded = new Texture(
             ktx,
             scene,
             false,
             false,
             Texture.TRILINEAR_SAMPLINGMODE,
-            undefined,
             () => {
-                const fallback = new Texture(
-                    jpg,
-                    scene,
-                    false,
-                    false,
-                    Texture.TRILINEAR_SAMPLINGMODE,
-                );
-                configure(fallback);
-                if (material.albedoTexture === texture) material.albedoTexture = fallback;
-                if (material.bumpTexture === texture) material.bumpTexture = fallback;
-                if (material.metallicTexture === texture) material.metallicTexture = fallback;
-                texture.dispose();
+                if (!upgraded) return;
+                configure(upgraded, linear);
+                assign(upgraded);
+                fallback.dispose();
+            },
+            () => {
+                upgraded?.dispose();
+                upgraded = null;
             },
         );
-        configure(texture);
-        return texture;
     };
 
-    material.albedoTexture = load(set.colorKtx, set.colorJpg, false);
-    material.bumpTexture = load(set.normalKtx, set.normalJpg, true);
-    material.bumpTexture.level = 0.7;
-    material.metallicTexture = load(set.armKtx, set.armJpg, true);
+    load(set.colorKtx, set.colorJpg, false, (texture) => {
+        material.albedoTexture = texture;
+    });
+    load(set.normalKtx, set.normalJpg, true, (texture) => {
+        material.bumpTexture = texture;
+        texture.level = 0.7;
+    });
+    load(set.armKtx, set.armJpg, true, (texture) => {
+        material.metallicTexture = texture;
+    });
     material.useRoughnessFromMetallicTextureAlpha = false;
     material.useRoughnessFromMetallicTextureGreen = true;
     material.useMetallnessFromMetallicTextureBlue = true;
