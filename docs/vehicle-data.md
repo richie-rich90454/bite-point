@@ -2,15 +2,15 @@
 
 ## Reference vehicle
 
-The initial vehicle is a generic reference-based compact car, not a replica of a particular production model:
+The initial vehicle is a generic performance reference, not a replica of a particular production model:
 
 - front-engine, front-wheel drive;
-- naturally aspirated four-cylinder gasoline engine;
+- high-revving four-cylinder gasoline engine with a 9,000 rpm redline;
 - six-speed H-pattern manual transmission;
 - open differential;
 - power-assisted rack-and-pinion steering;
 - independent front suspension with a reference-based rear suspension;
-- no modelled electronic driver aids.
+- optional stability assist and traction control for predictable high-speed handling.
 
 The rendered car is an original CC0 1990s five-door hatchback from Grab3D, adapted with a metallic finish, animated wheel pivots and a custom cockpit. No Volkswagen logos, model files or copyrighted assets are included. The licence and source URL are recorded in `src/assets/LICENSE-hatchback.txt`.
 
@@ -80,4 +80,4 @@ Until that work is complete, the bundled values are a playable, internally consi
 
 The reference configuration uses a 0.84 sixth-gear ratio and an estimated 0.58 m² drag area. These are gameplay calibration estimates, not measurements from a production car. The shorter sixth keeps the engine nearer its useful power band at high speed. Optional downforce and lift coefficients are estimated and validated only for finite, bounded behaviour, not for production-car accuracy. Rolling resistance opposes velocity in both forward and reverse.
 
-The closed-course regression launches from rest, uses clutch-operated upshifts near 5,800 rpm, exceeds 200 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. A separate high-speed test forces 90 m/s and verifies finite loads and state. A neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
+The closed-course regression launches from rest, uses clutch-operated upshifts, exceeds 200 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. The endless regression verifies a benchmark 0-100 km/h run and a top speed beyond 500 km/h on the endless straight. A separate high-speed test forces 90 m/s and verifies finite loads and state. A neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
