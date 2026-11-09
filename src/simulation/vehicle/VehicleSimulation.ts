@@ -35,7 +35,8 @@ export type SimEventType =
     | "redline"
     | "clutch-overheat"
     | "wheel-lock"
-    | "shift-hint";
+    | "shift-hint"
+    | "barrier";
 
 export interface SimEvent {
     timeS: number;
@@ -274,6 +275,7 @@ export class VehicleSimulation {
             this.pushEvent("engine-stop", "Engine stopped.", 0.5);
         }
 
+        const speedMagnitude = Math.abs(this.body.state.vx);
         const cosSlope =
             1 /
             Math.sqrt(
@@ -286,8 +288,17 @@ export class VehicleSimulation {
         const latAccel = clamp(this.body.lastLateralAcceleration, -14, 14);
         const longTransfer =
             (this.config.massKg * longAccel * this.config.cgHeightM) / this.config.wheelbaseM;
-        const frontAxleLoad = Math.max(0, staticFront - longTransfer);
-        const rearAxleLoad = Math.max(0, staticRear + longTransfer);
+        const dynamicPressure =
+            0.5 * this.config.aero.airDensity * this.body.state.vx * this.body.state.vx;
+        const downforceN = dynamicPressure * (this.config.aero.downforceCoefficient ?? 0);
+        const frontLiftN = dynamicPressure * (this.config.aero.frontLiftCoefficient ?? 0);
+        const rearLiftN = dynamicPressure * (this.config.aero.rearLiftCoefficient ?? 0);
+        // Downforce loads the axles; a positive lift coefficient unloads them.
+        const frontAxleLoad = Math.max(
+            0,
+            staticFront - longTransfer - downforceN * 0.45 - frontLiftN,
+        );
+        const rearAxleLoad = Math.max(0, staticRear + longTransfer - downforceN * 0.55 - rearLiftN);
         const lateralTransfer =
             (this.config.massKg * latAccel * this.config.cgHeightM) / this.config.trackM;
         const frontLateralTransfer = lateralTransfer * 0.55;
@@ -352,7 +363,6 @@ export class VehicleSimulation {
             wheelResults[0]!.longitudinalForceN + wheelResults[1]!.longitudinalForceN;
         const rearLongitudinal =
             wheelResults[2]!.longitudinalForceN + wheelResults[3]!.longitudinalForceN;
-        const speedMagnitude = Math.abs(this.body.state.vx);
         const vxSafe = Math.max(speedMagnitude, 1);
         const steerAngle = this.steering.angleRad;
         const effectiveSteer = this.body.state.vx >= 0 ? steerAngle : -steerAngle;
@@ -406,12 +416,32 @@ export class VehicleSimulation {
             slopeLateral,
             steerAngleRad: steerAngle,
         });
-        const speedLimitMps = this.config.aero.maxSpeedKph / 3.6;
-        if (this.body.state.vx > speedLimitMps) {
-            this.body.state.vx = speedLimitMps;
-        }
+        // No explicit top-speed clamp: maximum road speed emerges from engine power,
+        // aerodynamic drag, gearing, rolling resistance and the rev limiter.
         // reverseMaxSpeedMps is the engagement lockout threshold, not a driving
         // speed limiter. Reverse road speed follows its ratio and the engine limit.
+
+        const frame = this.road.project(this.body.state.x, this.body.state.y);
+        if (frame) {
+            const edge = frame.halfWidthM + 1.7;
+            const over = Math.abs(frame.lateralM) - edge;
+            if (over > 0) {
+                const side = Math.sign(frame.lateralM) || 1;
+                this.body.state.x -= side * frame.normalX * over;
+                this.body.state.y -= side * frame.normalY * over;
+                const impact = Math.min(1, over / 1.5);
+                this.body.state.vx *= 1 - impact * 0.35;
+                this.body.state.vy *= 1 - impact * 0.5;
+                this.body.state.yawRate *= 1 - impact * 0.25;
+                if (impact > 0.02) {
+                    this.pushEvent(
+                        "barrier",
+                        "Barrier contact. Keep the car between the guardrails.",
+                        1.5,
+                    );
+                }
+            }
+        }
 
         const pose = this.wheelPositions();
         const finalHeights = pose.map((position) => this.road.heightAt(position.x, position.y));
