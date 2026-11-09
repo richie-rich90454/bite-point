@@ -9,6 +9,7 @@ export interface InstructorMessage {
 
 export class DrivingInstructor {
     enabled: boolean;
+    redlineRpm = 9000;
     readonly messages: InstructorMessage[] = [];
     private cooldowns = new Map<string, number>();
     private ridingClutchTime = 0;
@@ -139,9 +140,9 @@ export class DrivingInstructor {
             );
         }
 
-        if (state.rpm > 6400 && state.gear > 0 && state.gear < 6) {
+        if (state.rpm > this.redlineRpm * 0.92 && state.gear > 0 && state.gear < 6) {
             this.push(
-                `Approaching the ${state.rpm > 6800 ? "limiter" : "redline"} at ${state.rpm.toFixed(0)} rpm. Shift up.`,
+                `Approaching the redline at ${state.rpm.toFixed(0)} rpm. Shift up.`,
                 "info",
                 this.timeS,
                 4,
