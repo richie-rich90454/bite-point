@@ -1,4 +1,5 @@
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
+import type { SpeedUnits } from "../settings/SettingsRepository";
 
 const AMBER = "#e8b04b";
 const AMBER_BRIGHT = "#f2c56d";
@@ -14,11 +15,13 @@ const DEFAULT_SPEEDOMETER_MAX_KPH = 260;
 
 export interface DashboardPresenterOptions {
     speedometerMaxKph?: number;
+    units?: SpeedUnits;
 }
 
 export class DashboardPresenter {
     private readonly context: CanvasRenderingContext2D;
     private readonly speedometerMaxKph: number;
+    private units: SpeedUnits;
     private width = 0;
     private height = 0;
     private dpr = 1;
@@ -35,7 +38,12 @@ export class DashboardPresenter {
             typeof configured === "number" && Number.isFinite(configured) && configured > 0
                 ? configured
                 : DEFAULT_SPEEDOMETER_MAX_KPH;
+        this.units = options.units ?? "metric";
         canvas.style.fontVariantNumeric = "tabular-nums";
+    }
+
+    setUnits(units: SpeedUnits): void {
+        this.units = units;
     }
 
     draw(state: VehicleRenderState, shifterGrabbed: boolean): void {
@@ -193,7 +201,10 @@ export class DashboardPresenter {
 
     private drawSpeedometer(state: VehicleRenderState, cx: number, cy: number): void {
         const context = this.context;
-        const speedFraction = Math.min(1, Math.max(0, state.speedKph) / this.speedometerMaxKph);
+        const imperial = this.units === "imperial";
+        const displayedSpeed = imperial ? state.speedKph * 0.621371 : state.speedKph;
+        const displayedMax = imperial ? this.speedometerMaxKph * 0.621371 : this.speedometerMaxKph;
+        const speedFraction = Math.min(1, Math.max(0, displayedSpeed) / displayedMax);
         context.beginPath();
         context.arc(cx, cy - 6, 52, Math.PI * 1.18, Math.PI * 1.82);
         context.strokeStyle = "rgba(195, 203, 208, 0.17)";
@@ -215,10 +226,10 @@ export class DashboardPresenter {
         context.font = `400 46px ${FONT}`;
         context.textAlign = "center";
         context.textBaseline = "middle";
-        context.fillText(state.speedKph.toFixed(0), cx, cy + 2);
+        context.fillText(displayedSpeed.toFixed(0), cx, cy + 2);
         context.fillStyle = MUTED;
         context.font = `600 8px ${FONT}`;
-        context.fillText("km/h", cx, cy + 31);
+        context.fillText(imperial ? "mph" : "km/h", cx, cy + 31);
 
         const surface = state.sessionSurfaceMu < 0.8 ? "Wet" : "Dry";
         context.font = `400 9px ${FONT}`;
