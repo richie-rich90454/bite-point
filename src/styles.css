@@ -26,6 +26,7 @@
     --radius-sm: 4px;
     --radius-md: 8px;
     --font: "Noto Sans", system-ui, sans-serif;
+    --hud-scale: 1;
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
     color-scheme: dark;
 }
@@ -387,7 +388,8 @@ button {
     position: absolute;
     left: 50%;
     bottom: 12px;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(var(--hud-scale));
+    transform-origin: bottom center;
     width: 545px;
     height: 191px;
     pointer-events: none;
