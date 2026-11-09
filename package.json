@@ -31,6 +31,7 @@
         "test:watch": "vitest",
         "test:e2e": "playwright test",
         "lint": "eslint .",
+        "assets:check": "node scripts/check-asset-provenance.mjs",
         "format": "oxfmt",
         "format:check": "oxfmt --check"
     },
@@ -42,7 +43,9 @@
         "@playwright/test": "^1.65.0",
         "@types/node": "^26.6.6",
         "eslint": "^10.14.0",
+        "jpeg-js": "^0.4.4",
         "jsdom": "^31.0.0",
+        "ktx2-encoder": "0.6.0",
         "oxfmt": "^0.77.0",
         "typescript": "6.0.3",
         "typescript-eslint": "^8.72.1",
