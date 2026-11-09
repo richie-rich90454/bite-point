@@ -1,3 +1,4 @@
+// Single-track chassis dynamics follow Gillespie [R7] and Milliken [R8].
 import { clamp, GRAVITY, wrapAngle } from "../core/MathUtils";
 
 export interface BodyState {

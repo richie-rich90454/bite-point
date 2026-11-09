@@ -644,10 +644,10 @@ export class EnvironmentBuilder {
             context.fillStyle = "#e8b04b";
             context.fillRect(0, 0, 18, 320);
             context.fillStyle = "#ede8dc";
-            context.font = "700 96px Bahnschrift, Arial, sans-serif";
+            context.font = '700 96px "Noto Sans", sans-serif';
             context.fillText(title, 52, 152);
             context.fillStyle = "rgba(232,176,75,0.85)";
-            context.font = "600 42px Consolas, monospace";
+            context.font = '600 42px "Noto Sans", sans-serif';
             context.fillText(subtitle, 54, 236);
             texture.update();
             const material = new StandardMaterial(`${name}-material`, this.scene);
@@ -676,10 +676,10 @@ export class EnvironmentBuilder {
             }
         };
 
-        board("main-sign", "BITE POINT", "MANUAL DRIVING PAD", 2, -20, 3.4, 5.2, 1.55);
-        board("hill-sign-gentle", "9% GRADE", "HILL START", 22, -16.5, 2.4, 3.2, 1);
-        board("hill-sign-steep", "16% GRADE", "CLUTCH CONTROL", 22, 16.5, 2.4, 3.2, 1);
-        board("park-sign", "PARKING", "REVERSE BAY", -14, 23.4, 2.2, 3.2, 1);
+        board("main-sign", "Bite point", "Manual driving pad", 2, -20, 3.4, 5.2, 1.55);
+        board("hill-sign-gentle", "9% grade", "Hill start", 22, -16.5, 2.4, 3.2, 1);
+        board("hill-sign-steep", "16% grade", "Clutch control", 22, 16.5, 2.4, 3.2, 1);
+        board("park-sign", "Parking", "Reverse bay", -14, 23.4, 2.2, 3.2, 1);
     }
 
     addHeadlightSpotlights(headlights: Array<SpotLight>): void {

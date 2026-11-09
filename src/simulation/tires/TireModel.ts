@@ -1,3 +1,4 @@
+// Combined-slip tire forces follow the empirical formulation in Pacejka [R6].
 import { clamp } from "../core/MathUtils";
 import type { TireConfig } from "../config/VehicleConfig";
 

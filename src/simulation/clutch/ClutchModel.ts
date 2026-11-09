@@ -1,3 +1,4 @@
+// Clutch capacity and thermal behavior follow the transmission model in [R10].
 import { clamp, clamp01, smoothstep } from "../core/MathUtils";
 
 export type ClutchMode = "open" | "slipping" | "locked";

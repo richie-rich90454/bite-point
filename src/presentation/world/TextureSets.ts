@@ -1,3 +1,4 @@
+// KTX2 container and transcoder references: [R20]; local decoder vendored from [R25].
 import "@babylonjs/core/Materials/Textures/Loaders/ktxTextureLoader";
 import { KhronosTextureContainer2 } from "@babylonjs/core/Misc/khronosTextureContainer2";
 import { PBRMaterial, Scene, Texture } from "../babylon";
