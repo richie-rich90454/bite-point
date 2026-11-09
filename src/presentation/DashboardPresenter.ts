@@ -15,12 +15,14 @@ const DEFAULT_SPEEDOMETER_MAX_KPH = 260;
 
 export interface DashboardPresenterOptions {
     speedometerMaxKph?: number;
+    maxRpm?: number;
     units?: SpeedUnits;
 }
 
 export class DashboardPresenter {
     private readonly context: CanvasRenderingContext2D;
-    private readonly speedometerMaxKph: number;
+    private speedometerMaxKph: number;
+    private maxRpm: number;
     private units: SpeedUnits;
     private width = 0;
     private height = 0;
@@ -38,12 +40,30 @@ export class DashboardPresenter {
             typeof configured === "number" && Number.isFinite(configured) && configured > 0
                 ? configured
                 : DEFAULT_SPEEDOMETER_MAX_KPH;
+        this.maxRpm = options.maxRpm ?? 9000;
         this.units = options.units ?? "metric";
         canvas.style.fontVariantNumeric = "tabular-nums";
     }
 
     setUnits(units: SpeedUnits): void {
         this.units = units;
+    }
+
+    setLimits(options: DashboardPresenterOptions): void {
+        if (
+            typeof options.speedometerMaxKph === "number" &&
+            Number.isFinite(options.speedometerMaxKph) &&
+            options.speedometerMaxKph > 0
+        ) {
+            this.speedometerMaxKph = options.speedometerMaxKph;
+        }
+        if (
+            typeof options.maxRpm === "number" &&
+            Number.isFinite(options.maxRpm) &&
+            options.maxRpm > 0
+        ) {
+            this.maxRpm = options.maxRpm;
+        }
     }
 
     draw(state: VehicleRenderState, shifterGrabbed: boolean): void {
@@ -118,7 +138,8 @@ export class DashboardPresenter {
         const radius = 72;
         const start = Math.PI * 0.75;
         const end = Math.PI * 2.25;
-        const fraction = Math.min(1, state.rpm / 7000);
+        const fraction = Math.min(1, state.rpm / this.maxRpm);
+        const redlineFraction = 0.94;
 
         context.beginPath();
         context.arc(cx, cy, radius, start, end);
@@ -127,7 +148,7 @@ export class DashboardPresenter {
         context.stroke();
 
         context.beginPath();
-        context.arc(cx, cy, radius, start, start + (end - start) * 0.93);
+        context.arc(cx, cy, radius, start, start + (end - start) * 0.97);
         context.lineWidth = 2;
         context.strokeStyle = "rgba(168, 73, 66, 0.62)";
         context.stroke();
@@ -135,11 +156,11 @@ export class DashboardPresenter {
         context.beginPath();
         context.arc(cx, cy, radius, start, start + (end - start) * fraction);
         context.lineWidth = 2.4;
-        context.strokeStyle = state.rpm > 6500 ? RED : AMBER;
+        context.strokeStyle = fraction > redlineFraction ? RED : AMBER;
         context.stroke();
 
-        for (let index = 0; index <= 28; index += 1) {
-            const angle = start + (end - start) * (index / 28);
+        for (let index = 0; index <= 36; index += 1) {
+            const angle = start + (end - start) * (index / 36);
             const major = index % 4 === 0;
             const inner = radius - (major ? 10 : 5);
             const outer = radius - 1;
@@ -147,7 +168,7 @@ export class DashboardPresenter {
             context.moveTo(cx + Math.cos(angle) * inner, cy + Math.sin(angle) * inner);
             context.lineTo(cx + Math.cos(angle) * outer, cy + Math.sin(angle) * outer);
             context.strokeStyle =
-                index / 4 >= 6.5
+                index / 36 >= redlineFraction
                     ? "rgba(168, 73, 66, 0.85)"
                     : major
                       ? TEXT_SECONDARY
@@ -156,9 +177,9 @@ export class DashboardPresenter {
             context.stroke();
         }
 
-        for (let index = 0; index <= 7; index += 1) {
-            const angle = start + (end - start) * (index / 7);
-            context.fillStyle = index >= 7 ? RED : TEXT_SECONDARY;
+        for (let index = 1; index <= 9; index += 1) {
+            const angle = start + (end - start) * (index / 9);
+            context.fillStyle = index / 9 >= redlineFraction ? RED : TEXT_SECONDARY;
             context.font = `400 11px ${FONT}`;
             context.textAlign = "center";
             context.textBaseline = "middle";
@@ -176,7 +197,7 @@ export class DashboardPresenter {
             cx + Math.cos(needleAngle) * (radius - 15),
             cy + Math.sin(needleAngle) * (radius - 15),
         );
-        context.strokeStyle = state.rpm > 6500 ? RED : AMBER_BRIGHT;
+        context.strokeStyle = fraction > redlineFraction ? RED : AMBER_BRIGHT;
         context.lineWidth = 1.4;
         context.stroke();
 
