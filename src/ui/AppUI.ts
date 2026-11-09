@@ -481,6 +481,14 @@ export class AppUI {
     private readonly instructorList: HTMLElement;
     private readonly cameraLabel: HTMLElement;
     private readonly pauseContent: HTMLElement;
+    private readonly pauseMain: HTMLElement;
+    private readonly customScrollbar: HTMLElement;
+    private readonly customScrollbarThumb: HTMLElement;
+    private readonly scenarioGrid: HTMLElement;
+    private readonly scenarioScrollbar: HTMLElement;
+    private readonly scenarioScrollbarThumb: HTMLElement;
+    private scrollbarDrag: { startY: number; startScroll: number } | null = null;
+    private scenarioScrollbarDrag: { startY: number; startScroll: number } | null = null;
     private readonly tabs: HTMLElement;
     private readonly inputTestPanel: HTMLElement;
     private readonly diagnosticsPanel: HTMLElement;
@@ -521,6 +529,12 @@ export class AppUI {
         this.instructorList = this.query(".instructor-list");
         this.cameraLabel = this.query(".camera-label");
         this.pauseContent = this.query(".pause-content");
+        this.pauseMain = this.query(".pause-main");
+        this.customScrollbar = this.query("[data-scrollbar]");
+        this.customScrollbarThumb = this.query("[data-scrollbar-thumb]");
+        this.scenarioGrid = this.query(".scenario-grid");
+        this.scenarioScrollbar = this.query("[data-scenario-scrollbar]");
+        this.scenarioScrollbarThumb = this.query("[data-scenario-scrollbar-thumb]");
         this.tabs = this.query(".pause-tabs");
         this.inputTestPanel = this.pauseContent;
         this.diagnosticsPanel = this.pauseContent;
@@ -536,6 +550,7 @@ export class AppUI {
         });
 
         this.bindStaticEvents();
+        this.bindCustomScrollbar();
         this.renderStartScenarios();
         this.renderHelp();
         this.setTelemetryVisible(settings.showTelemetry, false);
@@ -555,6 +570,113 @@ export class AppUI {
 
     private speedValue(kph: number): number {
         return this.settings.units === "imperial" ? kph * 0.621371 : kph;
+    }
+
+    private bindCustomScrollbar(): void {
+        this.pauseMain.addEventListener("scroll", () => this.updateCustomScrollbar(), {
+            passive: true,
+        });
+        window.addEventListener("resize", () => this.updateCustomScrollbar());
+        this.customScrollbar.addEventListener("pointerdown", (event) => {
+            if (event.target === this.customScrollbarThumb) return;
+            const rect = this.customScrollbar.getBoundingClientRect();
+            const fraction = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+            this.pauseMain.scrollTop =
+                fraction * (this.pauseMain.scrollHeight - this.pauseMain.clientHeight);
+        });
+        this.customScrollbarThumb.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            this.customScrollbarThumb.setPointerCapture(event.pointerId);
+            this.scrollbarDrag = {
+                startY: event.clientY,
+                startScroll: this.pauseMain.scrollTop,
+            };
+        });
+        this.customScrollbarThumb.addEventListener("pointermove", (event) => {
+            if (!this.scrollbarDrag) return;
+            const max = this.pauseMain.scrollHeight - this.pauseMain.clientHeight;
+            const usable = Math.max(
+                1,
+                this.customScrollbar.clientHeight - this.customScrollbarThumb.offsetHeight,
+            );
+            const delta = event.clientY - this.scrollbarDrag.startY;
+            this.pauseMain.scrollTop = this.scrollbarDrag.startScroll + (delta / usable) * max;
+        });
+        const endDrag = (): void => {
+            this.scrollbarDrag = null;
+        };
+        this.customScrollbarThumb.addEventListener("pointerup", endDrag);
+        this.customScrollbarThumb.addEventListener("pointercancel", endDrag);
+
+        this.scenarioGrid.addEventListener("scroll", () => this.updateScenarioScrollbar(), {
+            passive: true,
+        });
+        window.addEventListener("resize", () => this.updateScenarioScrollbar());
+        this.scenarioScrollbar.addEventListener("pointerdown", (event) => {
+            if (event.target === this.scenarioScrollbarThumb) return;
+            const rect = this.scenarioScrollbar.getBoundingClientRect();
+            const fraction = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+            this.scenarioGrid.scrollTop =
+                fraction * (this.scenarioGrid.scrollHeight - this.scenarioGrid.clientHeight);
+        });
+        this.scenarioScrollbarThumb.addEventListener("pointerdown", (event) => {
+            event.preventDefault();
+            this.scenarioScrollbarThumb.setPointerCapture(event.pointerId);
+            this.scenarioScrollbarDrag = {
+                startY: event.clientY,
+                startScroll: this.scenarioGrid.scrollTop,
+            };
+        });
+        this.scenarioScrollbarThumb.addEventListener("pointermove", (event) => {
+            if (!this.scenarioScrollbarDrag) return;
+            const max = this.scenarioGrid.scrollHeight - this.scenarioGrid.clientHeight;
+            const usable = Math.max(
+                1,
+                this.scenarioScrollbar.clientHeight - this.scenarioScrollbarThumb.offsetHeight,
+            );
+            const delta = event.clientY - this.scenarioScrollbarDrag.startY;
+            this.scenarioGrid.scrollTop =
+                this.scenarioScrollbarDrag.startScroll + (delta / usable) * max;
+        });
+        const endScenarioDrag = (): void => {
+            this.scenarioScrollbarDrag = null;
+        };
+        this.scenarioScrollbarThumb.addEventListener("pointerup", endScenarioDrag);
+        this.scenarioScrollbarThumb.addEventListener("pointercancel", endScenarioDrag);
+    }
+
+    private updateScenarioScrollbar(): void {
+        const max = this.scenarioGrid.scrollHeight - this.scenarioGrid.clientHeight;
+        if (max <= 1 || this.startOverlay.hidden) {
+            this.scenarioScrollbar.hidden = true;
+            return;
+        }
+        this.scenarioScrollbar.hidden = false;
+        const trackHeight = this.scenarioScrollbar.clientHeight;
+        const thumbHeight = Math.max(
+            32,
+            (this.scenarioGrid.clientHeight / this.scenarioGrid.scrollHeight) * trackHeight,
+        );
+        const top = (this.scenarioGrid.scrollTop / max) * (trackHeight - thumbHeight);
+        this.scenarioScrollbarThumb.style.height = `${thumbHeight}px`;
+        this.scenarioScrollbarThumb.style.transform = `translateY(${top}px)`;
+    }
+
+    private updateCustomScrollbar(): void {
+        const max = this.pauseMain.scrollHeight - this.pauseMain.clientHeight;
+        if (max <= 1 || this.pauseOverlay.hidden) {
+            this.customScrollbar.hidden = true;
+            return;
+        }
+        this.customScrollbar.hidden = false;
+        const trackHeight = this.customScrollbar.clientHeight;
+        const thumbHeight = Math.max(
+            32,
+            (this.pauseMain.clientHeight / this.pauseMain.scrollHeight) * trackHeight,
+        );
+        const top = (this.pauseMain.scrollTop / max) * (trackHeight - thumbHeight);
+        this.customScrollbarThumb.style.height = `${thumbHeight}px`;
+        this.customScrollbarThumb.style.transform = `translateY(${top}px)`;
     }
 
     private applyInterfacePreferences(): void {
@@ -581,6 +703,7 @@ export class AppUI {
         this.startOverlay.hidden = false;
         this.hud.classList.add("hud-hidden");
         document.exitPointerLock?.();
+        requestAnimationFrame(() => this.updateScenarioScrollbar());
     }
 
     hideStart(): void {
@@ -784,7 +907,12 @@ export class AppUI {
           </div>
           <div class="start-select">
             <div class="panel-label">Choose your session</div>
-            <div class="scenario-grid"></div>
+            <div class="scenario-scroll">
+              <div class="scenario-grid"></div>
+              <div class="custom-scrollbar scenario-scrollbar" data-scenario-scrollbar aria-hidden="true">
+                <div class="custom-scrollbar-thumb" data-scenario-scrollbar-thumb></div>
+              </div>
+            </div>
             <div class="start-hints">
               <span><b>I</b> ignition</span>
               <span><b>K</b> starter</span>
@@ -805,6 +933,9 @@ export class AppUI {
           </div>
           <div class="pause-main">
             <div class="pause-content"></div>
+          </div>
+          <div class="custom-scrollbar" data-scrollbar aria-hidden="true">
+            <div class="custom-scrollbar-thumb" data-scrollbar-thumb></div>
           </div>
         </div>
       </section>
@@ -875,6 +1006,7 @@ export class AppUI {
             container.append(button);
         }
         this.setScenarioSelection(this.selectedScenario);
+        requestAnimationFrame(() => this.updateScenarioScrollbar());
     }
 
     private renderScenario(data: UIUpdate): void {
@@ -1079,6 +1211,7 @@ export class AppUI {
         else if (this.activeTab === "settings") this.renderSettingsTab();
         else if (this.activeTab === "input") this.renderInputTab(true);
         else this.renderDiagnosticsTab(true);
+        requestAnimationFrame(() => this.updateCustomScrollbar());
     }
 
     private renderDriveTab(): void {
