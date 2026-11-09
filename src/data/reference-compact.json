@@ -94,7 +94,10 @@
     "aero": {
         "dragAreaCdA": 0.58,
         "airDensity": 1.2,
-        "maxSpeedKph": 200
+        "maxSpeedKph": 200,
+        "downforceCoefficient": 0.12,
+        "frontLiftCoefficient": 0.08,
+        "rearLiftCoefficient": 0.05
     },
     "provenance": {
         "massKg": "estimated",
@@ -132,6 +135,9 @@
         "suspension.springRateFrontNm": "estimated",
         "suspension.springRateRearNm": "estimated",
         "aero.dragAreaCdA": "estimated",
-        "aero.maxSpeedKph": "documented"
+        "aero.maxSpeedKph": "documented",
+        "aero.downforceCoefficient": "estimated",
+        "aero.frontLiftCoefficient": "estimated",
+        "aero.rearLiftCoefficient": "estimated"
     }
 }
