@@ -433,8 +433,7 @@ export class VehicleSimulation {
             const over = Math.abs(frame.lateralM) - edge;
             if (over > 0) {
                 const side = Math.sign(frame.lateralM) || 1;
-                this.body.state.x -= side * frame.normalX * over;
-                this.body.state.y -= side * frame.normalY * over;
+                this.body.shiftPosition(-side * frame.normalX * over, -side * frame.normalY * over);
                 const impact = Math.min(1, over / 1.5);
                 this.body.state.vx *= 1 - impact * 0.35;
                 this.body.state.vy *= 1 - impact * 0.5;
@@ -680,6 +679,7 @@ export class VehicleSimulation {
         const heading = options.heading ?? 0;
         this.timeS = 0;
         this.body.reset(x, y, heading);
+        this.road.syncHint(x, y);
         for (const wheel of this.wheels) wheel.reset();
         this.steering.reset();
         this.gearbox.reset(options.gear ?? 0);
