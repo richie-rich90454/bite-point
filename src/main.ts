@@ -1,6 +1,7 @@
 import { SimulatorApplication } from "./app/SimulatorApplication";
 
 async function boot(): Promise<void> {
+    await document.fonts.ready.catch(() => undefined);
     const canvas = document.getElementById("render-canvas");
     const uiRoot = document.getElementById("ui-root");
     const errorElement = document.getElementById("boot-error");
