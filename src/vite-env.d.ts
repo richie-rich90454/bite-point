@@ -20,6 +20,9 @@ export interface BitePointSnapshot {
     helpOpen: boolean;
     telemetryOpen: boolean;
     replaying: boolean;
+    worldMode: string;
+    roadDistance: number;
+    activeChunks: number;
     fps: number;
     stepsLastFrame: number;
     simulatedTimeS: number;
@@ -37,6 +40,17 @@ export interface BitePointDebugApi {
     startScenario: (id: string) => void;
     pause: () => void;
     resume: () => void;
+    world: () => {
+        material: string | null;
+        albedo: string | null;
+        albedoReady: boolean;
+        textures: number;
+        chunks: number;
+        roadMaterial: string | null;
+        terrainMaterial: string | null;
+        roadVertices: number;
+        terrainVertices: number;
+    };
 }
 
 declare global {
