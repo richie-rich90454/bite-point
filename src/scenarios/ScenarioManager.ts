@@ -70,7 +70,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
         ],
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
-            const distance = Math.max(0, context.state.pose.x);
+            const projected = context.sim.road.project(context.state.pose.x, context.state.pose.y);
+            const distance = projected ? Math.abs(projected.s) : Math.max(0, context.state.pose.x);
             const speed = context.stats.maxSpeedMps * 3.6;
             return {
                 status: "running",
