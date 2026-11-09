@@ -7,7 +7,7 @@ const ELEVATION_FREQUENCY = 1 / 6000;
 const MAX_GRADE = 0.09;
 export const SHOULDER_WIDTH_M = 3;
 const SHOULDER_DROP_M = 0.15;
-const CROWN_M = 0.08;
+export const CROWN_M = 0.08;
 const VERGE_SLOPE = 0.07;
 const VERGE_DROP_LIMIT_M = 6;
 
@@ -71,13 +71,14 @@ export class TerrainProfile {
         lateralM: number,
         worldX: number,
         worldY: number,
+        crownM = CROWN_M,
     ): number {
         const distance = Math.abs(lateralM);
         if (distance <= halfWidthM) {
             const normalized = lateralM / halfWidthM;
             return (
                 centerElevationM +
-                CROWN_M * (1 - normalized * normalized) -
+                crownM * (1 - normalized * normalized) -
                 lateralM * Math.tan(bankRad)
             );
         }
