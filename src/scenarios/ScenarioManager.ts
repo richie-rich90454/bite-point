@@ -100,6 +100,29 @@ export const SCENARIOS: ScenarioDefinition[] = [
         update: endlessUpdate,
     },
     {
+        id: "sprint-100",
+        title: "0-100 sprint",
+        description:
+            "A standing-start acceleration run on the endless straight. Launch cleanly, use every gear and stop the clock at 100 km/h.",
+        instructions: [
+            "The car starts in first gear on the endless straight.",
+            "Feed the clutch in and use full throttle.",
+            "Shift at the redline and keep the car straight.",
+            "The clock stops when the car reaches 100 km/h.",
+        ],
+        start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
+        update: (context) => {
+            const speed = context.stats.maxSpeedMps * 3.6;
+            if (speed >= 100) {
+                return {
+                    status: "success",
+                    message: `0-100 km/h in ${context.stats.elapsedS.toFixed(2)} s.`,
+                };
+            }
+            return { status: "running", progress: Math.min(0.98, speed / 100) };
+        },
+    },
+    {
         id: "free-drive",
         title: "Free drive",
         description:

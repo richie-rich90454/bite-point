@@ -3,7 +3,7 @@ import { clamp } from "../core/MathUtils";
 import { RoadPath } from "./RoadPath";
 import type { PathSample } from "./RoadPath";
 import { RoutePlan } from "./RoutePlan";
-import { TerrainProfile } from "./TerrainProfile";
+import { CROWN_M, TerrainProfile } from "./TerrainProfile";
 import type { RoadSample, RouteMode, RouteSegment, TerrainSample } from "./WorldTypes";
 
 const GRAVITY = 9.80665;
@@ -107,6 +107,7 @@ export class WorldGenerator {
         const road = this.scratchRoad;
         const worldX = road.x + road.normalX * lateralM;
         const worldY = road.y + road.normalY * lateralM;
+        const crownM = this.routeMode === "straight" ? 0 : CROWN_M;
         const heightM = this.terrain.heightAtCrossSection(
             road.elevationM,
             road.halfWidthM,
@@ -115,6 +116,7 @@ export class WorldGenerator {
             lateralM,
             worldX,
             worldY,
+            crownM,
         );
 
         const plusLat = this.terrain.heightAtCrossSection(
@@ -125,6 +127,7 @@ export class WorldGenerator {
             lateralM + NORMAL_EPSILON_M,
             worldX + road.normalX * NORMAL_EPSILON_M,
             worldY + road.normalY * NORMAL_EPSILON_M,
+            crownM,
         );
         const minusLat = this.terrain.heightAtCrossSection(
             road.elevationM,
@@ -134,6 +137,7 @@ export class WorldGenerator {
             lateralM - NORMAL_EPSILON_M,
             worldX - road.normalX * NORMAL_EPSILON_M,
             worldY - road.normalY * NORMAL_EPSILON_M,
+            crownM,
         );
         const gradientLateral = (plusLat - minusLat) / (2 * NORMAL_EPSILON_M);
         const gradientForward = this.terrain.gradeAt(s);
@@ -167,6 +171,7 @@ export class WorldGenerator {
             this.scratchProjection.lateralM,
             x,
             y,
+            this.routeMode === "straight" ? 0 : CROWN_M,
         );
     }
 

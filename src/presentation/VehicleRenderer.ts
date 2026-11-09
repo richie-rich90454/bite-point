@@ -105,7 +105,10 @@ export class VehicleRenderer {
             (config.engine.redlineRpm / 60) *
             (wheelCircumference / (topGear * config.finalDriveRatio)) *
             3.6;
-        this.speedoMaxKph = Math.ceil((redlineSpeedKph * 1.15) / 20) * 20;
+        this.speedoMaxKph = Math.max(
+            500,
+            Math.min(600, Math.ceil((redlineSpeedKph * 1.15) / 20) * 20),
+        );
         this.engine = new Engine(
             canvas,
             true,

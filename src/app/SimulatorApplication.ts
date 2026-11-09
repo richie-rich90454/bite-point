@@ -64,6 +64,7 @@ export class SimulatorApplication {
         this.road = new RoadContactProvider();
         this.simulation = new VehicleSimulation(this.config, this.road);
         this.instructor = new DrivingInstructor(settings.instructorEnabled);
+        this.instructor.redlineRpm = this.config.engine.redlineRpm;
         this.scenarios = new ScenarioManager();
         this.input = new InputService(window, settings, {
             onBindingsChanged: (bindings) => {
@@ -103,6 +104,19 @@ export class SimulatorApplication {
             getBindingLabel: (action) => this.input.formatBinding(action),
         };
         this.ui = new AppUI(uiRoot, this.scenarios.all, settings, callbacks);
+        const topGear = this.config.gearRatios[this.config.gearRatios.length - 1] ?? 1;
+        const wheelCircumference = 2 * Math.PI * this.config.wheelRadiusM;
+        const redlineSpeedKph =
+            (this.config.engine.redlineRpm / 60) *
+            (wheelCircumference / (topGear * this.config.finalDriveRatio)) *
+            3.6;
+        this.ui.setDashboardLimits({
+            maxRpm: this.config.engine.redlineRpm,
+            speedometerMaxKph: Math.max(
+                500,
+                Math.min(600, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
+            ),
+        });
 
         this.road.setWorld(this.worldCurved);
         this.renderer.setWorldMode("endless");
@@ -311,7 +325,7 @@ export class SimulatorApplication {
         const definition =
             this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
         const endlessMode =
-            definition.id === "endless-straight"
+            definition.id === "endless-straight" || definition.id === "sprint-100"
                 ? "straight"
                 : definition.id === "endless"
                   ? "curved"

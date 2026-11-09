@@ -127,7 +127,7 @@ export class AudioDirector {
         const targetGain = state.engineRunning ? load : 0;
         this.engineGain.gain.setTargetAtTime(targetGain, now, 0.08);
         const cutoff = 240 + rpm * 0.3 + state.throttle * 1600;
-        this.engineFilter.frequency.setTargetAtTime(Math.min(7000, cutoff), now, 0.06);
+        this.engineFilter.frequency.setTargetAtTime(Math.min(9000, cutoff), now, 0.06);
 
         if (this.intake) {
             this.intake.gain.gain.setTargetAtTime(

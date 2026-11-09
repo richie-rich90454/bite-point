@@ -365,7 +365,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
     else {
         num("aero.dragAreaCdA", 0.1, 3);
         num("aero.airDensity", 0.5, 2);
-        num("aero.maxSpeedKph", 50, 400);
+        num("aero.maxSpeedKph", 50, 600);
         optionalNum("aero.downforceCoefficient", 0, 5, 0);
         optionalNum("aero.frontLiftCoefficient", -2, 2, 0);
         optionalNum("aero.rearLiftCoefficient", -2, 2, 0);
