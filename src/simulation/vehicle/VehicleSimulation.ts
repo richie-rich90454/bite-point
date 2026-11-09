@@ -301,9 +301,9 @@ export class VehicleSimulation {
         // Downforce loads the axles; a positive lift coefficient unloads them.
         const frontAxleLoad = Math.max(
             0,
-            staticFront - longTransfer - downforceN * 0.45 - frontLiftN,
+            staticFront - longTransfer + downforceN * 0.45 - frontLiftN,
         );
-        const rearAxleLoad = Math.max(0, staticRear + longTransfer - downforceN * 0.55 - rearLiftN);
+        const rearAxleLoad = Math.max(0, staticRear + longTransfer + downforceN * 0.55 - rearLiftN);
         const lateralTransfer =
             (this.config.massKg * latAccel * this.config.cgHeightM) / this.config.trackM;
         const frontLateralTransfer = lateralTransfer * 0.55;
