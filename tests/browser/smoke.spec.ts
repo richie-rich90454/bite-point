@@ -10,7 +10,7 @@ test("boots, starts a session, launches and shifts", async ({ page }) => {
     });
     await page.addInitScript(() => {
         localStorage.setItem(
-            "bite-point.settings.v1",
+            "bite-point.settings.v2",
             JSON.stringify({
                 version: 1,
                 renderScale: 0.45,
@@ -24,7 +24,7 @@ test("boots, starts a session, launches and shifts", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator("#boot-error")).toBeHidden();
     await expect(page.locator(".start-overlay")).toBeVisible();
-    await expect(page.locator("h1")).toContainText("BITE");
+    await expect(page.locator("h1")).toContainText("Bite");
 
     await page.locator('[data-ui="start"]').click();
     await expect(page.locator(".start-overlay")).toBeHidden();
@@ -33,7 +33,7 @@ test("boots, starts a session, launches and shifts", async ({ page }) => {
     await page.waitForTimeout(400);
     let snapshot = await page.evaluate(() => window.bitePoint!.snapshot());
     expect(snapshot.started).toBe(true);
-    expect(snapshot.scenarioId).toBe("free-drive");
+    expect(snapshot.scenarioId).toBe("endless");
 
     await page.keyboard.press("Enter");
     await page.keyboard.press("ArrowLeft");
