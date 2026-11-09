@@ -52,6 +52,19 @@ describe("endless world driving", () => {
         );
     });
 
+    it("launches and upshifts with the automatic clutch", () => {
+        const { sim } = makeEndlessSimulation();
+        sim.autoClutch = true;
+        sim.selectGearDirect(1);
+        stepFor(sim, 6, () => ({ ...baseControls(), throttle: 0.65 }));
+        expect(sim.engine.running).toBe(true);
+        expect(sim.speedMps).toBeGreaterThan(2);
+        sim.selectGearDirect(2);
+        stepFor(sim, 1, () => ({ ...baseControls(), throttle: 0.5 }));
+        expect(sim.gear).toBe(2);
+        expect(Number.isFinite(sim.body.state.vx)).toBe(true);
+    });
+
     it("pushes the car back inside the guardrails", () => {
         const { sim } = makeEndlessSimulation();
         sim.body.state.y = 20;
