@@ -77,7 +77,7 @@ export class RoadContactProvider {
     }
 
     heightAt(x: number, y: number): number {
-        if (this.world) return this.world.heightAt(x, y, this.projectHint(x, y));
+        if (this.world) return this.world.heightAt(x, y, this.hintS);
         let height = 0;
         for (const ramp of this.ramps) {
             if (y >= ramp.yMin && y <= ramp.yMax && x >= ramp.xStart) {
@@ -99,7 +99,7 @@ export class RoadContactProvider {
 
     surfaceMuAt(x: number, y: number): number {
         if (this.world) {
-            return this.world.surfaceMuAt(x, y, this.projectHint(x, y));
+            return this.world.surfaceMuAt(x, y, this.hintS);
         }
         let mu = isPavedSurface(x, y) ? 1 : 0.62;
         for (const area of this.wetAreas) {
@@ -112,7 +112,7 @@ export class RoadContactProvider {
 
     rollingResistanceScaleAt(x: number, y: number): number {
         if (this.world) {
-            return this.world.rollingResistanceScaleAt(x, y, this.projectHint(x, y));
+            return this.world.rollingResistanceScaleAt(x, y, this.hintS);
         }
         return isPavedSurface(x, y) ? 1 : 3.2;
     }
@@ -120,7 +120,13 @@ export class RoadContactProvider {
     project(
         x: number,
         y: number,
-    ): { s: number; lateralM: number; halfWidthM: number; normalX: number; normalY: number } | null {
+    ): {
+        s: number;
+        lateralM: number;
+        halfWidthM: number;
+        normalX: number;
+        normalY: number;
+    } | null {
         if (!this.world) return null;
         const projected = this.world.project(x, y, this.hintS);
         this.hintS = projected.s;
@@ -136,7 +142,7 @@ export class RoadContactProvider {
 
     sample(x: number, y: number): RoadSample {
         if (this.world) {
-            const projected = this.world.project(x, y, this.projectHint(x, y));
+            const projected = this.world.project(x, y, this.hintS);
             this.hintS = projected.s;
             const terrain = this.world.sampleAt(projected.s, projected.lateralM);
             return {
@@ -152,8 +158,10 @@ export class RoadContactProvider {
         }
         const epsilon = 0.25;
         const height = this.heightAt(x, y);
-        const gradientX = (this.heightAt(x + epsilon, y) - this.heightAt(x - epsilon, y)) / (2 * epsilon);
-        const gradientY = (this.heightAt(x, y + epsilon) - this.heightAt(x, y - epsilon)) / (2 * epsilon);
+        const gradientX =
+            (this.heightAt(x + epsilon, y) - this.heightAt(x - epsilon, y)) / (2 * epsilon);
+        const gradientY =
+            (this.heightAt(x, y + epsilon) - this.heightAt(x, y - epsilon)) / (2 * epsilon);
         const length = Math.hypot(gradientX, gradientY, 1);
         return {
             heightM: height,
@@ -173,12 +181,5 @@ export class RoadContactProvider {
 
     resetSurface(): void {
         this.wetAreas = [TRAINING_GROUND_WET_AREA];
-    }
-
-    private projectHint(x: number, y: number): number {
-        if (!this.world) return 0;
-        const projected = this.world.project(x, y, this.hintS);
-        this.hintS = projected.s;
-        return projected.s;
     }
 }
