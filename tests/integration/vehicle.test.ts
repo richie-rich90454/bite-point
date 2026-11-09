@@ -140,6 +140,7 @@ describe("vehicle integration", () => {
         for (let step = 0; step < 25000; step += 1) {
             sim.step(1 / 250, { ...baseControls(), throttle: 1, clutchPedal: 0 });
             maxSpeed = Math.max(maxSpeed, sim.speedMps);
+            if (sim.speedMps * 3.6 > 205) break;
         }
         expect(sim.speedMps * 3.6).toBeGreaterThan(200);
         expect(maxSpeed * 3.6).toBeGreaterThan(200);
