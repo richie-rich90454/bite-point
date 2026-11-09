@@ -78,6 +78,9 @@ export interface AeroConfig {
     dragAreaCdA: number;
     airDensity: number;
     maxSpeedKph: number;
+    downforceCoefficient?: number;
+    frontLiftCoefficient?: number;
+    rearLiftCoefficient?: number;
 }
 
 export interface VehicleConfig {
@@ -141,6 +144,24 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
         if (typeof current !== "number" || !Number.isFinite(current)) {
             errors.push(`${path} must be a finite number.`);
             return Number.NaN;
+        }
+        if (current < min || current > max) {
+            errors.push(`${path} must be between ${min} and ${max}, received ${current}.`);
+        }
+        return current;
+    };
+
+    const optionalNum = (path: string, min: number, max: number, fallback: number): number => {
+        const parts = path.split(".");
+        let current: unknown = raw;
+        for (const part of parts) {
+            if (!isRecord(current)) break;
+            current = current[part];
+        }
+        if (current === undefined) return fallback;
+        if (typeof current !== "number" || !Number.isFinite(current)) {
+            errors.push(`${path} must be a finite number.`);
+            return fallback;
         }
         if (current < min || current > max) {
             errors.push(`${path} must be between ${min} and ${max}, received ${current}.`);
@@ -345,6 +366,9 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
         num("aero.dragAreaCdA", 0.1, 3);
         num("aero.airDensity", 0.5, 2);
         num("aero.maxSpeedKph", 50, 400);
+        optionalNum("aero.downforceCoefficient", 0, 5, 0);
+        optionalNum("aero.frontLiftCoefficient", -2, 2, 0);
+        optionalNum("aero.rearLiftCoefficient", -2, 2, 0);
     }
 
     if (bias > 0 && wheelbase > 0 && mass > 0) {
