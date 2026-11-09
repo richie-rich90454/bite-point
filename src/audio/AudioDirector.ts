@@ -19,6 +19,9 @@ export class AudioDirector {
     private noiseBuffer: AudioBuffer | null = null;
     private enabled: boolean;
     private volume: number;
+    private engineLevel = 0.8;
+    private tireLevel = 0.6;
+    private windLevel = 0.5;
     private initialized = false;
 
     constructor(enabled = true, volume = 0.7) {
@@ -100,6 +103,12 @@ export class AudioDirector {
         }
     }
 
+    setMix(mix: { engineVolume: number; tireVolume: number; windVolume: number }): void {
+        this.engineLevel = Math.max(0, Math.min(1, mix.engineVolume));
+        this.tireLevel = Math.max(0, Math.min(1, mix.tireVolume));
+        this.windLevel = Math.max(0, Math.min(1, mix.windVolume));
+    }
+
     update(state: VehicleRenderState, dt: number): void {
         if (!this.context || !this.engineGain || !this.engineFilter) return;
         const context = this.context;
@@ -114,7 +123,7 @@ export class AudioDirector {
                 0.035,
             );
         }
-        const load = state.engineRunning ? 0.13 + state.throttle * 0.22 : 0;
+        const load = state.engineRunning ? (0.13 + state.throttle * 0.22) * this.engineLevel : 0;
         const targetGain = state.engineRunning ? load : 0;
         this.engineGain.gain.setTargetAtTime(targetGain, now, 0.08);
         const cutoff = 240 + rpm * 0.3 + state.throttle * 1600;
@@ -122,18 +131,19 @@ export class AudioDirector {
 
         if (this.intake) {
             this.intake.gain.gain.setTargetAtTime(
-                state.engineRunning ? state.throttle * 0.035 : 0,
+                state.engineRunning ? state.throttle * 0.035 * this.engineLevel : 0,
                 now,
                 0.08,
             );
         }
         if (this.wind) {
-            const windGain = Math.min(0.14, (state.speedMps / 42) ** 2 * 0.14);
+            const windGain = Math.min(0.14, (state.speedMps / 42) ** 2 * 0.14) * this.windLevel;
             this.wind.gain.gain.setTargetAtTime(windGain, now, 0.2);
         }
         if (this.tire) {
             const surfaceFactor = state.sessionSurfaceMu < 0.8 ? 1.7 : 1;
-            const tireGain = Math.min(0.1, (state.speedMps / 32) * 0.1) * surfaceFactor;
+            const tireGain =
+                Math.min(0.1, (state.speedMps / 32) * 0.1) * surfaceFactor * this.tireLevel;
             this.tire.gain.gain.setTargetAtTime(tireGain, now, 0.15);
         }
         if (this.starterGain) {
