@@ -1,3 +1,4 @@
+// Terrain sampling and local projection follow the clipmap/chunked LOD ideas in [R4] and [R5].
 import { clamp } from "../core/MathUtils";
 import { RoadPath } from "./RoadPath";
 import type { PathSample } from "./RoadPath";
