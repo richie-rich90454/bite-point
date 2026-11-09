@@ -29,7 +29,8 @@ export class SimulatorApplication {
     private readonly config: VehicleConfig;
     private readonly settingsRepository: SettingsRepository;
     private readonly road: RoadContactProvider;
-    private readonly world = new WorldGenerator(2026);
+    private readonly worldCurved = new WorldGenerator(2026, "curved");
+    private readonly worldStraight = new WorldGenerator(2026, "straight");
     private readonly simulation: VehicleSimulation;
     private readonly clock = new SimulationClock(1 / 250, 120);
     private readonly input: InputService;
@@ -72,7 +73,13 @@ export class SimulatorApplication {
             onMessage: (message) => this.ui.showToast(message, "info"),
         });
         this.input.setClutchZone(this.config.clutch.bitePoint, this.config.clutch.engagementWidth);
-        this.renderer = new VehicleRenderer(canvas, this.config, this.road, settings, this.world);
+        this.renderer = new VehicleRenderer(
+            canvas,
+            this.config,
+            this.road,
+            settings,
+            this.worldCurved,
+        );
         this.audio = new AudioDirector(settings.audioEnabled, settings.masterVolume);
 
         const callbacks: AppUICallbacks = {
@@ -97,7 +104,7 @@ export class SimulatorApplication {
         };
         this.ui = new AppUI(uiRoot, this.scenarios.all, settings, callbacks);
 
-        this.road.setWorld(this.world);
+        this.road.setWorld(this.worldCurved);
         this.renderer.setWorldMode("endless");
         this.scenarios.start("endless", this.simulation);
         this.input.setIgnition(true);
@@ -303,9 +310,21 @@ export class SimulatorApplication {
         void this.audio.start();
         const definition =
             this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
-        const endless = definition.id === "endless";
-        this.road.setWorld(endless ? this.world : null);
-        this.renderer.setWorldMode(endless ? "endless" : "legacy");
+        const endlessMode =
+            definition.id === "endless-straight"
+                ? "straight"
+                : definition.id === "endless"
+                  ? "curved"
+                  : null;
+        const world =
+            endlessMode === "straight"
+                ? this.worldStraight
+                : endlessMode === "curved"
+                  ? this.worldCurved
+                  : null;
+        this.road.setWorld(world);
+        this.renderer.setWorld(world);
+        this.renderer.setWorldMode(endlessMode ? "endless" : "legacy");
         const scenario = this.scenarios.start(id, this.simulation);
         this.started = true;
         this.replay = null;
