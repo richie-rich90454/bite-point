@@ -288,6 +288,10 @@ export class VehicleRenderer {
         this.drawDistanceM = Math.max(500, Math.min(3000, distanceM));
     }
 
+    setWorld(world: WorldGenerator | null): void {
+        this.worldStreamer?.setWorld(world);
+    }
+
     cycleCamera(): CameraMode {
         const mode = this.cockpit.cycle();
         this.setCameraMode(mode);
