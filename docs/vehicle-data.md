@@ -78,6 +78,6 @@ Until that work is complete, the bundled values are a playable, internally consi
 
 ## Proving-straight calibration
 
-The reference configuration uses a 0.84 sixth-gear ratio and an estimated 0.58 m² drag area. These are gameplay calibration estimates, not measurements from a production car. The shorter sixth keeps the engine nearer its useful power band at 200 km/h. Rolling resistance opposes velocity in both forward and reverse; it previously had the wrong sign in chassis force assembly.
+The reference configuration uses a 0.84 sixth-gear ratio and an estimated 0.58 m² drag area. These are gameplay calibration estimates, not measurements from a production car. The shorter sixth keeps the engine nearer its useful power band at high speed. Optional downforce and lift coefficients are estimated and validated only for finite, bounded behaviour, not for production-car accuracy. Rolling resistance opposes velocity in both forward and reverse.
 
-The closed-course regression launches from rest, uses clutch-operated upshifts near 5,800 rpm, reaches at least 199.9 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. A separate neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
+The closed-course regression launches from rest, uses clutch-operated upshifts near 5,800 rpm, exceeds 200 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. A separate high-speed test forces 90 m/s and verifies finite loads and state. A neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
