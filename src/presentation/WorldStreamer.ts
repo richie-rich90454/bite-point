@@ -28,15 +28,26 @@ export class WorldStreamer {
     private initialized = false;
     private enabled = false;
 
+    private world: WorldGenerator | null;
+
     constructor(
         private readonly scene: Scene,
-        private readonly world: WorldGenerator,
+        world: WorldGenerator,
         private readonly shadows: ShadowGenerator,
     ) {
+        this.world = world;
         this.root = new TransformNode("endless-world", scene);
         this.materials = new WorldMaterials(scene);
         this.shadows.addShadowCaster(this.materials.treeCanopy);
         this.shadows.addShadowCaster(this.materials.treeTrunk);
+    }
+
+    setWorld(world: WorldGenerator | null): void {
+        for (const chunk of this.chunks.values()) chunk.dispose();
+        this.chunks.clear();
+        this.lastS = 0;
+        this.initialized = false;
+        if (world) this.world = world;
     }
 
     get activeChunks(): number {
@@ -54,7 +65,7 @@ export class WorldStreamer {
     }
 
     update(position: { x: number; y: number }, speedMps: number, drawDistanceM = 1400): void {
-        if (!this.enabled) return;
+        if (!this.enabled || !this.world) return;
         const projected = this.world.project(position.x, position.y, this.lastS);
         this.lastS = projected.s;
         const theme = this.world.sample(this.lastS).segment.theme;
