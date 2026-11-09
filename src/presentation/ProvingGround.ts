@@ -208,10 +208,10 @@ export class ProvingGround {
             this.distanceBoard(
                 x,
                 centerY - 17,
-                x === 6000 ? "BRAKE" : `${(x / 1000).toFixed(1)} km`,
+                x === 6000 ? "Brake" : `${(x / 1000).toFixed(1)} km`,
             );
         }
-        this.distanceBoard(-100, centerY - 17, "6 km STRAIGHT");
+        this.distanceBoard(-100, centerY - 17, "6 km straight");
     }
 
     private distanceBoard(x: number, y: number, label: string): void {
@@ -227,7 +227,7 @@ export class ProvingGround {
         ctx.strokeStyle = "#d8dfd7";
         ctx.lineWidth = 8;
         ctx.strokeRect(12, 12, 488, 168);
-        ctx.font = "600 52px Bahnschrift, Arial, sans-serif";
+        ctx.font = '600 52px "Noto Sans", sans-serif';
         ctx.fillStyle = "#f2f3e9";
         ctx.fillText(label, (512 - ctx.measureText(label).width) / 2, 115);
         texture.update();
