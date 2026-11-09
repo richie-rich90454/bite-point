@@ -30,9 +30,11 @@ import {
 import type { VehicleConfig } from "../simulation/config/VehicleConfig";
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 import type { RoadContactProvider } from "../simulation/road/RoadContactProvider";
+import type { WorldGenerator } from "../simulation/world/WorldGenerator";
 import type { UserSettings } from "../settings/SettingsRepository";
 import { CockpitController, type CameraMode } from "./CockpitController";
 import { EnvironmentBuilder } from "./EnvironmentBuilder";
+import { WorldStreamer } from "./WorldStreamer";
 
 interface WheelVisual {
     root: TransformNode;
@@ -45,6 +47,10 @@ export class VehicleRenderer {
     readonly scene: Scene;
     readonly environment: EnvironmentBuilder;
     readonly cockpit: CockpitController;
+    readonly worldStreamer: WorldStreamer | null;
+    private worldMode: "legacy" | "endless" = "legacy";
+    private drawDistanceM = 1400;
+    private readonly speedoMaxKph: number;
     private adaptiveLevel = 0;
     private lastSettings: UserSettings;
     private pipeline: DefaultRenderingPipeline | null = null;
@@ -88,8 +94,16 @@ export class VehicleRenderer {
         private readonly config: VehicleConfig,
         road: RoadContactProvider,
         settings: UserSettings,
+        world?: WorldGenerator,
     ) {
         this.lastSettings = settings;
+        const topGear = config.gearRatios[config.gearRatios.length - 1] ?? 1;
+        const wheelCircumference = 2 * Math.PI * config.wheelRadiusM;
+        const redlineSpeedKph =
+            (config.engine.redlineRpm / 60) *
+            (wheelCircumference / (topGear * config.finalDriveRatio)) *
+            3.6;
+        this.speedoMaxKph = Math.ceil((redlineSpeedKph * 1.15) / 20) * 20;
         this.engine = new Engine(
             canvas,
             true,
@@ -108,6 +122,8 @@ export class VehicleRenderer {
         this.scene.imageProcessingConfiguration.contrast = 1.14;
 
         this.environment = new EnvironmentBuilder(this.scene, road);
+        this.worldStreamer = world ? new WorldStreamer(this.scene, world, this.environment.shadows) : null;
+        this.setWorldMode("legacy");
         this.carRoot = new TransformNode("car-root", this.scene);
         this.exteriorCabin = new TransformNode("exterior-cabin", this.scene);
         this.exteriorCabin.parent = this.carRoot;
@@ -193,6 +209,20 @@ export class VehicleRenderer {
         return this.adaptiveLevel;
     }
 
+    get activeWorldMode(): "legacy" | "endless" {
+        return this.worldMode;
+    }
+
+    setWorldMode(mode: "legacy" | "endless"): void {
+        this.worldMode = mode;
+        this.environment.setLegacyMode(mode === "legacy");
+        this.worldStreamer?.setEnabled(mode === "endless");
+    }
+
+    setDrawDistance(distanceM: number): void {
+        this.drawDistanceM = Math.max(500, Math.min(3000, distanceM));
+    }
+
     cycleCamera(): CameraMode {
         const mode = this.cockpit.cycle();
         this.setCameraMode(mode);
@@ -244,6 +274,11 @@ export class VehicleRenderer {
             -pose.roll,
         );
         this.carRoot.computeWorldMatrix(true);
+        this.worldStreamer?.update(
+            { x: pose.x, y: pose.y },
+            state.speedMps,
+            this.worldMode === "endless" ? this.drawDistanceM : 0,
+        );
 
         for (let index = 0; index < this.wheels.length; index += 1) {
             const wheel = this.wheels[index]!;
@@ -269,7 +304,7 @@ export class VehicleRenderer {
             this.tachNeedleNode.rotation.z = 2.4 - rpmFraction * 4.8;
         }
         if (this.speedNeedleNode) {
-            const speedFraction = Math.min(1, state.speedKph / 220);
+            const speedFraction = Math.min(1, state.speedKph / this.speedoMaxKph);
             this.speedNeedleNode.rotation.z = 2.4 - speedFraction * 4.8;
         }
 
@@ -295,6 +330,7 @@ export class VehicleRenderer {
         if (this.disposed) return;
         this.disposed = true;
         window.removeEventListener("resize", this.resizeHandler);
+        this.worldStreamer?.dispose();
         this.cockpit.dispose();
         this.scene.dispose();
         this.engine.dispose();
