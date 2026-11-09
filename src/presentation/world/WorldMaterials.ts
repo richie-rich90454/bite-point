@@ -1,26 +1,31 @@
-import {
-    Color3,
-    CreateCylinder,
-    CreateSphere,
-    DynamicTexture,
-    Mesh,
-    PBRMaterial,
-    Scene,
-    Texture,
-} from "../babylon";
+import { Color3, CreateCylinder, CreateSphere, Mesh, PBRMaterial, Scene } from "../babylon";
 import { createRoadMaterial } from "../RoadMaterial";
+import { applyTextureSet, TEXTURE_SETS } from "./TextureSets";
+
+const TERRAIN_SETS: Record<string, string> = {
+    proving: "grass",
+    coast: "grass",
+    alpine: "rock",
+    mountain: "grass",
+    forest: "grass",
+    industrial: "concrete",
+    tunnel: "concrete",
+    bridge: "concrete",
+    city: "concrete",
+    summit: "rock",
+};
 
 const TERRAIN_TINTS: Record<string, string> = {
-    proving: "#7c8060",
-    coast: "#7f8568",
-    alpine: "#6f7b5c",
-    mountain: "#6d7862",
-    forest: "#55684d",
-    industrial: "#77746a",
-    tunnel: "#6c6b62",
-    bridge: "#737a6f",
-    city: "#79766c",
-    summit: "#8a897d",
+    proving: "#9aa07a",
+    coast: "#9ca47c",
+    alpine: "#8d8c84",
+    mountain: "#8f9778",
+    forest: "#7d8f70",
+    industrial: "#9a968c",
+    tunnel: "#8e8b82",
+    bridge: "#969184",
+    city: "#9a968a",
+    summit: "#a8a59a",
 };
 
 export class WorldMaterials {
@@ -31,7 +36,6 @@ export class WorldMaterials {
     readonly treeCanopy: Mesh;
     readonly rock: Mesh;
     private readonly terrainMaterials = new Map<string, PBRMaterial>();
-    private readonly textures: DynamicTexture[] = [];
 
     constructor(private readonly scene: Scene) {
         this.road = createRoadMaterial(scene, "endless-asphalt", 3, 3);
@@ -40,6 +44,8 @@ export class WorldMaterials {
         this.rail.metallic = 0.75;
         this.rail.roughness = 0.34;
         this.rail.backFaceCulling = false;
+        applyTextureSet(this.rail, scene, TEXTURE_SETS.metal!, 2, 2);
+        this.rail.albedoColor = new Color3(0.78, 0.8, 0.82);
 
         this.markings = new PBRMaterial("endless-markings", scene);
         this.markings.albedoColor = new Color3(0.92, 0.9, 0.82);
@@ -51,10 +57,11 @@ export class WorldMaterials {
         trunkMaterial.albedoColor = new Color3(0.31, 0.25, 0.18);
         trunkMaterial.roughness = 1;
         const canopyMaterial = new PBRMaterial("endless-canopy", scene);
-        canopyMaterial.albedoColor = new Color3(0.24, 0.35, 0.22);
+        canopyMaterial.albedoColor = new Color3(0.34, 0.46, 0.3);
         canopyMaterial.roughness = 1;
         const rockMaterial = new PBRMaterial("endless-rock", scene);
-        rockMaterial.albedoColor = new Color3(0.43, 0.42, 0.39);
+        applyTextureSet(rockMaterial, scene, TEXTURE_SETS.rock!, 1, 1);
+        rockMaterial.albedoColor = new Color3(0.72, 0.7, 0.66);
         rockMaterial.roughness = 0.94;
 
         this.treeTrunk = CreateCylinder(
@@ -84,33 +91,11 @@ export class WorldMaterials {
     terrain(theme: string): PBRMaterial {
         const cached = this.terrainMaterials.get(theme);
         if (cached) return cached;
-        const tint = TERRAIN_TINTS[theme] ?? TERRAIN_TINTS.sweep!;
+        const set = TEXTURE_SETS[TERRAIN_SETS[theme] ?? "grass"] ?? TEXTURE_SETS.grass!;
+        const tint = TERRAIN_TINTS[theme] ?? TERRAIN_TINTS.coast!;
         const material = new PBRMaterial(`terrain-${theme}`, this.scene);
-        const texture = new DynamicTexture(`terrain-texture-${theme}`, 512, this.scene, true);
-        const context = texture.getContext();
-        context.fillStyle = tint;
-        context.fillRect(0, 0, 512, 512);
-        let seed = 918273 + theme.length * 7919;
-        const random = (): number => {
-            seed = (1664525 * seed + 1013904223) >>> 0;
-            return seed / 4294967296;
-        };
-        for (let index = 0; index < 9000; index += 1) {
-            const shade = 30 + Math.floor(random() * 70);
-            context.fillStyle = `rgba(${shade},${shade + 10},${Math.max(0, shade - 12)},0.16)`;
-            context.fillRect(
-                random() * 512,
-                random() * 512,
-                1 + random() * 4,
-                1 + random() * 7,
-            );
-        }
-        texture.wrapU = Texture.WRAP_ADDRESSMODE;
-        texture.wrapV = Texture.WRAP_ADDRESSMODE;
-        texture.anisotropicFilteringLevel = 8;
-        texture.update(false);
-        this.textures.push(texture);
-        material.albedoTexture = texture;
+        applyTextureSet(material, this.scene, set, 1, 1);
+        material.albedoColor = Color3.FromHexString(tint);
         material.roughness = 0.98;
         material.metallic = 0;
         this.terrainMaterials.set(theme, material);
@@ -118,7 +103,6 @@ export class WorldMaterials {
     }
 
     dispose(): void {
-        for (const texture of this.textures) texture.dispose();
         for (const material of this.terrainMaterials.values()) material.dispose();
         this.road.dispose();
         this.rail.dispose();
