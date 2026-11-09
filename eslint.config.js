@@ -8,6 +8,7 @@ export default tseslint.config(
             "coverage/**",
             "test-results/**",
             "playwright-report/**",
+            "src/assets/ktx2/**",
         ],
     },
     ...tseslint.configs.recommended,
