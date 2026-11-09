@@ -25,7 +25,7 @@ The deterministic suite currently covers:
 | Configuration | Valid reference, invalid mass/fields, ratio ordering, bite geometry, provenance |
 | Telemetry | Ring buffer wrapping/order, sample rate, JSON export |
 | Input | Defaults, duplicate detection, layout labels, calibration, pedal ramps, focus-loss safety, repeat timing, rebinding conflicts, recovery hold |
-| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, physical top speed above 200 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
+| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
 Latest local result after implementation: all 93 deterministic tests pass across 18 files. The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
@@ -75,7 +75,7 @@ Reports should be archived in `docs/validation/` and converted into permanent re
 
 ## Proving straight regression
 
-`tests/integration/proving-run.test.ts` verifies a complete launch from rest past 200 km/h with clutch-operated shifts and enough remaining course length to stop. It also checks that neutral coast speed falls in both directions. `tests/integration/endless.test.ts` verifies streamed-world driving, surface classification and the guardrail soft barrier. `tests/unit/world-generator.test.ts` verifies deterministic route continuity, curvature bounds and projection round-trips. See the vehicle-data document for the estimated gearing and aerodynamic calibration.
+`tests/integration/proving-run.test.ts` verifies a complete launch from rest past 200 km/h with clutch-operated shifts and enough remaining course length to stop. `tests/integration/endless.test.ts` verifies a 0-100 km/h benchmark, a top-speed run beyond 500 km/h on the endless straight, handbrake deceleration, streamed-world driving, surface classification and the guardrail soft barrier. `tests/unit/world-generator.test.ts` verifies deterministic route continuity, curvature bounds and projection round-trips. See the vehicle-data document for the estimated gearing and aerodynamic calibration.
 
 ## Graphics and browser checks
 
