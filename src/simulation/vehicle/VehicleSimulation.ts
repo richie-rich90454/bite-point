@@ -83,6 +83,8 @@ export class VehicleSimulation {
     readonly recorder: TelemetryRecorder;
     controls: VehicleControls = { ...DEFAULT_CONTROLS };
     speedLimitKph: number | null = null;
+    autoClutch = false;
+    stabilityAssist = true;
     timeS = 0;
     lastEngineResult: EngineResult;
     lastClutchResult: ClutchResult;
@@ -200,6 +202,7 @@ export class VehicleSimulation {
 
         this.shifter.update(dt);
         this.gearbox.update(dt);
+        if (this.autoClutch) this.controls.clutchPedal = this.autoClutchPedal();
         this.steering.update(dt, this.controls.steering, this.body.state.vx);
         this.surfaceMu = this.road.surfaceMuAt(this.body.state.x, this.body.state.y);
 
@@ -392,8 +395,18 @@ export class VehicleSimulation {
             muRear,
         );
 
+        const slipAngle = Math.atan2(this.body.state.vy, Math.max(speedMagnitude, 1));
+        const slide = clamp((Math.abs(slipAngle) - 0.08) * 2.5, 0, 1);
+        const stabilityLateralN = this.stabilityAssist
+            ? -this.body.state.vy * this.config.massKg * 2.4 * slide
+            : 0;
+        const stabilityYawNm = this.stabilityAssist
+            ? -this.body.state.yawRate * this.config.massKg * 0.9 * slide
+            : 0;
         const yawMoment =
-            a * combinedFront.lateral * Math.cos(effectiveSteer) - b * combinedRear.lateral;
+            a * combinedFront.lateral * Math.cos(effectiveSteer) -
+            b * combinedRear.lateral +
+            stabilityYawNm;
         const dragN =
             0.5 *
             this.config.aero.airDensity *
@@ -410,7 +423,7 @@ export class VehicleSimulation {
 
         this.body.step(dt, {
             longitudinalN: combinedFront.longitudinal + combinedRear.longitudinal,
-            lateralN: combinedFront.lateral + combinedRear.lateral,
+            lateralN: combinedFront.lateral + combinedRear.lateral + stabilityLateralN,
             yawMomentNm: yawMoment,
             dragN,
             rollingResistanceN,
@@ -453,13 +466,23 @@ export class VehicleSimulation {
         const finalHeights = pose.map((position) => this.road.heightAt(position.x, position.y));
         this.body.state.z =
             (finalHeights[0]! + finalHeights[1]! + finalHeights[2]! + finalHeights[3]!) / 4;
-        this.body.state.pitch = Math.atan2(
-            (finalHeights[0]! + finalHeights[1]!) / 2 - (finalHeights[2]! + finalHeights[3]!) / 2,
-            this.config.wheelbaseM,
+        this.body.state.pitch = clamp(
+            Math.atan2(
+                (finalHeights[0]! + finalHeights[1]!) / 2 -
+                    (finalHeights[2]! + finalHeights[3]!) / 2,
+                this.config.wheelbaseM,
+            ),
+            -0.32,
+            0.32,
         );
-        this.body.state.roll = Math.atan2(
-            (finalHeights[0]! + finalHeights[2]!) / 2 - (finalHeights[1]! + finalHeights[3]!) / 2,
-            this.config.trackM,
+        this.body.state.roll = clamp(
+            Math.atan2(
+                (finalHeights[0]! + finalHeights[2]!) / 2 -
+                    (finalHeights[1]! + finalHeights[3]!) / 2,
+                this.config.trackM,
+            ),
+            -0.32,
+            0.32,
         );
 
         const newInputOmega =
@@ -578,6 +601,22 @@ export class VehicleSimulation {
         return result;
     }
 
+    private autoClutchPedal(): number {
+        if (this.shifter.grabbed || this.gearbox.gear === 0 || this.gearbox.torqueFactor < 0.99) {
+            return 1;
+        }
+        const speed = Math.abs(this.body.state.vx);
+        if (speed < 0.4 && this.controls.brake > 0.02) return 1;
+        if (speed < 0.6 && this.controls.throttle < 0.02) return 1;
+        if (speed < 2.2) {
+            return clamp(0.52 - this.controls.throttle * 0.08, 0.4, 0.58);
+        }
+        const engagement = clamp(0.55 - (speed - 2.2) / 6, 0, 0.55);
+        return this.engine.rpm < this.config.engine.idleRpm * 0.85
+            ? Math.max(engagement, 0.6)
+            : engagement;
+    }
+
     private engagementContext() {
         const outputOmega = this.driveline.outputShaftOmega([
             this.wheels[0].omega,
@@ -586,7 +625,8 @@ export class VehicleSimulation {
         const inputOmega =
             this.gearbox.gear !== 0 ? outputOmega * this.gearbox.ratio : this.neutralInputOmega;
         return {
-            clutchDisengaged: this.clutch.engagementForPedal(this.controls.clutchPedal) < 0.12,
+            clutchDisengaged:
+                this.autoClutch || this.clutch.engagementForPedal(this.controls.clutchPedal) < 0.12,
             inputOmega,
             outputOmega,
             speedMps: Math.abs(this.body.state.vx),
@@ -712,13 +752,21 @@ export class VehicleSimulation {
         const positions = this.wheelPositions();
         const heights = positions.map((position) => this.road.heightAt(position.x, position.y));
         this.body.state.z = (heights[0]! + heights[1]! + heights[2]! + heights[3]!) / 4;
-        this.body.state.pitch = Math.atan2(
-            (heights[0]! + heights[1]!) / 2 - (heights[2]! + heights[3]!) / 2,
-            this.config.wheelbaseM,
+        this.body.state.pitch = clamp(
+            Math.atan2(
+                (heights[0]! + heights[1]!) / 2 - (heights[2]! + heights[3]!) / 2,
+                this.config.wheelbaseM,
+            ),
+            -0.32,
+            0.32,
         );
-        this.body.state.roll = Math.atan2(
-            (heights[0]! + heights[2]!) / 2 - (heights[1]! + heights[3]!) / 2,
-            this.config.trackM,
+        this.body.state.roll = clamp(
+            Math.atan2(
+                (heights[0]! + heights[2]!) / 2 - (heights[1]! + heights[3]!) / 2,
+                this.config.trackM,
+            ),
+            -0.32,
+            0.32,
         );
     }
 

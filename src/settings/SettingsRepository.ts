@@ -44,6 +44,7 @@ export interface UserSettings {
     hudScale: number;
     antiStallAssist: boolean;
     autoClutch: boolean;
+    stabilityAssist: boolean;
     speedLimiterEnabled: boolean;
     colorblindMode: ColorblindMode;
     reducedMotion: boolean;
@@ -94,6 +95,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
     hudScale: 1,
     antiStallAssist: false,
     autoClutch: false,
+    stabilityAssist: true,
     speedLimiterEnabled: false,
     colorblindMode: "none",
     reducedMotion: false,
@@ -147,6 +149,7 @@ export function sanitizeSettings(raw: unknown): UserSettings {
         hudScale: clampNumber(source.hudScale, 0.75, 1.5, defaults.hudScale),
         antiStallAssist: booleanValue(source.antiStallAssist, defaults.antiStallAssist),
         autoClutch: booleanValue(source.autoClutch, defaults.autoClutch),
+        stabilityAssist: booleanValue(source.stabilityAssist, defaults.stabilityAssist),
         speedLimiterEnabled: booleanValue(source.speedLimiterEnabled, defaults.speedLimiterEnabled),
         colorblindMode: enumValue(source.colorblindMode, COLORBLIND_MODES, defaults.colorblindMode),
         reducedMotion: booleanValue(source.reducedMotion, defaults.reducedMotion),

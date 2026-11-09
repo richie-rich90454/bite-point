@@ -106,7 +106,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     {
         id: "proving-run",
-        title: "Six gears · 200 km/h",
+        title: "Six gears, 200 km/h",
         description:
             "A 6 km closed proving straight. Launch, shift through all six gears, reach 200 km/h, then brake to a stop.",
         instructions: [

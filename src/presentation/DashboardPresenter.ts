@@ -196,7 +196,7 @@ export class DashboardPresenter {
         context.fillText(`${Math.max(0, state.rpm).toFixed(0)}`, cx, cy + 32);
         context.fillStyle = MUTED;
         context.font = `600 7px ${FONT}`;
-        context.fillText("RPM", cx, cy + 47);
+        context.fillText("rpm", cx, cy + 47);
     }
 
     private drawSpeedometer(state: VehicleRenderState, cx: number, cy: number): void {

@@ -75,8 +75,8 @@
         "maxAngleRad": 0.58,
         "rateRadPerSec": 2.1,
         "returnRateRadPerSec": 3.4,
-        "highSpeedFactor": 0.42,
-        "speedSensitivityKph": 90
+        "highSpeedFactor": 0.32,
+        "speedSensitivityKph": 75
     },
     "brakes": {
         "frontTorqueNm": 1950,

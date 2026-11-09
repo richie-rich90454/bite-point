@@ -42,6 +42,7 @@ pnpm exec playwright install chromium
 - Engine torque from a shape-preserving torque curve, starter and ignition, idle control with anti-stall assistance, fuel cut, engine braking and stall transitions.
 - Clutch capacity from pedal position, clamp force, temperature and wear; slip torque, bounded coupling, slip energy, heating and cooling.
 - H-pattern shifter state machine driven by `Enter` and the arrow keys. No numpad and no simultaneous arrow combinations are required. Gears are not engaged until the lever is released.
+- Optional automatic clutch handles launches and gear changes without the clutch keys. Stability assist damps high-speed slides, and the steering angle falls with speed for a more predictable car.
 - Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
 - Photographic HDR sky and image-based lighting, plus scanned PBR asphalt with normal and packed occlusion/roughness maps. CC0 assets from Poly Haven are bundled locally.
 - Four-sample MSAA on High quality, FXAA at every quality level, device-pixel-aware render resolution, 16× road texture filtering and stabilized cascaded shadows on supported hardware. Authored vehicle textures are preserved.
