@@ -25,7 +25,7 @@ test("selects the proving lesson and uses sans-serif instruments", async ({ page
     expect(font).not.toMatch(/Georgia|Bodoni|Didot|Palatino|Baskerville/);
     await page.locator('[data-scenario-card="proving-run"]').click();
     await page.locator('[data-ui="start"]').click();
-    await expect(page.locator(".scenario-title")).toHaveText("Six gears · 200 km/h");
+    await expect(page.locator(".scenario-title")).toHaveText("Six gears, 200 km/h");
     const state = await page.evaluate(() => window.bitePoint!.snapshot());
     expect(state.scenarioId).toBe("proving-run");
     expect(state.gear).toBe(1);
@@ -37,6 +37,6 @@ test("selects the proving lesson and uses sans-serif instruments", async ({ page
     await expect(page.locator("[data-exterior-gear]")).toHaveText("1");
     await page.keyboard.press("Escape");
     await page.locator('[data-tab="lessons"]').click();
-    await expect(page.locator(".lesson-title")).toContainText(["Six gears · 200 km/h"]);
+    await expect(page.locator(".lesson-title")).toContainText(["Six gears, 200 km/h"]);
     expect(errors).toEqual([]);
 });
