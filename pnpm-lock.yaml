@@ -182,9 +182,15 @@ importers:
       eslint:
         specifier: ^10.14.0
         version: 10.14.0(supports-color@7.2.0)
+      jpeg-js:
+        specifier: ^0.4.4
+        version: 0.4.4
       jsdom:
         specifier: ^31.0.0
         version: 31.0.0
+      ktx2-encoder:
+        specifier: 0.6.0
+        version: 0.6.0
       oxfmt:
         specifier: ^0.77.0
         version: 0.77.0
@@ -837,6 +843,9 @@ packages:
   isexe@2.0.0:
     resolution: {integrity: sha512-RHxMLp9lnKHGHRng9QFhRCMbYAcVpn69smSGcq3f36xjgVVWThj4qqLbTLlq7Ssj8B+fIQ1EuCEGI2lKsyQeIw==}
 
+  jpeg-js@0.4.4:
+    resolution: {integrity: sha512-WZzeDOEtTOBK4Mdsar0IqEU5sMr3vSV2RqkAIzUEV2BHnUfKGyswWFPFwK5EeDo93K3FohSHbLAjj0s1Wzd+dg==}
+
   jsdom@31.0.0:
     resolution: {integrity: sha512-xAkhD9z1eyFC5+QUi9K24CaZJgdCQ2GOGLW1GdVDoQvkp/AxEH9TQ0pAplPOlIiV92hfcgnFOADZypbjgbBT6Q==}
     engines: {node: ^22.22.2 || ^24.15.0 || >=26.0.0}
@@ -854,6 +863,12 @@ packages:
 
   keyv@5.6.0:
     resolution: {integrity: sha512-CYDD3SOtsHtyXeEORYRx2qBtpDJFjRTGXUtmNEMGyzYOKj1TE3tycdlho7kA1Ufx9OYWZzg52QFBGALTirzDSw==}
+
+  ktx-parse@1.1.0:
+    resolution: {integrity: sha512-mKp3y+FaYgR7mXWAbyyzpa/r1zDWeaunH+INJO4fou3hb45XuNSwar+7llrRyvpMWafxSIi99RNFJ05MHedaJQ==}
+
+  ktx2-encoder@0.6.0:
+    resolution: {integrity: sha512-gEWkw2YUlhKO4hXhqVLQQWJ+fGJObsXIwz0pGjJMclnQ4MQU3SAtN1MzutjFxO3ejWvxHyvFk5kr8+RtLmHiTA==}
 
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
@@ -1792,6 +1807,8 @@ snapshots:
 
   isexe@2.0.0: {}
 
+  jpeg-js@0.4.4: {}
+
   jsdom@31.0.0:
     dependencies:
       '@exodus/bytes': 1.16.0
@@ -1822,6 +1839,12 @@ snapshots:
   keyv@5.6.0:
     dependencies:
       '@keyv/serialize': 1.1.1
+
+  ktx-parse@1.1.0: {}
+
+  ktx2-encoder@0.6.0:
+    dependencies:
+      ktx-parse: 1.1.0
 
   levn@0.4.1:
     dependencies:
