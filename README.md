@@ -49,11 +49,11 @@ pnpm exec playwright install chromium
 - Two endless highway modes: a curved procedural route with clothoid transitions, bounded curvature, elevation and banking, and a straight top-speed route. Both stream 160 m chunks with guardrails, lane markings and vegetation. The six-kilometre proving straight remains available as a legacy lesson.
 - Deterministic world seed, O(1) road tracking, bounded chunk caches and a streaming budget designed to hold 60 fps at 1080p on a mid-tier discrete GPU.
 - Cockpit, hood and exterior cameras, a dedicated exterior speed, gear, rpm and shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
-- CC0 five-door hatchback exterior with animated wheel pivots and a detailed cockpit interior. Top speed is physical, not clamped; an optional 200 km/h limiter is off by default.
+- CC0 five-door hatchback exterior with animated wheel pivots and a detailed cockpit interior. The performance reference revs to 9,000 rpm, runs 0-100 km/h in benchmark time and reaches beyond 500 km/h on the endless straight. An optional 500 km/h limiter is off by default.
 - Real CC0 asphalt, grass, gravel, rock, concrete and metal texture sets with 2K sources, local KTX2 runtime decoding and JPEG fallback.
 - Noto Sans-only interface with a redesigned settings surface, sentence-case labels, per-section resets, units, HUD scale, colorblind and reduced-motion support.
 - Web Audio engine, intake, wind, tire, starter, gearbox and stall sounds. Audio is synthesised; no unlicensed samples are bundled.
-- Lessons for moving off, hill starts, upshifts, braking, reverse parking and a launch-to-200-to-stop challenge; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
+- Lessons for moving off, hill starts, upshifts, braking, reverse parking, a 0-100 km/h sprint and a launch-to-200-to-stop challenge; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
 - Telemetry recording at 20 Hz, a live graph, JSON export and replay of the last 20 seconds.
 - Pause menu with lessons, settings, rebinding, input testing and diagnostics (frame rate, physics cost, catch-up, clutch state, wheel loads and surface).
 
@@ -108,7 +108,7 @@ Architecture and physics details are in [docs/architecture.md](docs/architecture
 
 ## Vehicle data and realism
 
-The bundled car is a Golf-class reference hatchback with a naturally aspirated four-cylinder, front-wheel drive, six-speed manual and open differential. The exterior is an original CC0 1990s five-door hatchback model from Grab3D (source and licence text are in `src/assets/LICENSE-hatchback.txt`), adapted with a metallic finish, animated wheel pivots and a full cockpit. It is not a licensed or exact replica of any production Volkswagen and contains no manufacturer logos or copyrighted assets. Every major parameter group carries a provenance tag in `src/data/reference-compact.json` (`measured`, `documented`, `estimated` or `unvalidated`). The configuration validator rejects invalid units, missing fields, non-monotonic ratios and impossible clamp geometry at startup with a readable error instead of starting a broken simulation.
+The bundled car starts from a reference hatchback shell and uses a performance-focused six-speed manual, front-wheel drive and open differential tune for the endless modes: 9,000 rpm, approximately 700 Nm, 0-100 km/h in benchmark time and a drag-limited top speed beyond 500 km/h. The exterior is an original CC0 1990s five-door hatchback model from Grab3D (source and licence text are in `src/assets/LICENSE-hatchback.txt`), adapted with a metallic finish, animated wheel pivots and a full cockpit. It is not a licensed or exact replica of any production Volkswagen and contains no manufacturer logos or copyrighted assets. The performance figures are gameplay calibration, not production-car measurements. Every major parameter group carries a provenance tag in `src/data/reference-compact.json` (`measured`, `documented`, `estimated` or `unvalidated`). The configuration validator rejects invalid units, missing fields, non-monotonic ratios and impossible clamp geometry at startup with a readable error instead of starting a broken simulation.
 
 The current tire, suspension and road-contact models are deliberately transparent approximations. They are calibratable and tested, but they are not a substitute for measured vehicle data. Known approximations and release gaps are listed in the physics and validation documents.
 
@@ -116,7 +116,7 @@ The current tire, suspension and road-contact models are deliberately transparen
 
 The test suite covers torque-curve interpolation, idle and stall behavior, clutch slip and heat, H-pattern movement, synchronizers and reverse lockout, driveline ratios, tire limits, suspension and steering, simulation-clock catch-up, configuration validation, telemetry buffers, keyboard safety and rebinding, deterministic simulation, hill rollback, hill holding, launches, braking, reverse and wet-surface stopping. Numerical tests repeat launches at 1/120, 1/250 and 1/500 second steps and check for finite state and bounded spread. A Playwright smoke test boots the production build, starts a session, selects first, launches and shifts to second.
 
-Run `pnpm test` for the deterministic tests, including a launch past 200 km/h with clutch-operated upshifts, a high-speed finite-state check and an endless-world stream test, and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md). Asset and algorithm citations are in [docs/references.md](docs/references.md).
+Run `pnpm test` for the deterministic tests, including a 0-100 km/h benchmark, a top-speed run beyond 500 km/h on the endless straight, high-speed finite-state checks and endless-world streaming, and `pnpm test:e2e` after installing Chromium. Validation results and current gaps are recorded in [docs/validation.md](docs/validation.md). Asset and algorithm citations are in [docs/references.md](docs/references.md).
 
 ## Performance
 
