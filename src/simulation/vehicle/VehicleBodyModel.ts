@@ -64,6 +64,13 @@ export class VehicleBodyModel {
         this.previous = { ...this.state };
     }
 
+    shiftPosition(x: number, y: number): void {
+        this.state.x += x;
+        this.state.y += y;
+        this.previous.x += x;
+        this.previous.y += y;
+    }
+
     step(dt: number, forces: BodyForces): void {
         const { state } = this;
         const forwardAccel =
