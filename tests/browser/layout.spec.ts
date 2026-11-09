@@ -23,12 +23,15 @@ test("keeps the session list, controls and settings inside the viewport", async 
         const shell = document.querySelector<HTMLElement>(".start-shell");
         return {
             gridScrollable: grid ? grid.scrollHeight > grid.clientHeight : false,
+            scrollbarVisible: !document.querySelector<HTMLElement>("[data-scenario-scrollbar]")
+                ?.hidden,
             shellWidth: shell?.getBoundingClientRect().width ?? 0,
             viewport: window.innerWidth,
             documentWidth: document.documentElement.scrollWidth,
         };
     });
     expect(startLayout.gridScrollable).toBe(true);
+    expect(startLayout.scrollbarVisible).toBe(true);
     expect(startLayout.shellWidth).toBeLessThanOrEqual(startLayout.viewport);
     expect(startLayout.documentWidth).toBeLessThanOrEqual(startLayout.viewport + 1);
     await page.screenshot({ path: "test-results/start-layout.png" });
@@ -69,8 +72,14 @@ test("keeps the session list, controls and settings inside the viewport", async 
             documentWidth: document.documentElement.scrollWidth,
             viewport: window.innerWidth,
             middleDots: document.body.innerText.includes("·"),
+            scrollHeight: main?.scrollHeight ?? 0,
+            clientHeight: main?.clientHeight ?? 0,
+            overflowY: main ? getComputedStyle(main).overflowY : "none",
+            scrollbarVisible: !document.querySelector<HTMLElement>("[data-scrollbar]")?.hidden,
         };
     });
+    expect(settingsLayout.scrollHeight).toBeGreaterThan(settingsLayout.clientHeight);
+    expect(settingsLayout.scrollbarVisible).toBe(true);
     expect(settingsLayout.gridWidth).toBeLessThanOrEqual(settingsLayout.mainWidth + 1);
     expect(settingsLayout.documentWidth).toBeLessThanOrEqual(settingsLayout.viewport + 1);
     expect(settingsLayout.middleDots).toBe(false);
