@@ -15,6 +15,7 @@ import {
     DynamicTexture,
     Engine,
     ImportMeshAsync,
+    MotionBlurPostProcess,
     Mesh,
     PBRMaterial,
     PointLight,
@@ -54,6 +55,7 @@ export class VehicleRenderer {
     private adaptiveLevel = 0;
     private lastSettings: UserSettings;
     private pipeline: DefaultRenderingPipeline | null = null;
+    private motionBlur: MotionBlurPostProcess | null = null;
     private readonly carRoot: TransformNode;
     private readonly exteriorCabin: TransformNode;
     private readonly cockpitGroup: TransformNode;
@@ -122,7 +124,9 @@ export class VehicleRenderer {
         this.scene.imageProcessingConfiguration.contrast = 1.14;
 
         this.environment = new EnvironmentBuilder(this.scene, road);
-        this.worldStreamer = world ? new WorldStreamer(this.scene, world, this.environment.shadows) : null;
+        this.worldStreamer = world
+            ? new WorldStreamer(this.scene, world, this.environment.shadows)
+            : null;
         this.setWorldMode("legacy");
         this.carRoot = new TransformNode("car-root", this.scene);
         this.exteriorCabin = new TransformNode("exterior-cabin", this.scene);
@@ -164,6 +168,10 @@ export class VehicleRenderer {
         this.pipeline.bloomWeight = 0.12;
         this.pipeline.bloomKernel = 32;
         this.pipeline.sharpenEnabled = false;
+        this.pipeline.chromaticAberrationEnabled = true;
+        this.pipeline.chromaticAberration.aberrationAmount = 6;
+        this.pipeline.grainEnabled = true;
+        this.pipeline.grain.intensity = 2.4;
         this.applySettings(settings);
         this.setCameraMode("cockpit");
         this.resizeHandler = () => this.engine.resize();
@@ -191,11 +199,40 @@ export class VehicleRenderer {
         );
         this.scene.shadowsEnabled = settings.shadows && this.adaptiveLevel < 2;
         if (this.pipeline) {
-            this.pipeline.bloomEnabled = settings.quality !== "low" && this.adaptiveLevel < 2;
+            this.pipeline.bloomEnabled =
+                settings.bloom && settings.quality !== "low" && this.adaptiveLevel < 2;
             this.pipeline.fxaaEnabled = true;
             this.pipeline.samples = settings.quality === "high" && this.adaptiveLevel === 0 ? 4 : 1;
+            this.pipeline.chromaticAberrationEnabled =
+                settings.quality === "high" && this.adaptiveLevel === 0;
+            this.pipeline.grainEnabled = settings.quality !== "low";
+        }
+        this.applyMotionBlur(
+            settings.motionBlur && settings.quality !== "low" && this.adaptiveLevel < 2,
+        );
+        const anisotropy =
+            settings.textureQuality === "low" ? 2 : settings.textureQuality === "medium" ? 4 : 8;
+        for (const texture of this.scene.textures) {
+            texture.anisotropicFilteringLevel = anisotropy;
         }
         this.cockpit.setFov(settings.fovDegrees);
+        this.cockpit.setShake(settings.cameraShake);
+    }
+
+    private applyMotionBlur(enabled: boolean): void {
+        if (enabled && !this.motionBlur) {
+            this.motionBlur = new MotionBlurPostProcess(
+                "speed-motion-blur",
+                this.scene,
+                1,
+                this.cockpit.camera,
+            );
+            this.motionBlur.motionStrength = 0.35;
+            this.motionBlur.motionBlurSamples = 12;
+        } else if (!enabled && this.motionBlur) {
+            this.motionBlur.dispose();
+            this.motionBlur = null;
+        }
     }
 
     setAdaptiveLevel(level: number): void {
@@ -211,6 +248,34 @@ export class VehicleRenderer {
 
     get activeWorldMode(): "legacy" | "endless" {
         return this.worldMode;
+    }
+
+    get worldDiagnostics(): {
+        material: string | null;
+        albedo: string | null;
+        albedoReady: boolean;
+        textures: number;
+        chunks: number;
+        roadMaterial: string | null;
+        terrainMaterial: string | null;
+        roadVertices: number;
+        terrainVertices: number;
+    } {
+        const material = this.scene.getMaterialByName("endless-asphalt") as PBRMaterial | null;
+        const albedo = material?.albedoTexture ?? null;
+        const road = this.scene.getMeshByName("endless-road");
+        const terrain = this.scene.getMeshByName("endless-terrain");
+        return {
+            material: material?.name ?? null,
+            albedo: albedo?.name ?? null,
+            albedoReady: albedo?.isReady() ?? false,
+            textures: this.scene.textures.length,
+            chunks: this.worldStreamer?.activeChunks ?? 0,
+            roadMaterial: road?.material?.name ?? null,
+            terrainMaterial: terrain?.material?.name ?? null,
+            roadVertices: road?.getTotalVertices() ?? 0,
+            terrainVertices: terrain?.getTotalVertices() ?? 0,
+        };
     }
 
     setWorldMode(mode: "legacy" | "endless"): void {
