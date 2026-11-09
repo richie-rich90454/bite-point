@@ -1,8 +1,6 @@
 # Environment asset provenance
 
-The following original Poly Haven assets are redistributed under CC0 1.0 Universal:
-https://creativecommons.org/publicdomain/zero/1.0/
-Poly Haven's asset license: https://polyhaven.com/license
+The following original Poly Haven assets are redistributed under CC0 1.0 Universal: https://creativecommons.org/publicdomain/zero/1.0/ Poly Haven's asset license: https://polyhaven.com/license
 
 ## Photographic sky
 

@@ -38,12 +38,12 @@ Each gate entry defines `gear`, `gate` and `slot`, where slot `-1` is the forwar
 
 Tags describe the evidence behind a value:
 
-| Tag | Meaning |
-| --- | --- |
-| `measured` | Derived from direct measurement on the reference vehicle or component |
-| `documented` | Obtained from a reliable technical source |
-| `estimated` | Approximated from related information |
-| `unvalidated` | Awaiting evidence |
+| Tag           | Meaning                                                               |
+| ------------- | --------------------------------------------------------------------- |
+| `measured`    | Derived from direct measurement on the reference vehicle or component |
+| `documented`  | Obtained from a reliable technical source                             |
+| `estimated`   | Approximated from related information                                 |
+| `unvalidated` | Awaiting evidence                                                     |
 
 Anything missing from the provenance map defaults to `unvalidated`. The validator warns when required key parameters have no explicit tag. The current reference car uses mostly `estimated` and `documented` values; no claim of production-car accuracy is made.
 

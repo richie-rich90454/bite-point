@@ -2,21 +2,21 @@ name: Feature or simulation improvement
 description: Propose an improvement with a concrete driving use case.
 labels: [enhancement]
 body:
-  - type: textarea
-    id: problem
-    attributes:
-      label: What should improve?
-      description: Describe the driving or learning problem, rather than only a proposed feature.
-    validations:
-      required: true
-  - type: textarea
-    id: proposal
-    attributes:
-      label: Proposed behavior
-    validations:
-      required: true
-  - type: textarea
-    id: validation
-    attributes:
-      label: How can we validate it?
-      description: For physics changes, include primary references, measurements, units and test conditions when available.
+    - type: textarea
+      id: problem
+      attributes:
+          label: What should improve?
+          description: Describe the driving or learning problem, rather than only a proposed feature.
+      validations:
+          required: true
+    - type: textarea
+      id: proposal
+      attributes:
+          label: Proposed behavior
+      validations:
+          required: true
+    - type: textarea
+      id: validation
+      attributes:
+          label: How can we validate it?
+          description: For physics changes, include primary references, measurements, units and test conditions when available.

@@ -2,28 +2,28 @@ name: Bug report
 description: Report a reproducible driving, graphics, input or interface problem.
 labels: [bug]
 body:
-  - type: textarea
-    id: reproduce
-    attributes:
-      label: Reproduction steps
-      description: Include the lesson, control device, exact inputs and what happened.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected behavior
-    validations:
-      required: true
-  - type: textarea
-    id: environment
-    attributes:
-      label: Environment
-      description: OS, browser version, GPU, graphics quality, render scale and controller.
-    validations:
-      required: true
-  - type: textarea
-    id: evidence
-    attributes:
-      label: Evidence
-      description: Attach screenshots, console errors or exported telemetry JSON. Remove personal information first.
+    - type: textarea
+      id: reproduce
+      attributes:
+          label: Reproduction steps
+          description: Include the lesson, control device, exact inputs and what happened.
+      validations:
+          required: true
+    - type: textarea
+      id: expected
+      attributes:
+          label: Expected behavior
+      validations:
+          required: true
+    - type: textarea
+      id: environment
+      attributes:
+          label: Environment
+          description: OS, browser version, GPU, graphics quality, render scale and controller.
+      validations:
+          required: true
+    - type: textarea
+      id: evidence
+      attributes:
+          label: Evidence
+          description: Attach screenshots, console errors or exported telemetry JSON. Remove personal information first.

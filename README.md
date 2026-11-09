@@ -1,7 +1,6 @@
 # Bite Point
 
-[![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
+[![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
 
 **Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, hill-start lessons and a six-kilometre proving straight.
 
@@ -54,22 +53,22 @@ pnpm exec playwright install chromium
 
 ## Default controls
 
-| Key | Action |
-| --- | --- |
-| `W` / `S` | Accelerator / brake |
-| `A` / `D` | Steer left / right |
-| `Z` / `X` | Depress / release the clutch |
-| `Enter` | Grab or release the gear lever |
-| Arrow keys | Move the lever through the current gate / neutral corridor |
-| `N` / `R` | Request neutral / reverse (reverse remains subject to lockout) |
-| `Space` | Handbrake while held |
-| `I` / `K` | Ignition toggle / starter while held |
-| `C` / `Home` | Cycle camera / recenter view |
-| `F` / `G` | Headlights / wipers |
-| `Tab` / `F1` / `F2` | Telemetry / help / instructor |
-| `Esc` | Cancel lever interaction, close a dialog or pause |
-| Hold `Backspace` | Recover a stopped vehicle to the start of the session |
-| `1`–`6` | Quick-select gears only when enabled in Settings |
+| Key                 | Action                                                         |
+| ------------------- | -------------------------------------------------------------- |
+| `W` / `S`           | Accelerator / brake                                            |
+| `A` / `D`           | Steer left / right                                             |
+| `Z` / `X`           | Depress / release the clutch                                   |
+| `Enter`             | Grab or release the gear lever                                 |
+| Arrow keys          | Move the lever through the current gate / neutral corridor     |
+| `N` / `R`           | Request neutral / reverse (reverse remains subject to lockout) |
+| `Space`             | Handbrake while held                                           |
+| `I` / `K`           | Ignition toggle / starter while held                           |
+| `C` / `Home`        | Cycle camera / recenter view                                   |
+| `F` / `G`           | Headlights / wipers                                            |
+| `Tab` / `F1` / `F2` | Telemetry / help / instructor                                  |
+| `Esc`               | Cancel lever interaction, close a dialog or pause              |
+| Hold `Backspace`    | Recover a stopped vehicle to the start of the session          |
+| `1`–`6`             | Quick-select gears only when enabled in Settings               |
 
 All bindings can be changed in **Pause → Controls**. The H-pattern is the default because it teaches the actual gate layout: `1` is left-forward, `2` left-rear, `3` centre-forward, `4` centre-rear, `5` right-forward and `6` right-rear. Neutral is the horizontal corridor.
 
