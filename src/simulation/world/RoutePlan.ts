@@ -1,3 +1,4 @@
+// Curvature transitions use the Euler-spiral/clothoid principle from [R3].
 import { clamp, smoothstep } from "../core/MathUtils";
 import { hashSeed, mulberry32 } from "./SeededNoise";
 import type { RouteKind, RouteSegment, SurfaceKind } from "./WorldTypes";
