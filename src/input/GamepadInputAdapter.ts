@@ -1,4 +1,5 @@
 import { clamp } from "../simulation/core/MathUtils";
+import type { ClutchAxis } from "../settings/SettingsRepository";
 
 export interface GamepadSnapshot {
     connected: boolean;
@@ -49,11 +50,26 @@ const EMPTY_SNAPSHOT: GamepadSnapshot = {
 export class GamepadInputAdapter {
     private previousButtons: boolean[] = [];
     private wasConnected = false;
+    private enabled = true;
+    private clutchAxisMode: ClutchAxis = "auto";
     lastDisconnected = false;
 
     constructor(private readonly deadzone = 0.08) {}
 
+    setClutchAxisMode(mode: ClutchAxis): void {
+        this.clutchAxisMode = mode;
+    }
+
+    setEnabled(enabled: boolean): void {
+        this.enabled = enabled;
+        if (!enabled) {
+            this.wasConnected = false;
+            this.previousButtons = [];
+        }
+    }
+
     update(): GamepadSnapshot {
+        if (!this.enabled) return { ...EMPTY_SNAPSHOT };
         const pads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
         let pad: Gamepad | null = null;
         for (const candidate of pads) {
@@ -82,13 +98,23 @@ export class GamepadInputAdapter {
         let throttleAxis = 0;
         let brakeAxis = 0;
         let clutchAxis: number | null = null;
+        const leftTrigger = pad.buttons[6]?.value ?? 0;
+        const rightTrigger = pad.buttons[7]?.value ?? 0;
         if (isWheel) {
-            clutchAxis = clamp(axes[1] ?? 0, 0, 1);
+            if (this.clutchAxisMode === "leftTrigger") {
+                clutchAxis = clamp(axes[4] ?? leftTrigger, 0, 1);
+            } else if (this.clutchAxisMode === "rightTrigger") {
+                clutchAxis = clamp(axes[5] ?? rightTrigger, 0, 1);
+            } else {
+                clutchAxis = clamp(axes[1] ?? 0, 0, 1);
+            }
             throttleAxis = clamp(axes[2] ?? 0, 0, 1);
             brakeAxis = clamp(axes[3] ?? 0, 0, 1);
         } else {
-            throttleAxis = pad.buttons[7] ? pad.buttons[7].value : 0;
-            brakeAxis = pad.buttons[6] ? pad.buttons[6].value : 0;
+            throttleAxis = rightTrigger;
+            brakeAxis = leftTrigger;
+            if (this.clutchAxisMode === "leftTrigger") clutchAxis = leftTrigger;
+            else if (this.clutchAxisMode === "rightTrigger") clutchAxis = rightTrigger;
         }
 
         const snapshot: GamepadSnapshot = {
