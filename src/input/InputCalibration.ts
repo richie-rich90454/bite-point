@@ -2,6 +2,10 @@ import { clamp01 } from "../simulation/core/MathUtils";
 
 export interface CalibrationSettings {
     deadzone: number;
+    steeringDeadzone?: number;
+    throttleDeadzone?: number;
+    brakeDeadzone?: number;
+    clutchDeadzone?: number;
     throttleExponent: number;
     brakeExponent: number;
     clutchExponent: number;
@@ -19,32 +23,41 @@ export const DEFAULT_CALIBRATION: CalibrationSettings = {
 export class InputCalibration {
     constructor(private settings: CalibrationSettings = { ...DEFAULT_CALIBRATION }) {}
 
-    private applyDeadzone(value: number): number {
+    private applyDeadzone(value: number, deadzone = this.settings.deadzone): number {
         const magnitude = Math.abs(value);
-        if (magnitude <= this.settings.deadzone) return 0;
-        return (
-            Math.sign(value) *
-            clamp01((magnitude - this.settings.deadzone) / (1 - this.settings.deadzone))
-        );
+        if (magnitude <= deadzone) return 0;
+        return Math.sign(value) * clamp01((magnitude - deadzone) / (1 - deadzone));
     }
 
     throttle(value: number): number {
-        const normalized = this.applyDeadzone(clamp01(value));
+        const normalized = this.applyDeadzone(
+            clamp01(value),
+            this.settings.throttleDeadzone ?? this.settings.deadzone,
+        );
         return Math.pow(normalized, this.settings.throttleExponent);
     }
 
     brake(value: number): number {
-        const normalized = this.applyDeadzone(clamp01(value));
+        const normalized = this.applyDeadzone(
+            clamp01(value),
+            this.settings.brakeDeadzone ?? this.settings.deadzone,
+        );
         return Math.pow(normalized, this.settings.brakeExponent);
     }
 
     clutch(value: number): number {
-        const normalized = this.applyDeadzone(clamp01(value));
+        const normalized = this.applyDeadzone(
+            clamp01(value),
+            this.settings.clutchDeadzone ?? this.settings.deadzone,
+        );
         return Math.pow(normalized, this.settings.clutchExponent);
     }
 
     steering(value: number): number {
-        const normalized = this.applyDeadzone(Math.max(-1, Math.min(1, value)));
+        const normalized = this.applyDeadzone(
+            Math.max(-1, Math.min(1, value)),
+            this.settings.steeringDeadzone ?? this.settings.deadzone,
+        );
         return (
             Math.sign(normalized) * Math.pow(Math.abs(normalized), this.settings.steeringExponent)
         );
