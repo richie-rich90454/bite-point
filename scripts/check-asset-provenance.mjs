@@ -10,9 +10,25 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const assetsDir = join(root, "src", "assets");
 const registryPath = join(assetsDir, "assets.json");
 const runtimeExtensions = new Set([
-    ".jpg", ".jpeg", ".png", ".ktx2", ".glb", ".gltf", ".hdr", ".exr",
-    ".woff", ".woff2", ".ttf", ".otf",
-    ".ogg", ".mp3", ".wav", ".m4a", ".flac",
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".ktx2",
+    ".glb",
+    ".gltf",
+    ".hdr",
+    ".exr",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+    ".ogg",
+    ".mp3",
+    ".wav",
+    ".m4a",
+    ".flac",
+    ".js",
+    ".wasm",
 ]);
 
 const toRepoPath = (absolute) => relative(root, absolute).split(sep).join("/");
@@ -65,7 +81,9 @@ for (const entry of entries) {
 
 if (errors.length > 0) {
     console.error(errors.join("\n"));
-    console.error(`\n${errors.length} provenance error(s) across ${files.length} runtime asset(s).`);
+    console.error(
+        `\n${errors.length} provenance error(s) across ${files.length} runtime asset(s).`,
+    );
     process.exit(1);
 }
 
