@@ -742,16 +742,35 @@ button {
     margin-bottom: 8px;
 }
 
+.scenario-scroll {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
 .scenario-grid {
     display: flex;
     flex: 1 1 auto;
     flex-direction: column;
     min-height: 0;
     margin-top: 0;
-    overflow-y: auto;
+    overflow-y: scroll;
     overscroll-behavior: contain;
-    padding-right: 8px;
+    padding-right: 18px;
     counter-reset: session;
+    scrollbar-width: none;
+}
+
+.scenario-grid::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.scenario-scrollbar {
+    top: 0;
+    bottom: 0;
+    right: 2px;
 }
 
 .scenario-option {
@@ -839,10 +858,10 @@ button {
 .pause-shell {
     position: relative;
     width: min(1120px, 100%);
-    min-height: min(700px, 87vh);
-    max-height: 89vh;
+    height: min(760px, 89vh);
     display: grid;
     grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -909,11 +928,49 @@ button {
 .pause-main {
     min-width: 0;
     min-height: 0;
-    padding: 32px 40px;
+    padding: 32px 44px 32px 40px;
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: scroll;
     overscroll-behavior: contain;
-    scrollbar-gutter: stable;
+    scrollbar-width: none;
+}
+
+.pause-main::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.custom-scrollbar {
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    bottom: 10px;
+    z-index: 3;
+    width: 10px;
+    border-radius: 5px;
+    background: #0b0e10;
+    opacity: 0;
+    transition: opacity 120ms var(--ease);
+}
+
+.custom-scrollbar:not([hidden]) {
+    opacity: 1;
+}
+
+.custom-scrollbar-thumb {
+    position: absolute;
+    left: 1px;
+    width: 8px;
+    min-height: 32px;
+    border-radius: 4px;
+    background: #8b959b;
+    cursor: grab;
+    touch-action: none;
+}
+
+.custom-scrollbar-thumb:active {
+    cursor: grabbing;
+    background: #c3cbd0;
 }
 
 .pause-content {
@@ -1412,8 +1469,7 @@ button {
 }
 
 * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
+    scrollbar-color: var(--border-strong) var(--surface-sunken);
 }
 
 *::-webkit-scrollbar {
@@ -1490,7 +1546,7 @@ button {
     }
     .pause-shell {
         grid-template-columns: minmax(0, 1fr);
-        max-height: 92vh;
+        height: min(760px, 92vh);
     }
     .pause-main {
         padding: 20px;

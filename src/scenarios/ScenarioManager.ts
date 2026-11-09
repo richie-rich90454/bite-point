@@ -56,10 +56,24 @@ const failOnStall = (context: ScenarioUpdate): ScenarioResult | null => {
     return null;
 };
 
+const endlessUpdate = (context: ScenarioUpdate): ScenarioResult => {
+    const projected = context.sim.road.project(context.state.pose.x, context.state.pose.y);
+    const distance = projected ? Math.abs(projected.s) : Math.max(0, context.state.pose.x);
+    const speed = context.stats.maxSpeedMps * 3.6;
+    return {
+        status: "running",
+        progress: Math.min(0.99, distance / 50_000),
+        message:
+            speed > 200
+                ? `Top speed ${speed.toFixed(0)} km/h. The road is still going.`
+                : undefined,
+    };
+};
+
 export const SCENARIOS: ScenarioDefinition[] = [
     {
         id: "endless",
-        title: "Endless run",
+        title: "Endless curves",
         description:
             "An endless procedural highway with sweeping curves, changing terrain and no artificial speed ceiling. Build speed, hold a gear and keep driving.",
         instructions: [
@@ -69,19 +83,21 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "There is no finish line and no artificial speed cap.",
         ],
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
-        update: (context) => {
-            const projected = context.sim.road.project(context.state.pose.x, context.state.pose.y);
-            const distance = projected ? Math.abs(projected.s) : Math.max(0, context.state.pose.x);
-            const speed = context.stats.maxSpeedMps * 3.6;
-            return {
-                status: "running",
-                progress: Math.min(0.99, distance / 50_000),
-                message:
-                    speed > 200
-                        ? `Top speed ${speed.toFixed(0)} km/h. The road is still going.`
-                        : undefined,
-            };
-        },
+        update: endlessUpdate,
+    },
+    {
+        id: "endless-straight",
+        title: "Endless straight",
+        description:
+            "An endless straight highway for top-speed runs, gearing checks and long manual-transmission drives. No finish line and no speed cap.",
+        instructions: [
+            "The car starts in first gear on an open straight.",
+            "Shift through the gearbox and hold top gear.",
+            "The road never ends and the speed limit is physical.",
+            "Use the curved mode when you want corners.",
+        ],
+        start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
+        update: endlessUpdate,
     },
     {
         id: "free-drive",

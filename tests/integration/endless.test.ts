@@ -65,6 +65,25 @@ describe("endless world driving", () => {
         expect(Number.isFinite(sim.body.state.vx)).toBe(true);
     });
 
+    it("keeps a high-speed steering input predictable", () => {
+        const { sim } = makeEndlessSimulation();
+        sim.stabilityAssist = true;
+        sim.body.state.vx = 25;
+        sim.wheels.forEach((wheel) => {
+            wheel.omega = 25 / sim.config.wheelRadiusM;
+        });
+        sim.selectGearDirect(4);
+        stepFor(sim, 3, () => ({
+            ...baseControls(),
+            steering: 0.25,
+            throttle: 0.2,
+        }));
+        expect(Math.abs(sim.body.state.yawRate)).toBeLessThan(1.8);
+        expect(Math.abs(sim.body.state.vy)).toBeLessThan(6);
+        expect(Number.isFinite(sim.body.state.yawRate)).toBe(true);
+        expect(Number.isFinite(sim.body.state.vy)).toBe(true);
+    });
+
     it("pushes the car back inside the guardrails", () => {
         const { sim } = makeEndlessSimulation();
         sim.body.state.y = 20;

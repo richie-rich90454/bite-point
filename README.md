@@ -46,9 +46,9 @@ pnpm exec playwright install chromium
 - Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
 - Photographic HDR sky and image-based lighting, plus scanned PBR asphalt with normal and packed occlusion/roughness maps. CC0 assets from Poly Haven are bundled locally.
 - Four-sample MSAA on High quality, FXAA at every quality level, device-pixel-aware render resolution, 16× road texture filtering and stabilized cascaded shadows on supported hardware. Authored vehicle textures are preserved.
-- Endless procedural highway with clothoid transitions, bounded curvature, elevation, banking, biomes, guardrails, lane markings, vegetation and streamed 160 m chunks. The six-kilometre proving straight remains available as a legacy lesson.
+- Two endless highway modes: a curved procedural route with clothoid transitions, bounded curvature, elevation and banking, and a straight top-speed route. Both stream 160 m chunks with guardrails, lane markings and vegetation. The six-kilometre proving straight remains available as a legacy lesson.
 - Deterministic world seed, O(1) road tracking, bounded chunk caches and a streaming budget designed to hold 60 fps at 1080p on a mid-tier discrete GPU.
-- Cockpit, hood and exterior cameras, a dedicated exterior speed/gear/RPM/shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
+- Cockpit, hood and exterior cameras, a dedicated exterior speed, gear, rpm and shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
 - CC0 five-door hatchback exterior with animated wheel pivots and a detailed cockpit interior. Top speed is physical, not clamped; an optional 200 km/h limiter is off by default.
 - Real CC0 asphalt, grass, gravel, rock, concrete and metal texture sets with 2K sources, local KTX2 runtime decoding and JPEG fallback.
 - Noto Sans-only interface with a redesigned settings surface, sentence-case labels, per-section resets, units, HUD scale, colorblind and reduced-motion support.

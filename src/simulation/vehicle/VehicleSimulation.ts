@@ -321,13 +321,21 @@ export class VehicleSimulation {
             this.suspensionRear.compressionForLoad(this.wheelLoads[3]),
         ];
 
-        const totalDriveTorque = this.driveline.totalWheelDriveTorque(
-            clutchResult.mode === "locked" && this.gearbox.gear !== 0
-                ? this.lastEngineResult.torqueNm
-                : clutchResult.torqueNm,
-            ratio,
-            this.gearbox.torqueFactor,
+        const drivenSlip = Math.max(
+            Math.abs(this.wheels[0].slipRatio),
+            Math.abs(this.wheels[1].slipRatio),
         );
+        const tractionScale = this.stabilityAssist
+            ? clamp(1 - (drivenSlip - 0.08) * 4, 0.25, 1)
+            : 1;
+        const totalDriveTorque =
+            this.driveline.totalWheelDriveTorque(
+                clutchResult.mode === "locked" && this.gearbox.gear !== 0
+                    ? this.lastEngineResult.torqueNm
+                    : clutchResult.torqueNm,
+                ratio,
+                this.gearbox.torqueFactor,
+            ) * tractionScale;
         const [leftDrive, rightDrive] = this.differential.distribute(totalDriveTorque);
         const yawRate = this.body.state.yawRate;
         const halfTrack = this.config.trackM / 2;
@@ -396,12 +404,16 @@ export class VehicleSimulation {
         );
 
         const slipAngle = Math.atan2(this.body.state.vy, Math.max(speedMagnitude, 1));
-        const slide = clamp((Math.abs(slipAngle) - 0.08) * 2.5, 0, 1);
+        const slide = clamp((Math.abs(slipAngle) - 0.035) * 4, 0, 1);
+        const kinematicYaw = (this.body.state.vx / this.config.wheelbaseM) * Math.tan(steerAngle);
+        const yawTargetError = this.body.state.yawRate - kinematicYaw;
+        const yawHold = clamp(speedMagnitude / 16, 0, 1);
         const stabilityLateralN = this.stabilityAssist
-            ? -this.body.state.vy * this.config.massKg * 2.4 * slide
+            ? -this.body.state.vy * this.config.massKg * 3.8 * slide
             : 0;
         const stabilityYawNm = this.stabilityAssist
-            ? -this.body.state.yawRate * this.config.massKg * 0.9 * slide
+            ? -this.body.state.yawRate * this.config.massKg * 2 * slide -
+              clamp(yawTargetError, -1.2, 1.2) * this.config.massKg * 0.9 * yawHold
             : 0;
         const yawMoment =
             a * combinedFront.lateral * Math.cos(effectiveSteer) -

@@ -1,7 +1,7 @@
 // Curvature transitions use the Euler-spiral/clothoid principle from [R3].
 import { clamp, smoothstep } from "../core/MathUtils";
 import { hashSeed, mulberry32 } from "./SeededNoise";
-import type { RouteKind, RouteSegment, SurfaceKind } from "./WorldTypes";
+import type { RouteKind, RouteMode, RouteSegment, SurfaceKind } from "./WorldTypes";
 
 export const TUTORIAL_START = -400;
 export const TUTORIAL_END = 400;
@@ -25,6 +25,7 @@ const KINDS_B: readonly RouteKind[] = ["industrial", "tunnel", "bridge", "city",
 
 const THEME_BY_KIND: Record<RouteKind, string> = {
     tutorial: "proving",
+    straight: "proving",
     sweep: "coast",
     esses: "alpine",
     climb: "mountain",
@@ -97,22 +98,43 @@ export class RoutePlan {
     private positive: RouteSegmentState[] = [];
     private negative: RouteSegmentState[] = [];
 
-    constructor(seed: number, gradeAt: (s: number) => number) {
+    constructor(
+        seed: number,
+        gradeAt: (s: number) => number,
+        readonly mode: RouteMode = "curved",
+    ) {
         this.seed = seed >>> 0;
         this.gradeAt = gradeAt;
         this.tutorial = this.createTutorialState();
+        this.straight = {
+            index: 0,
+            kind: "straight",
+            sStart: Number.NEGATIVE_INFINITY,
+            sEnd: Number.POSITIVE_INFINITY,
+            curvature: 0,
+            grade: 0,
+            bankRad: 0,
+            halfWidthM: 7,
+            surface: "asphalt",
+            theme: THEME_BY_KIND.straight,
+        };
     }
 
+    private readonly straight: RouteSegment;
+
     segmentAt(s: number): RouteSegment {
+        if (this.mode === "straight") return this.straight;
         return this.stateFor(s).segment;
     }
 
     curvatureAt(s: number): number {
+        if (this.mode === "straight") return 0;
         const state = this.stateFor(s);
         return curvatureAtDistance(state, s - state.segment.sStart);
     }
 
     stateAt(s: number): RoutePoint {
+        if (this.mode === "straight") return { x: s, y: 0, heading: 0 };
         const state = this.stateFor(s);
         const total = s - state.segment.sStart;
         let x = state.startX;

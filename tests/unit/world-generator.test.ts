@@ -129,4 +129,14 @@ describe("world generator", () => {
         }
         expect(maxGrade).toBeLessThanOrEqual(0.09 + 1e-12);
     });
+
+    it("keeps the straight mode on the x axis", () => {
+        const world = new WorldGenerator(321, "straight");
+        for (const s of [-5000, -400, 0, 400, 5000, 50_000]) {
+            const sample = world.sample(s);
+            expect(sample.x).toBeCloseTo(s, 6);
+            expect(sample.y).toBeCloseTo(0, 6);
+            expect(sample.heading).toBeCloseTo(0, 6);
+        }
+    });
 });
