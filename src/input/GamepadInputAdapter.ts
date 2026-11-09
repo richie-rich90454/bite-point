@@ -113,8 +113,6 @@ export class GamepadInputAdapter {
         } else {
             throttleAxis = rightTrigger;
             brakeAxis = leftTrigger;
-            if (this.clutchAxisMode === "leftTrigger") clutchAxis = leftTrigger;
-            else if (this.clutchAxisMode === "rightTrigger") clutchAxis = rightTrigger;
         }
 
         const snapshot: GamepadSnapshot = {
