@@ -7,7 +7,7 @@ test("selects the proving lesson and uses sans-serif instruments", async ({ page
     page.on("pageerror", (error) => errors.push(error.message));
     await page.addInitScript(() => {
         localStorage.setItem(
-            "bite-point.settings.v1",
+            "bite-point.settings.v2",
             JSON.stringify({
                 quality: "low",
                 renderScale: 0.5,
@@ -21,7 +21,7 @@ test("selects the proving lesson and uses sans-serif instruments", async ({ page
     const font = await page
         .locator("h1")
         .evaluate((element) => getComputedStyle(element).fontFamily);
-    expect(font).toContain("sans-serif");
+    expect(font).toContain("Noto Sans");
     expect(font).not.toMatch(/Georgia|Bodoni|Didot|Palatino|Baskerville/);
     await page.locator('[data-scenario-card="proving-run"]').click();
     await page.locator('[data-ui="start"]').click();
