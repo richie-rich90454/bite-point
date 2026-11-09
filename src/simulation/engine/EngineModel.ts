@@ -79,6 +79,7 @@ export class EngineModel {
     running = false;
     cranking = false;
     fuelCut = false;
+    antiStallAssist = true;
     private ignitionWasOn = false;
     private stallFlag = false;
 
@@ -102,7 +103,9 @@ export class EngineModel {
         this.cranking = control.ignition && control.starter && !this.running;
         const rpm = this.rpm;
         const idleThrottle = this.idle.update(rpm, this.running, throttle, dt);
-        const effectiveThrottle = Math.max(throttle, idleThrottle);
+        const stallAssist =
+            this.antiStallAssist && this.running && rpm < this.params.idleRpm * 0.9 ? 0.35 : 0;
+        const effectiveThrottle = Math.max(throttle, idleThrottle, stallAssist);
 
         if (this.running && rpm >= this.params.redlineRpm) this.fuelCut = true;
         if (!this.running) this.fuelCut = false;
