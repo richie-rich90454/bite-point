@@ -1,3 +1,4 @@
+// Gradient noise and fBm follow Perlin [R1] and Gustavson [R2].
 const FBM_OCTAVES = 4;
 
 export function mulberry32(seed: number): () => number {
