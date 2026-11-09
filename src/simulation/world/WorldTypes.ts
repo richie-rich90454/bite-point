@@ -1,7 +1,10 @@
 export type SurfaceKind = "asphalt" | "gravel" | "grass" | "dirt" | "snow" | "wet";
 
+export type RouteMode = "curved" | "straight";
+
 export type RouteKind =
     | "tutorial"
+    | "straight"
     | "sweep"
     | "esses"
     | "climb"
