@@ -1,6 +1,7 @@
 import { Mesh, Scene, TransformNode, VertexData } from "../babylon";
 import type { WorldGenerator } from "../../simulation/world/WorldGenerator";
 import type { WorldMaterials } from "./WorldMaterials";
+import { ThemeBuilder } from "./ThemeBuilder";
 
 const TERRAIN_LATERALS = [-110, -78, -52, -34, -22, -14, -9, 0, 9, 14, 22, 34, 52, 78, 110];
 const ROAD_FRACTIONS = [-1, -0.5, 0, 0.5, 1];
@@ -20,9 +21,13 @@ export class WorldChunk {
         const rows = 20;
         this.buildRoad(startS, rows);
         this.buildMarkings(startS, rows);
+        this.buildShoulders(startS, rows);
         this.buildTerrain(startS, rows);
-        this.buildRails(startS, rows);
-        this.buildProps(startS);
+        const theme = this.world.sample(startS + lengthM * 0.5).segment.theme;
+        if (theme !== "city" && theme !== "bridge" && theme !== "tunnel") {
+            this.buildRails(startS, rows);
+        }
+        new ThemeBuilder(scene, world, materials, this.root, index, startS, lengthM).build(theme);
     }
 
     dispose(): void {
@@ -77,9 +82,9 @@ export class WorldChunk {
             for (let row = 0; row <= rows; row += 1) {
                 const s = startS + (row / rows) * this.lengthM;
                 const road = this.world.sample(s);
-                const edge = side * (road.halfWidthM - 0.3);
-                addVertex(s, edge - 0.075);
-                addVertex(s, edge + 0.075);
+                const edge = side * (road.halfWidthM - 0.35);
+                addVertex(s, edge - 0.1);
+                addVertex(s, edge + 0.1);
             }
             for (let row = 0; row < rows; row += 1) {
                 const a = base + row * 2;
@@ -103,6 +108,41 @@ export class WorldChunk {
         mesh.material = this.materials.markings;
         mesh.receiveShadows = false;
         mesh.isPickable = false;
+    }
+
+    private buildShoulders(startS: number, rows: number): void {
+        const offsets = [0.02, 1.2, 2.4, 3];
+        for (const side of [-1, 1]) {
+            const positions: number[] = [];
+            const uvs: number[] = [];
+            const indices: number[] = [];
+            for (let row = 0; row <= rows; row += 1) {
+                const s = startS + (row / rows) * this.lengthM;
+                const road = this.world.sample(s);
+                for (const offset of offsets) {
+                    const lateral = side * (road.halfWidthM + offset);
+                    const terrain = this.world.sampleAt(s, lateral);
+                    const x = road.x + road.normalX * lateral;
+                    const y = road.y + road.normalY * lateral;
+                    positions.push(y, terrain.heightM + 0.004, x);
+                    uvs.push(lateral / 4, s / 4);
+                }
+            }
+            const columns = offsets.length;
+            for (let row = 0; row < rows; row += 1) {
+                for (let column = 0; column < columns - 1; column += 1) {
+                    const a = row * columns + column;
+                    const b = a + 1;
+                    const c = a + columns;
+                    const d = c + 1;
+                    indices.push(a, b, c, b, d, c);
+                }
+            }
+            const mesh = this.buildMesh(`endless-shoulder-${side}`, positions, uvs, indices);
+            mesh.material = this.materials.shoulder;
+            mesh.receiveShadows = true;
+            mesh.isPickable = false;
+        }
     }
 
     private buildTerrain(startS: number, rows: number): void {
@@ -163,58 +203,6 @@ export class WorldChunk {
             mesh.material = this.materials.rail;
             mesh.receiveShadows = true;
             mesh.isPickable = false;
-        }
-    }
-
-    private buildProps(startS: number): void {
-        let seed = (this.index * 2654435761 + 1013904223) >>> 0;
-        const random = (): number => {
-            seed = (1664525 * seed + 1013904223) >>> 0;
-            return seed / 4294967296;
-        };
-        const road = this.world.sample(startS + this.lengthM * 0.5);
-        const theme = road.segment.theme;
-        const dense = theme === "forest" || theme === "coast" || theme === "climb";
-        const count = dense ? 14 : 7;
-        for (let index = 0; index < count; index += 1) {
-            const side = random() < 0.5 ? -1 : 1;
-            const s = startS + random() * this.lengthM;
-            const lateral = side * (road.halfWidthM + 6 + random() * 44);
-            const terrain = this.world.sampleAt(s, lateral);
-            const center = this.world.sample(s);
-            const x = center.x + center.normalX * lateral;
-            const y = center.y + center.normalY * lateral;
-            const height = 4.5 + random() * 5;
-            const trunk = this.materials.treeTrunk.createInstance(`trunk-${this.index}-${index}`);
-            trunk.position.set(y, terrain.heightM + height * 0.5, x);
-            trunk.scaling.y = height / 5;
-            trunk.rotation.y = random() * Math.PI * 2;
-            trunk.parent = this.root;
-            const canopy = this.materials.treeCanopy.createInstance(
-                `canopy-${this.index}-${index}`,
-            );
-            canopy.position.set(y, terrain.heightM + height + 1.1, x);
-            canopy.scaling.y = height / 5.5;
-            canopy.scaling.x = 0.8 + random() * 0.5;
-            canopy.scaling.z = canopy.scaling.x;
-            canopy.rotation.y = random() * Math.PI * 2;
-            canopy.parent = this.root;
-        }
-        const rockCount = 2 + Math.floor(random() * 3);
-        for (let index = 0; index < rockCount; index += 1) {
-            const side = random() < 0.5 ? -1 : 1;
-            const s = startS + random() * this.lengthM;
-            const lateral = side * (road.halfWidthM + 3 + random() * 26);
-            const terrain = this.world.sampleAt(s, lateral);
-            const center = this.world.sample(s);
-            const x = center.x + center.normalX * lateral;
-            const y = center.y + center.normalY * lateral;
-            const rock = this.materials.rock.createInstance(`rock-${this.index}-${index}`);
-            const scale = 0.6 + random() * 1.8;
-            rock.position.set(y, terrain.heightM + scale * 0.4, x);
-            rock.scaling.set(scale, scale * 0.7, scale);
-            rock.rotation.y = random() * Math.PI * 2;
-            rock.parent = this.root;
         }
     }
 
