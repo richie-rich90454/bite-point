@@ -14,6 +14,9 @@ export class CockpitController {
     private baseFovDegrees = 62;
     private shakeAmount = 0;
     private speedFovBoost = 0;
+    private lookYawSmooth = 0;
+    private lookPitchSmooth = 0;
+    private steerLook = 0;
     private chasePosition: Vector3 | null = null;
     private readonly eyeLocal = new Vector3(-0.36, 1.26, -0.58);
     private readonly hoodLocal = new Vector3(0, 1.14, 1.55);
@@ -46,6 +49,8 @@ export class CockpitController {
         this.mode = MODES[(index + 1) % MODES.length]!;
         this.lookYaw = 0;
         this.lookPitch = 0;
+        this.lookYawSmooth = 0;
+        this.lookPitchSmooth = 0;
         this.chasePosition = null;
         return this.mode;
     }
@@ -54,6 +59,8 @@ export class CockpitController {
         this.mode = mode;
         this.lookYaw = 0;
         this.lookPitch = 0;
+        this.lookYawSmooth = 0;
+        this.lookPitchSmooth = 0;
         this.chasePosition = null;
     }
 
@@ -72,6 +79,10 @@ export class CockpitController {
         const targetBoost = Math.min(12, Math.max(0, state.speedMps - 20) * 0.12);
         this.speedFovBoost += (targetBoost - this.speedFovBoost) * (1 - Math.exp(-3 * dt));
         this.updateFov();
+        const lookBlend = 1 - Math.exp(-12 * dt);
+        this.lookYawSmooth += (this.lookYaw - this.lookYawSmooth) * lookBlend;
+        this.lookPitchSmooth += (this.lookPitch - this.lookPitchSmooth) * lookBlend;
+        this.steerLook += (state.steeringInput * 0.055 - this.steerLook) * (1 - Math.exp(-4 * dt));
         const matrix = this.carRoot.getWorldMatrix();
         const carPosition = new Vector3(matrix.m[12]!, matrix.m[13]!, matrix.m[14]!);
         const carUp = Vector3.TransformNormal(new Vector3(0, 1, 0), matrix).normalize();
@@ -110,17 +121,18 @@ export class CockpitController {
             direction = direction.add(new Vector3(0, -0.06, 0)).normalize();
         }
         if (this.mode === "cockpit") {
-            if (this.lookYaw !== 0) {
+            const yaw = this.lookYawSmooth + this.steerLook;
+            if (yaw !== 0) {
                 direction = Vector3.TransformNormal(
                     direction,
-                    Matrix.RotationAxis(carUp, this.lookYaw),
+                    Matrix.RotationAxis(carUp, yaw),
                 ).normalize();
             }
-            if (this.lookPitch !== 0) {
+            if (this.lookPitchSmooth !== 0) {
                 const right = Vector3.Cross(carUp, direction).normalize();
                 direction = Vector3.TransformNormal(
                     direction,
-                    Matrix.RotationAxis(right, -this.lookPitch),
+                    Matrix.RotationAxis(right, -this.lookPitchSmooth),
                 ).normalize();
             }
         }
