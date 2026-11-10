@@ -123,6 +123,29 @@ export const SCENARIOS: ScenarioDefinition[] = [
         },
     },
     {
+        id: "launch-control",
+        title: "Launch control",
+        description:
+            "Hold the brake and throttle together, let launch control sit on the bite point, then release the brake for a clean standing start.",
+        instructions: [
+            "The car starts in first gear on the endless straight.",
+            "Hold S (brake) and W (throttle) together until the launch light appears.",
+            "Release S and keep W down. The clutch will feed itself in.",
+            "Shift at the redline and keep the car straight.",
+        ],
+        start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
+        update: (context) => {
+            const speed = context.stats.maxSpeedMps * 3.6;
+            if (speed >= 100) {
+                return {
+                    status: "success",
+                    message: `Launch complete. 0-100 km/h in ${context.stats.elapsedS.toFixed(2)} s.`,
+                };
+            }
+            return { status: "running", progress: Math.min(0.98, speed / 100) };
+        },
+    },
+    {
         id: "free-drive",
         title: "Free drive",
         description:
@@ -150,7 +173,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "A 6 km closed proving straight. Launch, shift through all six gears, reach 200 km/h, then brake to a stop.",
         instructions: [
             "First gear is selected. Add throttle and feed the clutch in with X.",
-            "Shift up near 5,500–6,000 rpm; lift W and depress Z before each shift.",
+            "Shift up near the redline, around 8,500 rpm; lift W and depress Z before each shift.",
             "Keep straight. Reach 200 km/h, then brake with S and depress the clutch before stopping.",
             "The distance boards mark the braking space. This is a closed course.",
         ],
@@ -353,24 +376,31 @@ export class ScenarioManager {
     }
 
     private readonly scenarios: ScenarioDefinition[];
+    private startOverride: Partial<ScenarioStart> | undefined;
 
     get all(): ReadonlyArray<ScenarioDefinition> {
         return this.scenarios;
     }
 
-    start(id: string, sim: VehicleSimulation): ScenarioDefinition {
+    start(
+        id: string,
+        sim: VehicleSimulation,
+        startOverride?: Partial<ScenarioStart>,
+    ): ScenarioDefinition {
         const scenario = this.scenarios.find((item) => item.id === id) ?? this.scenarios[0]!;
+        const start = { ...scenario.start, ...startOverride };
         this.current = scenario;
         this.status = "running";
         this.message = "";
         this.progress = 0;
-        this.stats = this.freshStats(scenario);
+        this.stats = this.freshStats({ ...scenario, start });
+        this.startOverride = startOverride;
         sim.reset({
-            x: scenario.start.x,
-            y: scenario.start.y,
-            heading: scenario.start.heading,
-            gear: scenario.start.gear,
-            engineRunning: scenario.start.engineRunning,
+            x: start.x,
+            y: start.y,
+            heading: start.heading,
+            gear: start.gear,
+            engineRunning: start.engineRunning,
             ignition: true,
             clutchPedal: 1,
         });
@@ -407,7 +437,7 @@ export class ScenarioManager {
     }
 
     restart(sim: VehicleSimulation): void {
-        this.start(this.current.id, sim);
+        this.start(this.current.id, sim, this.startOverride);
     }
 
     private freshStats(scenario: ScenarioDefinition): ScenarioStats {
