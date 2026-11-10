@@ -150,6 +150,16 @@ export class DrivingInstructor {
             );
         }
 
+        if (state.launchControlActive) {
+            this.push(
+                "Launch control is holding the clutch. Keep the throttle down and release the brake to launch.",
+                "info",
+                this.timeS,
+                6,
+                "launch",
+            );
+        }
+
         if (
             state.clutchMode === "slipping" &&
             state.gear === 1 &&
