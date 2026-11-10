@@ -1,3 +1,4 @@
+import { EngineAudio } from "./EngineAudio";
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 
 interface NoiseLayer {
@@ -8,10 +9,7 @@ interface NoiseLayer {
 export class AudioDirector {
     private context: AudioContext | null = null;
     private master: GainNode | null = null;
-    private engineGain: GainNode | null = null;
-    private engineFilter: BiquadFilterNode | null = null;
-    private engineOscillators: OscillatorNode[] = [];
-    private intake: NoiseLayer | null = null;
+    private readonly engineAudio = new EngineAudio();
     private wind: NoiseLayer | null = null;
     private tire: NoiseLayer | null = null;
     private starterGain: GainNode | null = null;
@@ -34,6 +32,7 @@ export class AudioDirector {
             await this.context?.resume();
             return;
         }
+        if (typeof window === "undefined") return;
         const AudioContextClass =
             window.AudioContext ??
             (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
@@ -45,30 +44,8 @@ export class AudioDirector {
         this.master.connect(context.destination);
 
         this.noiseBuffer = this.createNoiseBuffer(context);
-        this.engineFilter = context.createBiquadFilter();
-        this.engineFilter.type = "lowpass";
-        this.engineFilter.frequency.value = 800;
-        this.engineFilter.Q.value = 0.8;
-        this.engineGain = context.createGain();
-        this.engineGain.gain.value = 0;
-        this.engineFilter.connect(this.engineGain);
-        this.engineGain.connect(this.master);
+        this.engineAudio.attach(context, this.master, this.noiseBuffer);
 
-        const frequencies = [1, 2.01, 0.5];
-        const types: OscillatorType[] = ["sawtooth", "square", "triangle"];
-        for (let index = 0; index < frequencies.length; index += 1) {
-            const oscillator = context.createOscillator();
-            oscillator.type = types[index]!;
-            oscillator.frequency.value = 32 * frequencies[index]!;
-            const gain = context.createGain();
-            gain.gain.value = index === 0 ? 0.55 : index === 1 ? 0.18 : 0.35;
-            oscillator.connect(gain);
-            gain.connect(this.engineFilter);
-            oscillator.start();
-            this.engineOscillators.push(oscillator);
-        }
-
-        this.intake = this.createNoiseLayer(context, "bandpass", 720, 1.2, 0);
         this.wind = this.createNoiseLayer(context, "lowpass", 500, 0.7, 0);
         this.tire = this.createNoiseLayer(context, "bandpass", 1600, 0.9, 0);
 
@@ -109,33 +86,17 @@ export class AudioDirector {
         this.windLevel = Math.max(0, Math.min(1, mix.windVolume));
     }
 
+    setSoundSet(soundSet: string): void {
+        this.engineAudio.setSoundSet(soundSet);
+    }
+
     update(state: VehicleRenderState, dt: number): void {
-        if (!this.context || !this.engineGain || !this.engineFilter) return;
+        if (!this.context) return;
         const context = this.context;
         const now = context.currentTime;
-        const rpm = Math.max(0, state.rpm);
-        const firingFrequency = Math.max(18, (rpm / 60) * 2);
-        for (let index = 0; index < this.engineOscillators.length; index += 1) {
-            const multiplier = index === 0 ? 1 : index === 1 ? 2.008 : 0.5;
-            this.engineOscillators[index]!.frequency.setTargetAtTime(
-                firingFrequency * multiplier,
-                now,
-                0.035,
-            );
-        }
-        const load = state.engineRunning ? (0.13 + state.throttle * 0.22) * this.engineLevel : 0;
-        const targetGain = state.engineRunning ? load : 0;
-        this.engineGain.gain.setTargetAtTime(targetGain, now, 0.08);
-        const cutoff = 240 + rpm * 0.3 + state.throttle * 1600;
-        this.engineFilter.frequency.setTargetAtTime(Math.min(9000, cutoff), now, 0.06);
 
-        if (this.intake) {
-            this.intake.gain.gain.setTargetAtTime(
-                state.engineRunning ? state.throttle * 0.035 * this.engineLevel : 0,
-                now,
-                0.08,
-            );
-        }
+        this.engineAudio.update(state, this.engineLevel);
+
         if (this.wind) {
             const windGain = Math.min(0.14, (state.speedMps / 42) ** 2 * 0.14) * this.windLevel;
             this.wind.gain.gain.setTargetAtTime(windGain, now, 0.2);
@@ -147,7 +108,8 @@ export class AudioDirector {
             this.tire.gain.gain.setTargetAtTime(tireGain, now, 0.15);
         }
         if (this.starterGain) {
-            this.starterGain.gain.setTargetAtTime(state.cranking ? 0.055 : 0, now, 0.05);
+            const starter = state.cranking && this.engineAudio.usesStarter;
+            this.starterGain.gain.setTargetAtTime(starter ? 0.055 : 0, now, 0.05);
         }
         if (this.starterOsc) {
             const wobble = 70 + (state.rpm % 120) * 0.25;
@@ -240,17 +202,22 @@ export class AudioDirector {
     }
 
     dispose(): void {
-        for (const oscillator of this.engineOscillators) {
-            try {
-                oscillator.stop();
-            } catch {
-                // Already stopped.
-            }
+        this.engineAudio.dispose();
+        try {
+            this.starterOsc?.stop();
+        } catch {
+            // Already stopped.
         }
-        this.starterOsc?.stop();
-        this.intake?.source.stop();
-        this.wind?.source.stop();
-        this.tire?.source.stop();
+        try {
+            this.wind?.source.stop();
+        } catch {
+            // Already stopped.
+        }
+        try {
+            this.tire?.source.stop();
+        } catch {
+            // Already stopped.
+        }
         void this.context?.close();
         this.context = null;
         this.initialized = false;
