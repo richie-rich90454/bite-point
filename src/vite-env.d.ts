@@ -6,6 +6,8 @@ export interface BitePointSnapshot {
     scenarioStatus: string;
     gear: number;
     gearLabel: string;
+    carId: string;
+    mapId: string;
     speedKph: number;
     rpm: number;
     running: boolean;
@@ -29,6 +31,7 @@ export interface BitePointSnapshot {
     throttle: number;
     brake: number;
     handbrake: boolean;
+    launchControlActive: boolean;
     engineTorqueNm: number;
     wheelOmegas: number[];
     clutchModeDetail: string;
@@ -50,6 +53,16 @@ export interface BitePointDebugApi {
         terrainMaterial: string | null;
         roadVertices: number;
         terrainVertices: number;
+    };
+    debug: () => {
+        camera: [number, number, number] | null;
+        cameraMode: string;
+        cockpitEnabled: boolean;
+        cockpitChildren: number;
+        cockpitVisible: number;
+        importedCar: boolean;
+        exteriorCabin: boolean;
+        activeMeshes: number;
     };
 }
 
