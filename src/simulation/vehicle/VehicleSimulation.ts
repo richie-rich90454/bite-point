@@ -4,7 +4,7 @@ import { EngineModel, type EngineResult } from "../engine/EngineModel";
 import { ClutchModel, type ClutchResult } from "../clutch/ClutchModel";
 import { HPatternShifter } from "../gearbox/HPatternShifter";
 import { ManualGearbox, SynchronizerModel, type EngagementResult } from "../gearbox/ManualGearbox";
-import { DrivelineModel, OpenDifferential } from "../driveline/DrivelineModel";
+import { DrivelineModel } from "../driveline/DrivelineModel";
 import { TireModel } from "../tires/TireModel";
 import { SteeringModel } from "../steering/SteeringModel";
 import { BrakeModel } from "../brakes/BrakeModel";
@@ -72,7 +72,6 @@ export class VehicleSimulation {
     readonly gearbox: ManualGearbox;
     readonly shifter: HPatternShifter;
     readonly driveline: DrivelineModel;
-    readonly differential = new OpenDifferential();
     readonly tire: TireModel;
     readonly steering: SteeringModel;
     readonly brakes: BrakeModel;
@@ -85,11 +84,14 @@ export class VehicleSimulation {
     speedLimitKph: number | null = null;
     autoClutch = false;
     stabilityAssist = true;
+    launchControl = true;
     timeS = 0;
     lastEngineResult: EngineResult;
     lastClutchResult: ClutchResult;
     lastEngagement: EngagementResult | null = null;
     private neutralInputOmega = 0;
+    private launchState: "idle" | "holding" | "releasing" = "idle";
+    private launchClutchPedal = 1;
     private events: SimEvent[] = [];
     private eventCooldowns = new Map<SimEventType, number>();
     private wheelLoads: [number, number, number, number] = [0, 0, 0, 0];
@@ -129,7 +131,12 @@ export class VehicleSimulation {
             positions: config.gearbox.gates,
             shiftTimeS: config.gearbox.shiftTimeS,
         });
-        this.driveline = new DrivelineModel(config.finalDriveRatio, config.drivetrainEfficiency);
+        this.driveline = new DrivelineModel(
+            config.finalDriveRatio,
+            config.drivetrainEfficiency,
+            config.drivetrain,
+            config.awdTorqueSplit,
+        );
         this.tire = new TireModel(config.tires);
         this.steering = new SteeringModel(config.steering);
         this.brakes = new BrakeModel(config.brakes);
@@ -203,6 +210,7 @@ export class VehicleSimulation {
         this.shifter.update(dt);
         this.gearbox.update(dt);
         if (this.autoClutch) this.controls.clutchPedal = this.autoClutchPedal();
+        this.applyLaunchControl(dt);
         this.steering.update(dt, this.controls.steering, this.body.state.vx);
         this.surfaceMu = this.road.surfaceMuAt(this.body.state.x, this.body.state.y);
 
@@ -224,8 +232,7 @@ export class VehicleSimulation {
         this.slopeForward = slopeForward;
         this.slopeLateral = slopeLateral;
 
-        const frontOmega = [this.wheels[0].omega, this.wheels[1].omega] as const;
-        const outputOmega = this.driveline.outputShaftOmega(frontOmega);
+        const outputOmega = this.outputShaftOmega();
         const ratio = this.gearbox.ratio;
         let inputOmega: number;
         if (this.gearbox.gear !== 0) {
@@ -248,7 +255,7 @@ export class VehicleSimulation {
                       this.config.massKg,
                       this.config.wheelRadiusM,
                       this.config.wheelInertiaKgM2,
-                      2,
+                      this.driveline.drivenWheelCount,
                   )
                 : 0.05;
         const clutchResult = this.clutch.computeTorque(
@@ -321,10 +328,10 @@ export class VehicleSimulation {
             this.suspensionRear.compressionForLoad(this.wheelLoads[3]),
         ];
 
-        const drivenSlip = Math.max(
-            Math.abs(this.wheels[0].slipRatio),
-            Math.abs(this.wheels[1].slipRatio),
-        );
+        let drivenSlip = 0;
+        for (const index of this.drivenWheelIndices()) {
+            drivenSlip = Math.max(drivenSlip, Math.abs(this.wheels[index]!.slipRatio));
+        }
         const tractionScale = this.stabilityAssist
             ? clamp(1 - (drivenSlip - 0.08) * 4, 0.25, 1)
             : 1;
@@ -336,7 +343,19 @@ export class VehicleSimulation {
                 ratio,
                 this.gearbox.torqueFactor,
             ) * tractionScale;
-        const [leftDrive, rightDrive] = this.differential.distribute(totalDriveTorque);
+        const axleTorque = this.driveline.driveTorqueByAxle(totalDriveTorque);
+        const [frontLeftDrive, frontRightDrive] = this.driveline.frontDifferential.distribute(
+            axleTorque.frontNm,
+        );
+        const [rearLeftDrive, rearRightDrive] = this.driveline.rearDifferential.distribute(
+            axleTorque.rearNm,
+        );
+        const driveTorques = [
+            frontLeftDrive,
+            frontRightDrive,
+            rearLeftDrive,
+            rearRightDrive,
+        ] as const;
         const yawRate = this.body.state.yawRate;
         const halfTrack = this.config.trackM / 2;
         const frontBrake = this.brakes.torqueForWheel(
@@ -362,7 +381,7 @@ export class VehicleSimulation {
         const wheelResults = this.wheels.map((wheel, index) =>
             wheel.update({
                 dt,
-                driveTorqueNm: index < 2 ? (index === 0 ? leftDrive : rightDrive) : 0,
+                driveTorqueNm: driveTorques[index]!,
                 brakeTorqueNm: index < 2 ? frontBrake : rearBrake,
                 normalLoadN: this.wheelLoads[index]!,
                 forwardSpeedMps: wheelSpeeds[index]!,
@@ -498,10 +517,7 @@ export class VehicleSimulation {
         );
 
         const newInputOmega =
-            this.gearbox.gear !== 0
-                ? this.driveline.outputShaftOmega([this.wheels[0].omega, this.wheels[1].omega]) *
-                  ratio
-                : this.neutralInputOmega;
+            this.gearbox.gear !== 0 ? this.outputShaftOmega() * ratio : this.neutralInputOmega;
         if (
             clutchResult.mode === "locked" &&
             this.gearbox.gear !== 0 &&
@@ -613,6 +629,47 @@ export class VehicleSimulation {
         return result;
     }
 
+    private applyLaunchControl(dt: number): void {
+        if (!this.launchControl) {
+            this.launchState = "idle";
+            return;
+        }
+        const wantsLaunch =
+            this.gearbox.gear > 0 &&
+            Math.abs(this.body.state.vx) < 1 &&
+            this.controls.brake > 0.5 &&
+            this.controls.throttle > 0.5;
+        if (wantsLaunch) {
+            this.launchState = "holding";
+            this.launchClutchPedal = clamp01(
+                this.config.clutch.bitePoint + this.config.clutch.engagementWidth * 0.25,
+            );
+        } else if (this.launchState === "holding") {
+            // Throttle lift while still braking aborts and hands the clutch back.
+            this.launchState =
+                this.controls.brake > 0.5 && this.controls.throttle <= 0.5 ? "idle" : "releasing";
+            if (this.launchState === "idle") this.launchClutchPedal = 1;
+        }
+        if (this.launchState === "releasing") {
+            this.launchClutchPedal = Math.max(0, this.launchClutchPedal - dt * 1.2);
+            if (this.launchClutchPedal <= 0) this.launchState = "idle";
+        }
+        if (this.launchState !== "idle") this.controls.clutchPedal = this.launchClutchPedal;
+    }
+
+    private outputShaftOmega(): number {
+        return this.driveline.outputShaftOmega(
+            [this.wheels[0].omega, this.wheels[1].omega],
+            [this.wheels[2].omega, this.wheels[3].omega],
+        );
+    }
+
+    private drivenWheelIndices(): number[] {
+        if (this.driveline.drivetrain === "FWD") return [0, 1];
+        if (this.driveline.drivetrain === "RWD") return [2, 3];
+        return [0, 1, 2, 3];
+    }
+
     private autoClutchPedal(): number {
         if (this.shifter.grabbed || this.gearbox.gear === 0 || this.gearbox.torqueFactor < 0.99) {
             return 1;
@@ -630,10 +687,7 @@ export class VehicleSimulation {
     }
 
     private engagementContext() {
-        const outputOmega = this.driveline.outputShaftOmega([
-            this.wheels[0].omega,
-            this.wheels[1].omega,
-        ]);
+        const outputOmega = this.outputShaftOmega();
         const inputOmega =
             this.gearbox.gear !== 0 ? outputOmega * this.gearbox.ratio : this.neutralInputOmega;
         return {
@@ -689,6 +743,7 @@ export class VehicleSimulation {
             clutchBitePedal: this.config.clutch.bitePoint,
             clutchEngagementWidth: this.config.clutch.engagementWidth,
             handbrake: this.controls.handbrake,
+            launchControlActive: this.launchState !== "idle",
             steeringInput: this.controls.steering,
             steeringAngleRad: this.steering.angleRad,
             steeringWheelAngleRad: this.steering.steeringWheelAngleRad,
@@ -753,6 +808,8 @@ export class VehicleSimulation {
         this.lastEngineResult = this.makeEnginePlaceholder();
         this.lastClutchResult = this.makeClutchPlaceholder();
         this.lastEngagement = null;
+        this.launchState = "idle";
+        this.launchClutchPedal = 1;
         this.events = [];
         this.eventCooldowns.clear();
         this.recorder.clear();
