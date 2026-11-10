@@ -1,23 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
-const MAPS = [
-    "city-center",
-    "industrial-district",
-    "coastal-highway",
-    "alpine-pass",
-    "forest-run",
-    "tunnel-run",
-    "bridge-crossing",
-    "summit",
-    "endless-straight",
-    "endless-curves",
-    "world-tour",
-];
-
-test("starts every map without runtime errors", async ({ page }) => {
-    test.setTimeout(300_000);
+async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
     page.on("console", (message) => {
@@ -39,7 +24,7 @@ test("starts every map without runtime errors", async ({ page }) => {
     await page.goto("/");
     await page.locator('[data-setup-tab="map"]').click();
 
-    for (const mapId of MAPS) {
+    for (const mapId of mapIds) {
         await page.locator(`[data-map-card="${mapId}"]`).click();
         await page.locator('[data-setup-tab="session"]').click();
         await page.locator('[data-scenario-card="endless"]').click();
@@ -57,4 +42,30 @@ test("starts every map without runtime errors", async ({ page }) => {
         await page.waitForTimeout(150);
         await page.locator('[data-setup-tab="map"]').click();
     }
+    expect(errors).toEqual([]);
+}
+
+test("starts the city, industrial, coastal, alpine and forest maps", async ({ page }) => {
+    test.setTimeout(300_000);
+    await checkMaps(page, [
+        "city-center",
+        "industrial-district",
+        "coastal-highway",
+        "alpine-pass",
+        "forest-run",
+    ]);
+});
+
+test("starts the tunnel, bridge, summit, straight, curves and world tour maps", async ({
+    page,
+}) => {
+    test.setTimeout(300_000);
+    await checkMaps(page, [
+        "tunnel-run",
+        "bridge-crossing",
+        "summit",
+        "endless-straight",
+        "endless-curves",
+        "world-tour",
+    ]);
 });
