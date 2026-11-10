@@ -6,7 +6,18 @@ import {
     selectGear,
     startWarm,
     stepFor,
+    vehicleConfig,
 } from "../support/simulation";
+import { VehicleSimulation } from "../../src/simulation/vehicle/VehicleSimulation";
+import type { Drivetrain } from "../../src/simulation/config/VehicleConfig";
+
+function makeDrivetrainSimulation(drivetrain: Drivetrain): VehicleSimulation {
+    return new VehicleSimulation({ ...vehicleConfig, drivetrain, awdTorqueSplit: 0.45 });
+}
+
+function wheelsPulling(sim: VehicleSimulation): boolean[] {
+    return sim.wheels.map((wheel) => wheel.longitudinalForceN > 1);
+}
 
 describe("vehicle integration", () => {
     it("idles in neutral without creeping", () => {
@@ -191,5 +202,83 @@ describe("vehicle integration", () => {
             expect(Math.abs(sim.engine.angularVelocity - wheelOmega * ratio)).toBeLessThan(2);
         }
         expect(Number.isFinite(sim.engine.angularVelocity)).toBe(true);
+    });
+
+    it("drives only the front wheels in FWD", () => {
+        const sim = makeDrivetrainSimulation("FWD");
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 0.6, () => ({ ...baseControls(), throttle: 0.8, clutchPedal: 0.5 }));
+        expect(sim.speedMps).toBeGreaterThan(0.1);
+        expect(wheelsPulling(sim)).toEqual([true, true, false, false]);
+    });
+
+    it("drives only the rear wheels in RWD", () => {
+        const sim = makeDrivetrainSimulation("RWD");
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 0.6, () => ({ ...baseControls(), throttle: 0.8, clutchPedal: 0.5 }));
+        expect(sim.speedMps).toBeGreaterThan(0.1);
+        expect(wheelsPulling(sim)).toEqual([false, false, true, true]);
+    });
+
+    it("drives both axles in AWD", () => {
+        const sim = makeDrivetrainSimulation("AWD");
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 0.6, () => ({ ...baseControls(), throttle: 0.8, clutchPedal: 0.5 }));
+        expect(sim.speedMps).toBeGreaterThan(0.1);
+        expect(wheelsPulling(sim)).toEqual([true, true, true, true]);
+    });
+
+    it("applies the handbrake as rear brake torque only", () => {
+        const sim = makeSimulation();
+        const reference = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        startWarm(reference, { gear: 1 });
+        stepFor(sim, 0.5, () => ({
+            ...baseControls(),
+            throttle: 1,
+            clutchPedal: 1,
+            handbrake: true,
+        }));
+        stepFor(reference, 0.5, () => ({ ...baseControls(), throttle: 1, clutchPedal: 1 }));
+        const state = sim.getRenderState(0);
+        expect(state.throttle).toBe(1);
+        expect(sim.engine.rpm).toBeGreaterThan(3000);
+        expect(Math.abs(sim.engine.rpm - reference.engine.rpm)).toBeLessThan(100);
+        expect(sim.speedMps).toBeLessThan(0.2);
+        expect(sim.brakes.torqueForWheel(0, true, "front")).toBe(0);
+        expect(sim.brakes.torqueForWheel(0, true, "rear")).toBeGreaterThan(0);
+    });
+
+    it("revs on launch control, then launches when the brake releases", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 1.5, () => ({
+            ...baseControls(),
+            throttle: 1,
+            brake: 1,
+            clutchPedal: 1,
+        }));
+        expect(sim.getRenderState(0).launchControlActive).toBe(true);
+        expect(sim.engine.rpm).toBeGreaterThan(2500);
+        expect(sim.speedMps).toBeLessThan(1);
+
+        stepFor(sim, 2.5, () => ({ ...baseControls(), throttle: 1, brake: 0, clutchPedal: 1 }));
+        expect(sim.engine.running).toBe(true);
+        expect(sim.speedMps).toBeGreaterThan(2);
+        expect(sim.getRenderState(0).launchControlActive).toBe(false);
+    });
+
+    it("launches with the automatic clutch", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        sim.autoClutch = true;
+        stepFor(sim, 1.5, () => ({ ...baseControls(), throttle: 1, brake: 1 }));
+        expect(sim.getRenderState(0).launchControlActive).toBe(true);
+        expect(sim.engine.rpm).toBeGreaterThan(2500);
+        expect(sim.speedMps).toBeLessThan(1);
+
+        stepFor(sim, 2.5, () => ({ ...baseControls(), throttle: 1, brake: 0 }));
+        expect(sim.engine.running).toBe(true);
+        expect(sim.speedMps).toBeGreaterThan(2);
     });
 });
