@@ -1,0 +1,2227 @@
+[
+    {
+        "id": "commuter-16-6mt",
+        "name": "1.6 commuter 6MT",
+        "tier": 1,
+        "engineType": "NA",
+        "drivetrain": "FWD",
+        "modelId": "commuter-hatch",
+        "paintColor": "#b9c4c9",
+        "soundSet": "inline-four",
+        "config": {
+            "schemaVersion": 1,
+            "id": "commuter-16-6mt",
+            "name": "1.6 commuter 6MT",
+            "drivetrain": "FWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1160,
+            "wheelbaseM": 2.6,
+            "trackM": 1.53,
+            "cgHeightM": 0.54,
+            "frontWeightBias": 0.62,
+            "wheelRadiusM": 0.31,
+            "wheelInertiaKgM2": 0.9,
+            "finalDriveRatio": 4.2,
+            "drivetrainEfficiency": 0.91,
+            "gearRatios": [3.7, 2.2, 1.5, 1.12, 0.88, 0.72],
+            "reverseRatio": -3.6,
+            "engine": {
+                "idleRpm": 800,
+                "redlineRpm": 6500,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.16,
+                "starterTorqueNm": 130,
+                "frictionBaseNm": 10,
+                "frictionPerRadPerSec": 0.012,
+                "pumpingLossNm": 16,
+                "torqueCurve": [
+                    [750, 140],
+                    [2000, 168],
+                    [3500, 178],
+                    [5000, 182],
+                    [6000, 176],
+                    [6500, 160]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 190,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 6000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.18,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1,
+                "peakSlip": 0.12,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.012,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 2200,
+                "rearTorqueNm": 1400,
+                "handbrakeTorqueNm": 1800
+            },
+            "suspension": {
+                "springRateFrontNm": 24000,
+                "springRateRearNm": 21000,
+                "damperNsm": 1900,
+                "rideHeightM": 0.17,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.33,
+                "airDensity": 1.2,
+                "maxSpeedKph": 185,
+                "downforceCoefficient": 0,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "sedan-20-6mt",
+        "name": "2.0 city sedan 6MT",
+        "tier": 1,
+        "engineType": "NA",
+        "drivetrain": "FWD",
+        "modelId": "city-sedan",
+        "paintColor": "#5d6b74",
+        "soundSet": "inline-four",
+        "config": {
+            "schemaVersion": 1,
+            "id": "sedan-20-6mt",
+            "name": "2.0 city sedan 6MT",
+            "drivetrain": "FWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1360,
+            "wheelbaseM": 2.7,
+            "trackM": 1.56,
+            "cgHeightM": 0.53,
+            "frontWeightBias": 0.61,
+            "wheelRadiusM": 0.32,
+            "wheelInertiaKgM2": 1,
+            "finalDriveRatio": 4,
+            "drivetrainEfficiency": 0.91,
+            "gearRatios": [3.5, 2.05, 1.42, 1.08, 0.85, 0.7],
+            "reverseRatio": -3.5,
+            "engine": {
+                "idleRpm": 820,
+                "redlineRpm": 6800,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.18,
+                "starterTorqueNm": 140,
+                "frictionBaseNm": 11,
+                "frictionPerRadPerSec": 0.013,
+                "pumpingLossNm": 18,
+                "torqueCurve": [
+                    [780, 165],
+                    [2500, 220],
+                    [4500, 232],
+                    [6000, 218],
+                    [6800, 198]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 230,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 6800,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.16,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.12,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.011,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 2600,
+                "rearTorqueNm": 1700,
+                "handbrakeTorqueNm": 2000
+            },
+            "suspension": {
+                "springRateFrontNm": 26000,
+                "springRateRearNm": 23000,
+                "damperNsm": 2000,
+                "rideHeightM": 0.16,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.3,
+                "airDensity": 1.2,
+                "maxSpeedKph": 200,
+                "downforceCoefficient": 0,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "hot-hatch-20t-6mt",
+        "name": "2.0 turbo hot hatch 6MT",
+        "tier": 2,
+        "engineType": "Turbo",
+        "drivetrain": "FWD",
+        "modelId": "hot-hatch",
+        "paintColor": "#d84b2a",
+        "soundSet": "turbo-four",
+        "config": {
+            "schemaVersion": 1,
+            "id": "hot-hatch-20t-6mt",
+            "name": "2.0 turbo hot hatch 6MT",
+            "drivetrain": "FWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1380,
+            "wheelbaseM": 2.63,
+            "trackM": 1.58,
+            "cgHeightM": 0.5,
+            "frontWeightBias": 0.62,
+            "wheelRadiusM": 0.32,
+            "wheelInertiaKgM2": 1,
+            "finalDriveRatio": 3.6,
+            "drivetrainEfficiency": 0.92,
+            "gearRatios": [3.4, 2.1, 1.45, 1.1, 0.86, 0.7],
+            "reverseRatio": -3.5,
+            "engine": {
+                "idleRpm": 850,
+                "redlineRpm": 6800,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.2,
+                "starterTorqueNm": 160,
+                "frictionBaseNm": 12,
+                "frictionPerRadPerSec": 0.015,
+                "pumpingLossNm": 22,
+                "torqueCurve": [
+                    [800, 180],
+                    [1800, 320],
+                    [3000, 380],
+                    [4500, 370],
+                    [5500, 335],
+                    [6800, 285]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 520,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 8000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.14,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.28,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.011,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 3400,
+                "rearTorqueNm": 2100,
+                "handbrakeTorqueNm": 2600
+            },
+            "suspension": {
+                "springRateFrontNm": 32000,
+                "springRateRearNm": 27000,
+                "damperNsm": 2400,
+                "rideHeightM": 0.15,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.31,
+                "airDensity": 1.2,
+                "maxSpeedKph": 250,
+                "downforceCoefficient": 0.15,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "muscle-50-v8-6mt",
+        "name": "5.0 muscle car 6MT",
+        "tier": 2,
+        "engineType": "NA",
+        "drivetrain": "RWD",
+        "modelId": "muscle-coupe",
+        "paintColor": "#1f2a44",
+        "soundSet": "cross-plane-v8",
+        "config": {
+            "schemaVersion": 1,
+            "id": "muscle-50-v8-6mt",
+            "name": "5.0 muscle car 6MT",
+            "drivetrain": "RWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1680,
+            "wheelbaseM": 2.82,
+            "trackM": 1.62,
+            "cgHeightM": 0.52,
+            "frontWeightBias": 0.56,
+            "wheelRadiusM": 0.34,
+            "wheelInertiaKgM2": 1.2,
+            "finalDriveRatio": 3.7,
+            "drivetrainEfficiency": 0.92,
+            "gearRatios": [2.75, 1.85, 1.35, 1, 0.8, 0.65],
+            "reverseRatio": -3.3,
+            "engine": {
+                "idleRpm": 780,
+                "redlineRpm": 6800,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.32,
+                "starterTorqueNm": 220,
+                "frictionBaseNm": 14,
+                "frictionPerRadPerSec": 0.016,
+                "pumpingLossNm": 28,
+                "torqueCurve": [
+                    [750, 380],
+                    [2000, 480],
+                    [4000, 545],
+                    [5500, 525],
+                    [6800, 470]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 780,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 10000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.15,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.38,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.012,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 4100,
+                "rearTorqueNm": 2500,
+                "handbrakeTorqueNm": 3000
+            },
+            "suspension": {
+                "springRateFrontNm": 30000,
+                "springRateRearNm": 26000,
+                "damperNsm": 2400,
+                "rideHeightM": 0.16,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.36,
+                "airDensity": 1.2,
+                "maxSpeedKph": 260,
+                "downforceCoefficient": 0,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "rally-special-20t-6mt",
+        "name": "2.0 turbo rally special 6MT",
+        "tier": 2,
+        "engineType": "Turbo",
+        "drivetrain": "AWD",
+        "modelId": "rally-sedan",
+        "paintColor": "#2e6fb7",
+        "soundSet": "turbo-four",
+        "config": {
+            "schemaVersion": 1,
+            "id": "rally-special-20t-6mt",
+            "name": "2.0 turbo rally special 6MT",
+            "drivetrain": "AWD",
+            "awdTorqueSplit": 0.42,
+            "massKg": 1350,
+            "wheelbaseM": 2.6,
+            "trackM": 1.6,
+            "cgHeightM": 0.48,
+            "frontWeightBias": 0.6,
+            "wheelRadiusM": 0.32,
+            "wheelInertiaKgM2": 1,
+            "finalDriveRatio": 3.7,
+            "drivetrainEfficiency": 0.9,
+            "gearRatios": [3.1, 1.95, 1.45, 1.12, 0.9, 0.74],
+            "reverseRatio": -3.7,
+            "engine": {
+                "idleRpm": 850,
+                "redlineRpm": 7000,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.2,
+                "starterTorqueNm": 160,
+                "frictionBaseNm": 12,
+                "frictionPerRadPerSec": 0.015,
+                "pumpingLossNm": 22,
+                "torqueCurve": [
+                    [800, 190],
+                    [2000, 320],
+                    [3500, 350],
+                    [5000, 330],
+                    [7000, 275]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 540,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 8500,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.13,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.4,
+                "peakSlip": 0.12,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.012,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 3600,
+                "rearTorqueNm": 2200,
+                "handbrakeTorqueNm": 3000
+            },
+            "suspension": {
+                "springRateFrontNm": 34000,
+                "springRateRearNm": 30000,
+                "damperNsm": 2600,
+                "rideHeightM": 0.17,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.33,
+                "airDensity": 1.2,
+                "maxSpeedKph": 240,
+                "downforceCoefficient": 0.3,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "sports-coupe-30t-6mt",
+        "name": "3.0 turbo sports coupe 6MT",
+        "tier": 3,
+        "engineType": "Turbo",
+        "drivetrain": "RWD",
+        "modelId": "sports-coupe",
+        "paintColor": "#e2c044",
+        "soundSet": "turbo-six",
+        "config": {
+            "schemaVersion": 1,
+            "id": "sports-coupe-30t-6mt",
+            "name": "3.0 turbo sports coupe 6MT",
+            "drivetrain": "RWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1450,
+            "wheelbaseM": 2.7,
+            "trackM": 1.6,
+            "cgHeightM": 0.48,
+            "frontWeightBias": 0.55,
+            "wheelRadiusM": 0.33,
+            "wheelInertiaKgM2": 1.1,
+            "finalDriveRatio": 3.65,
+            "drivetrainEfficiency": 0.92,
+            "gearRatios": [3.1, 2, 1.5, 1.15, 0.9, 0.75],
+            "reverseRatio": -3.4,
+            "engine": {
+                "idleRpm": 850,
+                "redlineRpm": 7200,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.24,
+                "starterTorqueNm": 180,
+                "frictionBaseNm": 12,
+                "frictionPerRadPerSec": 0.015,
+                "pumpingLossNm": 24,
+                "torqueCurve": [
+                    [800, 320],
+                    [1800, 500],
+                    [3000, 595],
+                    [4500, 585],
+                    [6000, 540],
+                    [7200, 475]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 720,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 9000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.14,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.6,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.011,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 4200,
+                "rearTorqueNm": 2600,
+                "handbrakeTorqueNm": 3000
+            },
+            "suspension": {
+                "springRateFrontNm": 34000,
+                "springRateRearNm": 30000,
+                "damperNsm": 2600,
+                "rideHeightM": 0.15,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.3,
+                "airDensity": 1.2,
+                "maxSpeedKph": 280,
+                "downforceCoefficient": 0.4,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "track-special-35-v6-6mt",
+        "name": "3.5 track special 6MT",
+        "tier": 3,
+        "engineType": "NA",
+        "drivetrain": "RWD",
+        "modelId": "track-coupe",
+        "paintColor": "#7ac142",
+        "soundSet": "high-rev-six",
+        "config": {
+            "schemaVersion": 1,
+            "id": "track-special-35-v6-6mt",
+            "name": "3.5 track special 6MT",
+            "drivetrain": "RWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1280,
+            "wheelbaseM": 2.55,
+            "trackM": 1.6,
+            "cgHeightM": 0.45,
+            "frontWeightBias": 0.55,
+            "wheelRadiusM": 0.32,
+            "wheelInertiaKgM2": 0.95,
+            "finalDriveRatio": 3.9,
+            "drivetrainEfficiency": 0.93,
+            "gearRatios": [3.3, 2.15, 1.6, 1.25, 1, 0.82],
+            "reverseRatio": -3.6,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 7800,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.2,
+                "starterTorqueNm": 170,
+                "frictionBaseNm": 12,
+                "frictionPerRadPerSec": 0.016,
+                "pumpingLossNm": 22,
+                "torqueCurve": [
+                    [850, 290],
+                    [2500, 400],
+                    [4500, 435],
+                    [6000, 415],
+                    [7800, 345]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 620,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 8000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.12,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.58,
+                "peakSlip": 0.1,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.01,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 4400,
+                "rearTorqueNm": 2700,
+                "handbrakeTorqueNm": 3000
+            },
+            "suspension": {
+                "springRateFrontNm": 38000,
+                "springRateRearNm": 33000,
+                "damperNsm": 2800,
+                "rideHeightM": 0.13,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.32,
+                "airDensity": 1.2,
+                "maxSpeedKph": 270,
+                "downforceCoefficient": 0.9,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "supercar-40tt-v8-6mt",
+        "name": "4.0 twin-turbo supercar 6MT",
+        "tier": 4,
+        "engineType": "Turbo",
+        "drivetrain": "AWD",
+        "modelId": "supercar",
+        "paintColor": "#111318",
+        "soundSet": "flat-plane-v8",
+        "config": {
+            "schemaVersion": 1,
+            "id": "supercar-40tt-v8-6mt",
+            "name": "4.0 twin-turbo supercar 6MT",
+            "drivetrain": "AWD",
+            "awdTorqueSplit": 0.4,
+            "massKg": 1560,
+            "wheelbaseM": 2.65,
+            "trackM": 1.66,
+            "cgHeightM": 0.44,
+            "frontWeightBias": 0.58,
+            "wheelRadiusM": 0.34,
+            "wheelInertiaKgM2": 1.2,
+            "finalDriveRatio": 3.5,
+            "drivetrainEfficiency": 0.91,
+            "gearRatios": [3, 2, 1.55, 1.2, 0.95, 0.8],
+            "reverseRatio": -3.3,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 8000,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.28,
+                "starterTorqueNm": 200,
+                "frictionBaseNm": 13,
+                "frictionPerRadPerSec": 0.016,
+                "pumpingLossNm": 26,
+                "torqueCurve": [
+                    [850, 420],
+                    [2500, 650],
+                    [4000, 730],
+                    [6000, 705],
+                    [8000, 620]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 950,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 10500,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.11,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.6,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.011,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 5600,
+                "rearTorqueNm": 3400,
+                "handbrakeTorqueNm": 3400
+            },
+            "suspension": {
+                "springRateFrontNm": 40000,
+                "springRateRearNm": 35000,
+                "damperNsm": 2900,
+                "rideHeightM": 0.12,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.34,
+                "airDensity": 1.2,
+                "maxSpeedKph": 330,
+                "downforceCoefficient": 1.1,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "gt-52-v10-6mt",
+        "name": "5.2 V10 GT 6MT",
+        "tier": 4,
+        "engineType": "NA",
+        "drivetrain": "RWD",
+        "modelId": "gt-coupe",
+        "paintColor": "#f0f0f0",
+        "soundSet": "v10",
+        "config": {
+            "schemaVersion": 1,
+            "id": "gt-52-v10-6mt",
+            "name": "5.2 V10 GT 6MT",
+            "drivetrain": "RWD",
+            "awdTorqueSplit": 0,
+            "massKg": 1400,
+            "wheelbaseM": 2.65,
+            "trackM": 1.64,
+            "cgHeightM": 0.42,
+            "frontWeightBias": 0.55,
+            "wheelRadiusM": 0.34,
+            "wheelInertiaKgM2": 1.15,
+            "finalDriveRatio": 3.6,
+            "drivetrainEfficiency": 0.93,
+            "gearRatios": [2.9, 2.1, 1.6, 1.25, 1, 0.82],
+            "reverseRatio": -3.5,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 8500,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.26,
+                "starterTorqueNm": 200,
+                "frictionBaseNm": 13,
+                "frictionPerRadPerSec": 0.017,
+                "pumpingLossNm": 26,
+                "torqueCurve": [
+                    [850, 430],
+                    [2500, 545],
+                    [4500, 600],
+                    [6500, 585],
+                    [8500, 510]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 830,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 9500,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.12,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.85,
+                "peakSlip": 0.1,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.01,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 5400,
+                "rearTorqueNm": 3300,
+                "handbrakeTorqueNm": 3300
+            },
+            "suspension": {
+                "springRateFrontNm": 39000,
+                "springRateRearNm": 34000,
+                "damperNsm": 2900,
+                "rideHeightM": 0.12,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.33,
+                "airDensity": 1.2,
+                "maxSpeedKph": 325,
+                "downforceCoefficient": 1,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "hybrid-hypercar-40h-v8-6mt",
+        "name": "4.0 hybrid hypercar 6MT",
+        "tier": 5,
+        "engineType": "Hybrid",
+        "drivetrain": "AWD",
+        "modelId": "hypercar",
+        "paintColor": "#1b5e8e",
+        "soundSet": "hybrid-v8",
+        "config": {
+            "schemaVersion": 1,
+            "id": "hybrid-hypercar-40h-v8-6mt",
+            "name": "4.0 hybrid hypercar 6MT",
+            "drivetrain": "AWD",
+            "awdTorqueSplit": 0.5,
+            "massKg": 1550,
+            "wheelbaseM": 2.7,
+            "trackM": 1.68,
+            "cgHeightM": 0.4,
+            "frontWeightBias": 0.6,
+            "wheelRadiusM": 0.34,
+            "wheelInertiaKgM2": 1.2,
+            "finalDriveRatio": 3.4,
+            "drivetrainEfficiency": 0.92,
+            "gearRatios": [2.9, 1.95, 1.5, 1.2, 0.95, 0.8],
+            "reverseRatio": -3.2,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 9000,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.24,
+                "starterTorqueNm": 200,
+                "frictionBaseNm": 13,
+                "frictionPerRadPerSec": 0.017,
+                "pumpingLossNm": 26,
+                "torqueCurve": [
+                    [850, 460],
+                    [2500, 760],
+                    [5000, 860],
+                    [7000, 830],
+                    [9000, 720]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 1100,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 11000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.1,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.8,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.01,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 6200,
+                "rearTorqueNm": 3800,
+                "handbrakeTorqueNm": 3600
+            },
+            "suspension": {
+                "springRateFrontNm": 44000,
+                "springRateRearNm": 38000,
+                "damperNsm": 3200,
+                "rideHeightM": 0.11,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.36,
+                "airDensity": 1.2,
+                "maxSpeedKph": 350,
+                "downforceCoefficient": 1.8,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "electric-hypercar-1mt",
+        "name": "dual-motor electric hypercar 1MT",
+        "tier": 5,
+        "engineType": "Electric",
+        "drivetrain": "AWD",
+        "modelId": "electric-hypercar",
+        "paintColor": "#c8e6ff",
+        "soundSet": "electric",
+        "config": {
+            "schemaVersion": 1,
+            "id": "electric-hypercar-1mt",
+            "name": "dual-motor electric hypercar 1MT",
+            "drivetrain": "AWD",
+            "awdTorqueSplit": 0.5,
+            "massKg": 1750,
+            "wheelbaseM": 2.75,
+            "trackM": 1.7,
+            "cgHeightM": 0.36,
+            "frontWeightBias": 0.58,
+            "wheelRadiusM": 0.34,
+            "wheelInertiaKgM2": 1.3,
+            "finalDriveRatio": 4.1,
+            "drivetrainEfficiency": 0.95,
+            "gearRatios": [2.2, 1.1, 0.9, 0.75, 0.62, 0.52],
+            "reverseRatio": -2.2,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 11000,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.18,
+                "starterTorqueNm": 120,
+                "frictionBaseNm": 8,
+                "frictionPerRadPerSec": 0.01,
+                "pumpingLossNm": 6,
+                "torqueCurve": [
+                    [800, 850],
+                    [4000, 850],
+                    [7000, 800],
+                    [9000, 720],
+                    [11000, 600]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 2000,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 12000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.08,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.9,
+                "peakSlip": 0.1,
+                "peakSlipAngleRad": 0.22,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.009,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 6600,
+                "rearTorqueNm": 4000,
+                "handbrakeTorqueNm": 3600
+            },
+            "suspension": {
+                "springRateFrontNm": 46000,
+                "springRateRearNm": 40000,
+                "damperNsm": 3300,
+                "rideHeightM": 0.11,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.28,
+                "airDensity": 1.2,
+                "maxSpeedKph": 330,
+                "downforceCoefficient": 2.2,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    },
+    {
+        "id": "reference-performance-6mt",
+        "name": "Bite Point performance 6MT",
+        "tier": 5,
+        "engineType": "Turbo",
+        "drivetrain": "AWD",
+        "modelId": "reference-coupe",
+        "paintColor": "#d6d6d6",
+        "soundSet": "performance-six",
+        "config": {
+            "schemaVersion": 1,
+            "id": "reference-performance-6mt",
+            "name": "Bite Point performance 6MT reference",
+            "drivetrain": "AWD",
+            "awdTorqueSplit": 0.45,
+            "massKg": 1310,
+            "wheelbaseM": 2.62,
+            "trackM": 1.55,
+            "cgHeightM": 0.48,
+            "frontWeightBias": 0.58,
+            "wheelRadiusM": 0.317,
+            "wheelInertiaKgM2": 1.1,
+            "finalDriveRatio": 3.6,
+            "drivetrainEfficiency": 0.92,
+            "gearRatios": [2.8, 2, 1.5, 1.15, 0.9, 0.48],
+            "reverseRatio": -3.5,
+            "engine": {
+                "idleRpm": 900,
+                "redlineRpm": 9000,
+                "stallRpm": 400,
+                "startRpm": 300,
+                "inertiaKgM2": 0.25,
+                "starterTorqueNm": 220,
+                "frictionBaseNm": 12,
+                "frictionPerRadPerSec": 0.015,
+                "pumpingLossNm": 28,
+                "torqueCurve": [
+                    [800, 260],
+                    [1500, 420],
+                    [3000, 560],
+                    [5000, 660],
+                    [7000, 700],
+                    [8200, 670],
+                    [9000, 610]
+                ]
+            },
+            "clutch": {
+                "maxCapacityNm": 900,
+                "frictionCoeff": 0.35,
+                "effectiveRadiusM": 0.095,
+                "frictionSurfaces": 2,
+                "bitePoint": 0.4,
+                "engagementWidth": 0.5,
+                "thermalMassJK": 9000,
+                "ambientTempC": 30,
+                "maxTempC": 520,
+                "coolingPerSecond": 0.018,
+                "wearRatePerJoule": 1.2e-7
+            },
+            "gearbox": {
+                "shiftTimeS": 0.14,
+                "syncSpeedThresholdRadPerSec": 10,
+                "reverseMaxSpeedMps": 1.5,
+                "gates": [
+                    {
+                        "gear": 0,
+                        "gate": 1,
+                        "slot": 0
+                    },
+                    {
+                        "gear": 1,
+                        "gate": 0,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 2,
+                        "gate": 0,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 3,
+                        "gate": 1,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 4,
+                        "gate": 1,
+                        "slot": 1
+                    },
+                    {
+                        "gear": 5,
+                        "gate": 2,
+                        "slot": -1
+                    },
+                    {
+                        "gear": 6,
+                        "gate": 2,
+                        "slot": 1
+                    },
+                    {
+                        "gear": -1,
+                        "gate": 3,
+                        "slot": -1
+                    }
+                ]
+            },
+            "tires": {
+                "mu": 1.45,
+                "peakSlip": 0.11,
+                "peakSlipAngleRad": 0.2,
+                "loadSensitivity": 0.1,
+                "rollingResistance": 0.01,
+                "lateralStiffnessFactor": 1.7
+            },
+            "steering": {
+                "maxAngleRad": 0.58,
+                "rateRadPerSec": 2.1,
+                "returnRateRadPerSec": 3.4,
+                "highSpeedFactor": 0.32,
+                "speedSensitivityKph": 75
+            },
+            "brakes": {
+                "frontTorqueNm": 4200,
+                "rearTorqueNm": 2600,
+                "handbrakeTorqueNm": 3200
+            },
+            "suspension": {
+                "springRateFrontNm": 32000,
+                "springRateRearNm": 28000,
+                "damperNsm": 2400,
+                "rideHeightM": 0.16,
+                "maxCompressionM": 0.16,
+                "bumpStopRateNm": 180000
+            },
+            "aero": {
+                "dragAreaCdA": 0.25,
+                "airDensity": 1.2,
+                "maxSpeedKph": 500,
+                "downforceCoefficient": 1.4,
+                "frontLiftCoefficient": 0,
+                "rearLiftCoefficient": 0
+            },
+            "provenance": {
+                "massKg": "estimated",
+                "wheelbaseM": "documented",
+                "trackM": "documented",
+                "drivetrain": "estimated",
+                "awdTorqueSplit": "estimated",
+                "cgHeightM": "estimated",
+                "frontWeightBias": "estimated",
+                "wheelRadiusM": "documented",
+                "wheelInertiaKgM2": "estimated",
+                "finalDriveRatio": "documented",
+                "drivetrainEfficiency": "estimated",
+                "gearRatios": "estimated",
+                "reverseRatio": "documented",
+                "engine.torqueCurve": "estimated",
+                "engine.idleRpm": "documented",
+                "engine.redlineRpm": "documented",
+                "engine.inertiaKgM2": "estimated",
+                "engine.starterTorqueNm": "estimated",
+                "engine.frictionBaseNm": "estimated",
+                "engine.frictionPerRadPerSec": "estimated",
+                "engine.pumpingLossNm": "estimated",
+                "clutch.maxCapacityNm": "estimated",
+                "clutch.bitePoint": "estimated",
+                "clutch.engagementWidth": "estimated",
+                "clutch.thermalMassJK": "estimated",
+                "clutch.wearRatePerJoule": "estimated",
+                "tires.mu": "estimated",
+                "tires.peakSlip": "estimated",
+                "tires.peakSlipAngleRad": "estimated",
+                "tires.loadSensitivity": "estimated",
+                "steering.maxAngleRad": "documented",
+                "steering.highSpeedFactor": "estimated",
+                "brakes.frontTorqueNm": "estimated",
+                "brakes.rearTorqueNm": "estimated",
+                "suspension.springRateFrontNm": "estimated",
+                "suspension.springRateRearNm": "estimated",
+                "aero.dragAreaCdA": "estimated",
+                "aero.maxSpeedKph": "documented",
+                "aero.downforceCoefficient": "estimated",
+                "aero.frontLiftCoefficient": "estimated",
+                "aero.rearLiftCoefficient": "estimated"
+            }
+        }
+    }
+]

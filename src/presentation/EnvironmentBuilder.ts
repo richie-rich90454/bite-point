@@ -26,7 +26,7 @@ import {
     VertexData,
 } from "./babylon";
 import photographicSkyUrl from "../assets/proving-sky.hdr?url";
-import { createRoadMaterial } from "./RoadMaterial";
+import { createRoadMaterial, createShoulderMaterial } from "./RoadMaterial";
 import { ProvingGround } from "./ProvingGround";
 import type { RoadContactProvider } from "../simulation/road/RoadContactProvider";
 
@@ -67,6 +67,7 @@ export class EnvironmentBuilder {
         this.shadows.darkness = 0.25;
         const before = new Set(this.scene.meshes);
         this.ground = this.createTerrain();
+        this.createShoulders();
         this.createMarkings();
         this.createProps();
         this.createWetPad();
@@ -97,7 +98,7 @@ export class EnvironmentBuilder {
                 if (this.scene.isDisposed) return;
                 const previous = this.scene.environmentTexture;
                 this.scene.environmentTexture = environment;
-                this.scene.environmentIntensity = 0.7;
+                this.scene.environmentIntensity = 0.82;
                 previous?.dispose();
                 const skyTexture = environment.clone();
                 skyTexture.coordinatesMode = Texture.SKYBOX_MODE;
@@ -229,7 +230,7 @@ export class EnvironmentBuilder {
             );
             texture.name = "procedural-environment";
             this.scene.environmentTexture = texture;
-            this.scene.environmentIntensity = 0.85;
+            this.scene.environmentIntensity = 0.95;
         } catch {
             // Direct sunlight and hemispheric light remain available if environment generation fails.
         }
@@ -266,20 +267,49 @@ export class EnvironmentBuilder {
 
     private createLights(): DirectionalLight {
         const ambient = new HemisphericLight("sky-light", new Vector3(0.2, 1, 0.1), this.scene);
-        ambient.intensity = 0.4;
-        ambient.diffuse = new Color3(0.82, 0.9, 1);
-        ambient.groundColor = new Color3(0.2, 0.2, 0.18);
+        ambient.intensity = 0.42;
+        ambient.diffuse = new Color3(0.8, 0.88, 1);
+        ambient.groundColor = new Color3(0.24, 0.22, 0.18);
 
         const sun = new DirectionalLight("sun", new Vector3(-0.45, -0.85, 0.28), this.scene);
         sun.position = new Vector3(60, 95, -40);
-        sun.intensity = 2.1;
-        sun.diffuse = new Color3(1, 0.94, 0.84);
+        sun.intensity = 2.25;
+        sun.diffuse = new Color3(1, 0.93, 0.82);
         sun.specular = new Color3(1, 0.97, 0.9);
         const fill = new DirectionalLight("rim-fill", new Vector3(0.24, -0.5, 0.84), this.scene);
-        fill.intensity = 0.22;
-        fill.diffuse = new Color3(1, 0.78, 0.6);
+        fill.intensity = 0.26;
+        fill.diffuse = new Color3(1, 0.79, 0.6);
         fill.specular = new Color3(1, 0.82, 0.64);
+        const backlight = new DirectionalLight(
+            "cool-backlight",
+            new Vector3(0.5, -0.32, -0.72),
+            this.scene,
+        );
+        backlight.intensity = 0.16;
+        backlight.diffuse = new Color3(0.62, 0.76, 1);
+        backlight.specular = new Color3(0.7, 0.82, 1);
         return sun;
+    }
+
+    private createShoulders(): void {
+        for (const y of [-16.5, 16.5]) {
+            const width = 2.6;
+            const length = 72;
+            const strip = CreateGround(
+                `training-shoulder-${y}`,
+                { width, height: length, subdivisionsX: 1, subdivisionsY: 1 },
+                this.scene,
+            );
+            strip.position = simToBabylon(60, y, 0.018);
+            strip.material = createShoulderMaterial(
+                this.scene,
+                `training-shoulder-material-${y}`,
+                width,
+                length,
+            );
+            strip.receiveShadows = true;
+            strip.isPickable = false;
+        }
     }
 
     private createMarkings(): void {

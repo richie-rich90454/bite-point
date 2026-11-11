@@ -4,7 +4,7 @@ import { RoadPath } from "./RoadPath";
 import type { PathSample } from "./RoadPath";
 import { RoutePlan } from "./RoutePlan";
 import { CROWN_M, TerrainProfile } from "./TerrainProfile";
-import type { RoadSample, RouteMode, RouteSegment, TerrainSample } from "./WorldTypes";
+import type { RoadSample, RouteKind, RouteMode, RouteSegment, TerrainSample } from "./WorldTypes";
 
 const GRAVITY = 9.80665;
 const REFERENCE_SPEED = 40;
@@ -36,10 +36,16 @@ export class WorldGenerator {
     constructor(
         seed = 0,
         readonly routeMode: RouteMode = "curved",
+        readonly themeSequence: readonly RouteKind[] = [],
     ) {
         this.seed = seed >>> 0;
         this.terrain = new TerrainProfile(this.seed);
-        this.route = new RoutePlan(this.seed, (s) => this.terrain.gradeAt(s), routeMode);
+        this.route = new RoutePlan(
+            this.seed,
+            (s) => this.terrain.gradeAt(s),
+            routeMode,
+            themeSequence,
+        );
         this.path = new RoadPath(this.route);
         this.scratchPath = {
             s: 0,

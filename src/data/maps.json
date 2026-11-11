@@ -1,0 +1,113 @@
+[
+    {
+        "id": "city-center",
+        "name": "City Center",
+        "description": "Endless downtown blocks: sidewalks, streetlights and towers on both sides.",
+        "seed": 1101,
+        "routeMode": "curved",
+        "themeSequence": ["city", "city", "sweep"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "industrial-district",
+        "name": "Industrial District",
+        "description": "Warehouses, container yards, chimneys and chain-link fences.",
+        "seed": 1202,
+        "routeMode": "curved",
+        "themeSequence": ["industrial", "industrial", "sweep"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "coastal-highway",
+        "name": "Coastal Highway",
+        "description": "Seaside sweepers with water, beaches, palms and the odd bridge.",
+        "seed": 1303,
+        "routeMode": "curved",
+        "themeSequence": ["coast", "bridge", "coast", "sweep"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "alpine-pass",
+        "name": "Alpine Pass",
+        "description": "Climbs, descents and esses through rock, pines and snow.",
+        "seed": 1404,
+        "routeMode": "curved",
+        "themeSequence": ["climb", "descent", "esses", "climb"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "forest-run",
+        "name": "Forest Run",
+        "description": "Tight forest roads walled with broadleaf trees and undergrowth.",
+        "seed": 1505,
+        "routeMode": "curved",
+        "themeSequence": ["forest", "forest", "sweep", "esses"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "tunnel-run",
+        "name": "Tunnel Run",
+        "description": "Long concrete galleries with ceiling lights and no daylight.",
+        "seed": 1606,
+        "routeMode": "curved",
+        "themeSequence": ["tunnel", "tunnel", "sweep"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "bridge-crossing",
+        "name": "Bridge Crossing",
+        "description": "Elevated decks, pylons and railings over open water.",
+        "seed": 1707,
+        "routeMode": "curved",
+        "themeSequence": ["bridge", "bridge", "sweep"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "summit",
+        "name": "Summit",
+        "description": "High-altitude climb to a summit crest, then a long descent.",
+        "seed": 1808,
+        "routeMode": "curved",
+        "themeSequence": ["climb", "summit", "descent", "climb"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "endless-straight",
+        "name": "Endless Straight",
+        "description": "The unbending proving straight: no curves, no excuses.",
+        "seed": 1909,
+        "routeMode": "straight",
+        "themeSequence": ["straight"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "endless-curves",
+        "name": "Endless Curves",
+        "description": "Sweepers and esses forever, with just enough straight to catch your breath.",
+        "seed": 2010,
+        "routeMode": "curved",
+        "themeSequence": ["sweep", "esses", "sweep", "esses"],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "world-tour",
+        "name": "World Tour",
+        "description": "Every theme in the book, cycling through city, coast, pass and tunnel.",
+        "seed": 2026,
+        "routeMode": "curved",
+        "themeSequence": [
+            "city",
+            "forest",
+            "coast",
+            "industrial",
+            "tunnel",
+            "bridge",
+            "sweep",
+            "esses",
+            "climb",
+            "descent",
+            "summit"
+        ],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    }
+]

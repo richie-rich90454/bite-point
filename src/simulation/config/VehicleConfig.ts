@@ -2,6 +2,8 @@ export type Provenance = "measured" | "documented" | "estimated" | "unvalidated"
 
 export type GateSlot = -1 | 0 | 1;
 
+export type Drivetrain = "FWD" | "RWD" | "AWD";
+
 export interface GearPosition {
     gear: number;
     gate: number;
@@ -87,6 +89,8 @@ export interface VehicleConfig {
     schemaVersion: number;
     id: string;
     name: string;
+    drivetrain: Drivetrain;
+    awdTorqueSplit: number;
     massKg: number;
     wheelbaseM: number;
     trackM: number;
@@ -181,6 +185,11 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
     if (raw.schemaVersion !== 1) errors.push("schemaVersion must be 1.");
     str("id");
     str("name");
+
+    if (raw.drivetrain !== "FWD" && raw.drivetrain !== "RWD" && raw.drivetrain !== "AWD") {
+        errors.push("drivetrain must be FWD, RWD or AWD.");
+    }
+    const awdSplit = num("awdTorqueSplit", 0, 1);
 
     const mass = num("massKg", 300, 5000);
     const wheelbase = num("wheelbaseM", 1.5, 5);
@@ -375,6 +384,9 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
         const frontLoad = mass * 9.81 * bias;
         if (frontLoad > 30000) warnings.push("Front axle load looks unusually high.");
     }
+    if (raw.drivetrain === "AWD" && awdSplit <= 0) {
+        warnings.push("AWD with awdTorqueSplit 0 sends no torque to the front axle.");
+    }
 
     const provenance = raw.provenance;
     if (!isRecord(provenance)) {
@@ -391,6 +403,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
             "massKg",
             "wheelbaseM",
             "frontWeightBias",
+            "drivetrain",
             "engine.torqueCurve",
             "engine.inertiaKgM2",
             "clutch.maxCapacityNm",

@@ -102,6 +102,7 @@ export class RoutePlan {
         seed: number,
         gradeAt: (s: number) => number,
         readonly mode: RouteMode = "curved",
+        readonly themeSequence: readonly RouteKind[] = [],
     ) {
         this.seed = seed >>> 0;
         this.gradeAt = gradeAt;
@@ -194,11 +195,11 @@ export class RoutePlan {
             this.negative.push(this.createNegativeState(last.segment.index - 1, last));
             last = this.negative[this.negative.length - 1]!;
         }
-        for (let i = this.negative.length - 1; i >= 0; i -= 1) {
+        for (let i = 0; i < this.negative.length; i += 1) {
             const candidate = this.negative[i]!;
             if (s >= candidate.segment.sStart) return candidate;
         }
-        return this.negative[0]!;
+        return this.negative[this.negative.length - 1]!;
     }
 
     private createPositiveState(ordinal: number, previous: RouteSegmentState): RouteSegmentState {
@@ -278,7 +279,10 @@ export class RoutePlan {
     private createCore(ordinal: number, referenceHeading: number): SegmentCore {
         const random = mulberry32(hashSeed(this.seed, ordinal, 0x2545f491));
         const kinds = (Math.abs(ordinal) & 1) === 1 ? KINDS_A : KINDS_B;
-        const kind = kinds[Math.floor(random() * kinds.length)]!;
+        const kind =
+            this.themeSequence.length > 0
+                ? this.themeSequence[(Math.abs(ordinal) - 1) % this.themeSequence.length]!
+                : kinds[Math.floor(random() * kinds.length)]!;
         const length = MIN_SEGMENT_LENGTH + random() * (MAX_SEGMENT_LENGTH - MIN_SEGMENT_LENGTH);
         const rampM = Math.min(60 + random() * 90, length / 3);
         const halfWidthM = 6 + random() * 2;

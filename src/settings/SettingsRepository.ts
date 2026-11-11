@@ -14,6 +14,8 @@ export type ClutchAxis = "auto" | "leftTrigger" | "rightTrigger" | "separate";
 export interface UserSettings {
     version: 2;
     bindings: BindingMap;
+    selectedCarId: string;
+    selectedMapId: string;
     masterVolume: number;
     audioEnabled: boolean;
     shadows: boolean;
@@ -65,6 +67,8 @@ const CLUTCH_AXES: ReadonlyArray<ClutchAxis> = ["auto", "leftTrigger", "rightTri
 export const DEFAULT_SETTINGS: UserSettings = {
     version: 2,
     bindings: cloneBindings(DEFAULT_BINDINGS),
+    selectedCarId: "reference-performance-6mt",
+    selectedMapId: "city-center",
     masterVolume: 0.7,
     audioEnabled: true,
     shadows: true,
@@ -115,6 +119,8 @@ export function sanitizeSettings(raw: unknown): UserSettings {
     return {
         version: 2,
         bindings: validateBindings(source.bindings) ?? cloneBindings(DEFAULT_BINDINGS),
+        selectedCarId: stringValue(source.selectedCarId, defaults.selectedCarId),
+        selectedMapId: stringValue(source.selectedMapId, defaults.selectedMapId),
         masterVolume: clampNumber(source.masterVolume, 0, 1, defaults.masterVolume),
         audioEnabled: booleanValue(source.audioEnabled, defaults.audioEnabled),
         shadows: booleanValue(source.shadows, defaults.shadows),
@@ -227,6 +233,10 @@ function clampNumber(value: unknown, min: number, max: number, fallback: number)
 
 function booleanValue(value: unknown, fallback: boolean): boolean {
     return typeof value === "boolean" ? value : fallback;
+}
+
+function stringValue(value: unknown, fallback: string): string {
+    return typeof value === "string" && value.length > 0 ? value : fallback;
 }
 
 function enumValue<T extends string>(value: unknown, allowed: ReadonlyArray<T>, fallback: T): T {

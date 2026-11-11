@@ -106,19 +106,26 @@ export const TEXTURE_SETS: Record<string, TextureSet> = {
     },
 };
 
+export interface TextureSetOptions {
+    anisotropy?: number;
+    bumpLevel?: number;
+}
+
 export function applyTextureSet(
     material: PBRMaterial,
     scene: Scene,
     set: TextureSet,
     uScale = 1,
     vScale = 1,
+    options: TextureSetOptions = {},
 ): void {
+    const anisotropy = options.anisotropy ?? 8;
     const configure = (texture: Texture, linear: boolean): void => {
         texture.uScale = uScale;
         texture.vScale = vScale;
         texture.wrapU = Texture.WRAP_ADDRESSMODE;
         texture.wrapV = Texture.WRAP_ADDRESSMODE;
-        texture.anisotropicFilteringLevel = 8;
+        texture.anisotropicFilteringLevel = anisotropy;
         texture.gammaSpace = !linear;
     };
     const load = (
@@ -155,7 +162,7 @@ export function applyTextureSet(
     });
     load(set.normalKtx, set.normalJpg, true, (texture) => {
         material.bumpTexture = texture;
-        texture.level = 0.7;
+        texture.level = options.bumpLevel ?? 0.7;
     });
     load(set.armKtx, set.armJpg, true, (texture) => {
         material.metallicTexture = texture;

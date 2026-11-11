@@ -834,6 +834,84 @@ button {
     overflow-wrap: anywhere;
 }
 
+.setup-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.setup-tab {
+    flex: 1 1 0;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 8px 6px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition:
+        background 160ms var(--ease),
+        color 160ms var(--ease),
+        border-color 160ms var(--ease);
+}
+
+.setup-tab:hover {
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+.setup-tab.active {
+    color: var(--accent-strong);
+    border-color: var(--accent);
+    background: var(--surface-raised);
+}
+
+.setup-summary {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-faint);
+}
+
+.car-option {
+    grid-template-columns: 38px 1fr;
+}
+
+.car-option::before {
+    display: none;
+}
+
+.car-tier {
+    grid-row: 1 / span 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 22px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+}
+
+.car-option.selected .car-tier {
+    border-color: var(--accent);
+    color: var(--accent-strong);
+}
+
+.car-option .scenario-option-title,
+.car-option .scenario-option-description {
+    grid-column: 2;
+}
+
 .start-hints {
     display: grid;
     grid-template-columns: 1fr 1fr;

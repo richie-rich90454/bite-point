@@ -18,17 +18,21 @@ The deterministic suite currently covers:
 | Clutch | Pedal mapping, open/slipping/locked modes, capacity limit, heat, cooling, wear derating |
 | H-pattern | Neutral start, grab requirement, gate/corridor movement, first to second through neutral, reverse request |
 | Gearbox | Ratios, reverse, reverse lockout, clutch requirement, synchronized and rev-matched shifts, torque ramp |
-| Driveline | Wheel/engine speed relationships, reflected inertia, torque multiplication |
+| Driveline | Wheel/engine speed relationships, reflected inertia, torque multiplication, FWD/RWD/AWD torque split |
+| Catalog | Twelve validated cars, unique ids, tier and engine-type coverage, simulated 0-100 km/h times |
+| Maps | Map catalog validation, deterministic generation, theme cycling, finite heights and normals, chunk continuity |
+| Audio | Engine profile construction and safe sound-set switching without an AudioContext |
+| Settings | Default car/map selection, valid selections, fallback on invalid values |
 | Wheels/tires | Free roll, grip saturation, braking force and lock behavior, load sensitivity, wet μ, friction ellipse |
 | Suspension/steering/brakes | Static compression, bump stop, damping, steering rate and speed sensitivity, handbrake split |
 | Clock | Fixed steps, bounded catch-up, overload/dropped time, interpolation alpha, reset |
 | Configuration | Valid reference, invalid mass/fields, ratio ordering, bite geometry, provenance |
 | Telemetry | Ring buffer wrapping/order, sample rate, JSON export |
 | Input | Defaults, duplicate detection, layout labels, calibration, pedal ramps, focus-loss safety, repeat timing, rebinding conflicts, recovery hold |
-| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
+| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, launch control, FWD/RWD/AWD wheel drive, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
-Latest local result after implementation: all 93 deterministic tests pass across 18 files. The Playwright smoke test boots the production build, starts Free Drive, engages first through the H-pattern, launches, steers, shifts to second, opens pause, opens the input test and settings, checks telemetry export/replay, and verifies there are no uncaught page errors.
+Latest local result after implementation: all 141 deterministic tests pass across 25 files. Six Playwright tests boot the production build, start sessions, engage gears, launch, steer, shift, change car and map, open pause, open the input test and settings, check telemetry export/replay, and verify there are no uncaught page errors.
 
 ## What is not yet validated
 

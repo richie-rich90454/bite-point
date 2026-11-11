@@ -2,25 +2,28 @@
 
 ## Reference vehicle
 
-The initial vehicle is a generic performance reference, not a replica of a particular production model:
+The game ships a twelve-car manual-transmission roster in `src/data/cars.json`, ranked from tier 1 to tier 5. The top-tier Bite Point performance car is a generic performance reference, not a replica of a particular production model:
 
-- front-engine, front-wheel drive;
+- front-engine, all-wheel drive with a configurable front torque split;
 - high-revving four-cylinder gasoline engine with a 9,000 rpm redline;
 - six-speed H-pattern manual transmission;
-- open differential;
+- open differential per axle;
 - power-assisted rack-and-pinion steering;
 - independent front suspension with a reference-based rear suspension;
 - optional stability assist and traction control for predictable high-speed handling.
 
-The rendered car is an original CC0 1990s five-door hatchback from Grab3D, adapted with a metallic finish, animated wheel pivots and a custom cockpit. No Volkswagen logos, model files or copyrighted assets are included. The licence and source URL are recorded in `src/assets/LICENSE-hatchback.txt`.
+The other tiers cover naturally aspirated, turbo, hybrid and electric powertrains with front-, rear- and all-wheel drive. Every car is manual: electric cars use a single-speed manual.
 
-The configuration lives in `src/data/reference-compact.json` and is loaded and validated at application start. A future calibration should select a real reference vehicle and replace estimates with measured data, then record the measurement conditions.
+The rendered car is an original CC0 1990s five-door hatchback from Grab3D, adapted with a metallic finish, animated wheel pivots and a custom cockpit. The roster shares the hatchback shell with per-car paint and performance. No Volkswagen logos, model files or copyrighted assets are included. The licence and source URL are recorded in `src/assets/LICENSE-hatchback.txt`.
+
+The top-tier configuration also lives in `src/data/reference-compact.json`; the catalog in `src/data/CarCatalog.ts` validates every car at startup.
 
 ## Schema
 
 The schema is versioned with `schemaVersion: 1`. Major sections:
 
 - `massKg`, `wheelbaseM`, `trackM`, `cgHeightM`, `frontWeightBias`, `wheelRadiusM`, `wheelInertiaKgM2`
+- `drivetrain` (`FWD`, `RWD`, `AWD`) and `awdTorqueSplit`
 - `finalDriveRatio`, `drivetrainEfficiency`, `gearRatios[6]`, `reverseRatio`
 - `engine`: idle, redline, stall and start speeds; inertia; starter, friction and pumping losses; monotonically ordered torque curve
 - `clutch`: capacity, friction coefficient, effective radius, friction surfaces, bite point, engagement width, thermal mass, ambient/max temperatures, cooling and wear rates

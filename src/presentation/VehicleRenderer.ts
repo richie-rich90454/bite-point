@@ -1,4 +1,3 @@
-import hatchbackUrl from "../assets/hatchback.glb?url";
 import "@babylonjs/loaders/glTF/glTFFileLoader";
 import "@babylonjs/loaders/glTF/2.0/glTFLoader";
 import {
@@ -28,11 +27,13 @@ import {
     Vector3,
     VertexData,
 } from "./babylon";
+import { ColorCurves } from "@babylonjs/core/Materials/colorCurves";
 import type { VehicleConfig } from "../simulation/config/VehicleConfig";
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 import type { RoadContactProvider } from "../simulation/road/RoadContactProvider";
 import type { WorldGenerator } from "../simulation/world/WorldGenerator";
 import type { UserSettings } from "../settings/SettingsRepository";
+import { DEFAULT_CAR_MODEL_ID, resolveCarModel, type CarModelDefinition } from "./CarModels";
 import { CockpitController, type CameraMode } from "./CockpitController";
 import { EnvironmentBuilder } from "./EnvironmentBuilder";
 import { WorldStreamer } from "./WorldStreamer";
@@ -67,9 +68,15 @@ export class VehicleRenderer {
         steer: TransformNode | null;
         angle: number;
     } | null> = [];
+    private readonly importedPaintMaterials: PBRMaterial[] = [];
+    private carModelId = DEFAULT_CAR_MODEL_ID;
+    private importedModelId: string | null = null;
+    private carPaintColor = resolveCarModel(DEFAULT_CAR_MODEL_ID).defaultPaint;
+    private carLoadToken = 0;
     private usingImportedCar = false;
     private carAssetPending = true;
     private cockpitLight: PointLight | null = null;
+    private readonly cockpitLights: PointLight[] = [];
     private steeringSpinNode: TransformNode | null = null;
     private tachNeedleNode: TransformNode | null = null;
     private speedNeedleNode: TransformNode | null = null;
@@ -116,15 +123,28 @@ export class VehicleRenderer {
             true,
         );
         this.scene = new Scene(this.engine);
-        this.scene.clearColor = Color4.FromHexString("#a9c0d2ff");
-        this.scene.ambientColor = new Color3(0.3, 0.32, 0.35);
+        this.scene.clearColor = Color4.FromHexString("#b6c9d6ff");
+        this.scene.ambientColor = new Color3(0.26, 0.28, 0.31);
         this.scene.fogMode = Scene.FOGMODE_EXP2;
-        this.scene.fogDensity = 0.00085;
-        this.scene.fogColor = new Color3(0.72, 0.8, 0.86);
-        this.scene.imageProcessingConfiguration.toneMappingEnabled = true;
-        this.scene.imageProcessingConfiguration.toneMappingType = 1;
-        this.scene.imageProcessingConfiguration.exposure = 0.84;
-        this.scene.imageProcessingConfiguration.contrast = 1.14;
+        this.scene.fogDensity = 0.00072;
+        this.scene.fogColor = new Color3(0.72, 0.79, 0.85);
+        const imageProcessing = this.scene.imageProcessingConfiguration;
+        imageProcessing.toneMappingEnabled = true;
+        imageProcessing.toneMappingType = 1;
+        imageProcessing.exposure = 1.04;
+        imageProcessing.contrast = 1.18;
+        imageProcessing.vignetteEnabled = true;
+        imageProcessing.vignetteWeight = 2.6;
+        imageProcessing.vignetteStretch = 0.25;
+        imageProcessing.vignetteColor = new Color4(0.015, 0.02, 0.03, 1);
+        imageProcessing.colorCurvesEnabled = true;
+        const curves = new ColorCurves();
+        curves.globalSaturation = 7;
+        curves.highlightsDensity = 5;
+        curves.highlightsHue = 38;
+        curves.shadowsDensity = -5;
+        curves.shadowsHue = 214;
+        imageProcessing.colorCurves = curves;
 
         this.environment = new EnvironmentBuilder(this.scene, road);
         this.worldStreamer = world
@@ -150,7 +170,7 @@ export class VehicleRenderer {
         this.reverseLightMaterial.diffuseColor = new Color3(0.1, 0.1, 0.1);
 
         this.buildCar();
-        this.loadDetailedCar();
+        this.loadDetailedCar(resolveCarModel(this.carModelId), this.carPaintColor);
         const cockpitMeshes = new Set(this.cockpitGroup.getChildMeshes());
         for (const mesh of this.carRoot.getChildMeshes()) {
             if (!cockpitMeshes.has(mesh)) this.exteriorMeshes.push(mesh);
@@ -167,14 +187,17 @@ export class VehicleRenderer {
         ]);
         this.pipeline.fxaaEnabled = true;
         this.pipeline.bloomEnabled = true;
-        this.pipeline.bloomThreshold = 0.92;
-        this.pipeline.bloomWeight = 0.12;
-        this.pipeline.bloomKernel = 32;
-        this.pipeline.sharpenEnabled = false;
+        this.pipeline.bloomThreshold = 0.88;
+        this.pipeline.bloomWeight = 0.16;
+        this.pipeline.bloomKernel = 48;
+        this.pipeline.sharpenEnabled = true;
+        this.pipeline.sharpen.edgeAmount = 0.14;
+        this.pipeline.sharpen.colorAmount = 1;
         this.pipeline.chromaticAberrationEnabled = true;
-        this.pipeline.chromaticAberration.aberrationAmount = 6;
+        this.pipeline.chromaticAberration.aberrationAmount = 5;
         this.pipeline.grainEnabled = true;
-        this.pipeline.grain.intensity = 2.4;
+        this.pipeline.grain.intensity = 2;
+        this.pipeline.imageProcessingEnabled = true;
         this.applySettings(settings);
         this.setCameraMode("cockpit");
         this.resizeHandler = () => this.engine.resize();
@@ -209,6 +232,7 @@ export class VehicleRenderer {
             this.pipeline.chromaticAberrationEnabled =
                 settings.quality === "high" && this.adaptiveLevel === 0;
             this.pipeline.grainEnabled = settings.quality !== "low";
+            this.pipeline.sharpenEnabled = settings.quality !== "low" && this.adaptiveLevel < 2;
         }
         this.applyMotionBlur(
             settings.motionBlur && settings.quality !== "low" && this.adaptiveLevel < 2,
@@ -329,6 +353,30 @@ export class VehicleRenderer {
         return this.headlightsOn;
     }
 
+    get carModel(): string {
+        return this.carModelId;
+    }
+
+    setCarModel(modelId: string, paintColor?: string): void {
+        const model = resolveCarModel(modelId);
+        const nextPaint = paintColor ?? this.carPaintColor;
+        const paintChanged = nextPaint.toLowerCase() !== this.carPaintColor.toLowerCase();
+        this.carModelId = model.id;
+        this.carPaintColor = nextPaint;
+        if (this.usingImportedCar && model.id === this.importedModelId) {
+            if (paintChanged) this.applyPaintColor();
+            return;
+        }
+        this.loadDetailedCar(model, nextPaint);
+    }
+
+    private applyPaintColor(): void {
+        const color = Color3.FromHexString(this.carPaintColor);
+        for (const material of this.importedPaintMaterials) {
+            material.albedoColor = color;
+        }
+    }
+
     setWipers(mode: number): void {
         this.wipersMode = ((mode % 3) + 3) % 3;
     }
@@ -413,6 +461,7 @@ export class VehicleRenderer {
         const showExterior = mode !== "cockpit";
         this.cockpitGroup.setEnabled(!showExterior);
         if (this.cockpitLight) this.cockpitLight.setEnabled(!showExterior);
+        for (const light of this.cockpitLights) light.setEnabled(!showExterior);
         if (this.usingImportedCar) {
             this.importedCar?.setEnabled(showExterior);
             this.exteriorCabin.setEnabled(false);
@@ -430,24 +479,26 @@ export class VehicleRenderer {
 
     private createPaintMaterial(): PBRMaterial {
         const material = new PBRMaterial("paint", this.scene);
-        material.albedoColor = Color3.FromHexString("#4f585e");
-        material.metallic = 0.73;
-        material.roughness = 0.27;
+        material.albedoColor = Color3.FromHexString("#39424a");
+        material.metallic = 0.82;
+        material.roughness = 0.24;
         material.clearCoat.isEnabled = true;
-        material.clearCoat.intensity = 0.85;
-        material.clearCoat.roughness = 0.14;
-        material.environmentIntensity = 0.9;
+        material.clearCoat.intensity = 1;
+        material.clearCoat.roughness = 0.06;
+        material.clearCoat.indexOfRefraction = 1.5;
+        material.environmentIntensity = 1.05;
         material.backFaceCulling = false;
         return material;
     }
 
     private createGlassMaterial(): PBRMaterial {
         const material = new PBRMaterial("glass", this.scene);
-        material.albedoColor = new Color3(0.005, 0.007, 0.009);
-        material.metallic = 0.15;
-        material.roughness = 0.1;
-        material.alpha = 1;
-        material.environmentIntensity = 0.3;
+        material.albedoColor = new Color3(0.012, 0.018, 0.022);
+        material.metallic = 0.25;
+        material.roughness = 0.045;
+        material.alpha = 0.52;
+        material.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+        material.environmentIntensity = 1.25;
         material.backFaceCulling = false;
         return material;
     }
@@ -467,12 +518,12 @@ export class VehicleRenderer {
         const interior = new StandardMaterial("interior", this.scene);
         interior.diffuseColor = new Color3(0.012, 0.016, 0.02);
         interior.specularColor = new Color3(0.02, 0.02, 0.02);
-        const seatMaterial = new StandardMaterial("seat", this.scene);
-        seatMaterial.diffuseColor = new Color3(0.025, 0.028, 0.03);
-        seatMaterial.specularColor = new Color3(0.02, 0.02, 0.02);
         const carpet = new StandardMaterial("carpet", this.scene);
         carpet.diffuseColor = new Color3(0.008, 0.009, 0.01);
         carpet.specularColor = Color3.Black();
+        const seatMaterial = new StandardMaterial("seat", this.scene);
+        seatMaterial.diffuseColor = new Color3(0.025, 0.028, 0.03);
+        seatMaterial.specularColor = new Color3(0.02, 0.02, 0.02);
         const rim = this.material("rim", "#9fa4a8", 0.82, 0.32);
 
         const halfWidth = this.config.trackM / 2;
@@ -1289,17 +1340,30 @@ export class VehicleRenderer {
         this.buildInterior(trim, interior, seatMaterial, carpet, chrome);
     }
 
-    private loadDetailedCar(): void {
-        void ImportMeshAsync(hatchbackUrl, this.scene)
+    private loadDetailedCar(model: CarModelDefinition, paintColor?: string): void {
+        const token = ++this.carLoadToken;
+        if (this.importedCar) {
+            this.importedCar.dispose(false, false);
+            this.importedCar = null;
+        }
+        this.importedWheels = [];
+        this.importedPaintMaterials.length = 0;
+        this.importedModelId = null;
+        this.usingImportedCar = false;
+        this.carAssetPending = true;
+        void ImportMeshAsync(model.url, this.scene)
             .then((result) => {
-                if (this.disposed) return;
+                if (this.disposed || token !== this.carLoadToken) {
+                    result.meshes[0]?.dispose();
+                    return;
+                }
                 const assetRoot = result.meshes[0];
                 if (!assetRoot) throw new Error("The car asset has no root mesh.");
 
                 const root = new TransformNode("imported-car", this.scene);
                 root.parent = this.carRoot;
-                root.scaling.setAll(1.04);
-                root.position.set(0, 0, -0.29);
+                root.scaling.setAll(model.scale);
+                root.position.set(model.offset[0], model.offset[1], model.offset[2]);
                 assetRoot.parent = root;
 
                 const shadowTexture = new DynamicTexture(
@@ -1386,17 +1450,20 @@ export class VehicleRenderer {
                 for (const mesh of result.meshes) {
                     if (mesh.material instanceof PBRMaterial) materials.add(mesh.material);
                 }
+                this.importedPaintMaterials.length = 0;
                 for (const material of materials) {
                     const name = material.name.toLowerCase();
-                    if (name.includes("body_pbr")) {
-                        // Preserve the authored panel, trim and roughness detail in the GLB.
-                        material.albedoColor = Color3.White();
-                        material.metallic = 1;
-                        material.roughness = 1;
+                    if (name.includes(model.paintMaterial.toLowerCase())) {
+                        material.albedoColor = Color3.FromHexString(
+                            paintColor ?? model.defaultPaint,
+                        );
+                        material.metallic = 0.85;
+                        material.roughness = 0.28;
                         material.clearCoat.isEnabled = true;
-                        material.clearCoat.intensity = 0.45;
-                        material.clearCoat.roughness = 0.24;
-                        material.environmentIntensity = 0.9;
+                        material.clearCoat.intensity = 0.65;
+                        material.clearCoat.roughness = 0.12;
+                        material.environmentIntensity = 1;
+                        this.importedPaintMaterials.push(material);
                     } else if (name.includes("window_glass")) {
                         material.albedoColor = new Color3(0.018, 0.028, 0.034);
                         material.metallic = 0.08;
@@ -1417,6 +1484,7 @@ export class VehicleRenderer {
 
                 this.importedWheels = wheelEntries;
                 this.importedCar = root;
+                this.importedModelId = model.id;
                 this.usingImportedCar = true;
                 this.carAssetPending = false;
                 this.exteriorCabin.setEnabled(false);
@@ -1425,6 +1493,7 @@ export class VehicleRenderer {
                 this.scene.getEngine().resize();
             })
             .catch((error: unknown) => {
+                if (token !== this.carLoadToken) return;
                 this.carAssetPending = false;
                 this.setCameraMode(this.lastCameraMode);
                 console.warn(

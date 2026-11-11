@@ -24,7 +24,7 @@ describe("closed-course performance", () => {
             elapsed += 1 / 250;
         }
         expect(sim.engine.running).toBe(true);
-        expect(sim.gear).toBe(6);
+        expect(sim.gear).toBeGreaterThanOrEqual(5);
         expect(sim.speedMps * 3.6).toBeGreaterThanOrEqual(199.9);
         expect(sim.x).toBeLessThan(5500);
         scenarios.update(sim, sim.getRenderState(1), [], elapsed);

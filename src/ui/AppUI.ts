@@ -16,6 +16,10 @@ import {
     type DashboardPresenterOptions,
 } from "../presentation/DashboardPresenter";
 import { ACTION_LABELS, INPUT_ACTIONS, formatKeyCode } from "../input/bindings";
+import { CARS, DEFAULT_CAR_ID, getCar } from "../data/CarCatalog";
+import { DEFAULT_MAP_ID, MAPS, getMap } from "../data/MapCatalog";
+import { measureZeroToHundred } from "../simulation/measure/ZeroToHundred";
+import type { CarDefinition } from "../data/CarTypes";
 
 export interface UIScenarioInfo {
     id: string;
@@ -52,6 +56,8 @@ export interface AppUICallbacks {
     onResume: () => void;
     onRestart: () => void;
     onScenario: (scenarioId: string) => void;
+    onCarSelect: (carId: string) => void;
+    onMapSelect: (mapId: string) => void;
     onRecovery: () => void;
     onSettings: (settings: Partial<UserSettings>) => void;
     onRebind: (action: InputAction) => Promise<RebindResult>;
@@ -65,6 +71,7 @@ export interface AppUICallbacks {
 }
 
 type PauseTab = "drive" | "lessons" | "controls" | "settings" | "input" | "diagnostics";
+type SetupTab = "car" | "map" | "session";
 
 const TAB_LABELS: Record<PauseTab, string> = {
     drive: "Drive",
@@ -455,6 +462,13 @@ export class AppUI {
     telemetryOpen = false;
     private activeTab: PauseTab = "drive";
     private selectedScenario = "endless";
+    private setupTab: SetupTab = "car";
+    private selectedCarId = DEFAULT_CAR_ID;
+    private selectedMapId = DEFAULT_MAP_ID;
+    private readonly carStatsCache = new Map<
+        string,
+        { zeroToHundred: number; powerHp: number; torqueNm: number }
+    >();
     private readonly dashboard: DashboardPresenter;
     private maxRpm = 9000;
     private readonly root: HTMLElement;
@@ -491,6 +505,7 @@ export class AppUI {
     private readonly scenarioGrid: HTMLElement;
     private readonly scenarioScrollbar: HTMLElement;
     private readonly scenarioScrollbarThumb: HTMLElement;
+    private readonly setupSummary: HTMLElement;
     private scrollbarDrag: { startY: number; startScroll: number } | null = null;
     private scenarioScrollbarDrag: { startY: number; startScroll: number } | null = null;
     private readonly tabs: HTMLElement;
@@ -514,6 +529,8 @@ export class AppUI {
         this.scenarios = scenarios;
         this.settings = settings;
         this.callbacks = callbacks;
+        this.selectedCarId = getCar(settings.selectedCarId)?.id ?? DEFAULT_CAR_ID;
+        this.selectedMapId = getMap(settings.selectedMapId)?.id ?? DEFAULT_MAP_ID;
         root.innerHTML = this.template();
         this.startOverlay = this.query(".start-overlay");
         this.pauseOverlay = this.query(".pause-overlay");
@@ -539,6 +556,7 @@ export class AppUI {
         this.scenarioGrid = this.query(".scenario-grid");
         this.scenarioScrollbar = this.query("[data-scenario-scrollbar]");
         this.scenarioScrollbarThumb = this.query("[data-scenario-scrollbar-thumb]");
+        this.setupSummary = this.query(".setup-summary");
         this.tabs = this.query(".pause-tabs");
         this.inputTestPanel = this.pauseContent;
         this.diagnosticsPanel = this.pauseContent;
@@ -555,16 +573,26 @@ export class AppUI {
 
         this.bindStaticEvents();
         this.bindCustomScrollbar();
-        this.renderStartScenarios();
+        this.renderSetup();
         this.renderHelp();
         this.setTelemetryVisible(settings.showTelemetry, false);
         this.updateSettings(settings);
     }
 
     updateSettings(settings: UserSettings): void {
+        const previousCar = this.selectedCarId;
+        const previousMap = this.selectedMapId;
         this.settings = settings;
+        if (getCar(settings.selectedCarId)) this.selectedCarId = settings.selectedCarId;
+        if (getMap(settings.selectedMapId)) this.selectedMapId = settings.selectedMapId;
         this.dashboard.setUnits(settings.units);
         this.applyInterfacePreferences();
+        if (
+            (previousCar !== this.selectedCarId || previousMap !== this.selectedMapId) &&
+            this.startOpen
+        ) {
+            this.renderSetup();
+        }
         if (this.pauseOpen && this.activeTab === "settings") this.renderPauseTab();
     }
 
@@ -915,13 +943,19 @@ export class AppUI {
             <div class="start-footnote">Six speeds, 250 Hz physics, endless road</div>
           </div>
           <div class="start-select">
-            <div class="panel-label">Choose your session</div>
+            <div class="panel-label">Choose your setup</div>
+            <div class="setup-tabs" role="tablist" aria-label="Setup">
+              <button class="setup-tab active" data-setup-tab="car" role="tab">Car</button>
+              <button class="setup-tab" data-setup-tab="map" role="tab">Map</button>
+              <button class="setup-tab" data-setup-tab="session" role="tab">Session</button>
+            </div>
             <div class="scenario-scroll">
               <div class="scenario-grid"></div>
               <div class="custom-scrollbar scenario-scrollbar" data-scenario-scrollbar aria-hidden="true">
                 <div class="custom-scrollbar-thumb" data-scenario-scrollbar-thumb></div>
               </div>
             </div>
+            <div class="setup-summary"></div>
             <div class="start-hints">
               <span><b>I</b> ignition</span>
               <span><b>K</b> starter</span>
@@ -985,6 +1019,14 @@ export class AppUI {
                 this.callbacks.onStart(this.selectedScenario);
             }
         });
+        this.query(".setup-tabs").addEventListener("click", (event) => {
+            const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+                "[data-setup-tab]",
+            );
+            if (!button) return;
+            this.setupTab = button.dataset.setupTab as SetupTab;
+            this.renderSetup();
+        });
         this.pauseOverlay.addEventListener("click", (event) => {
             if ((event.target as HTMLElement).classList.contains("pause-overlay"))
                 this.closePause();
@@ -1000,9 +1042,20 @@ export class AppUI {
         });
     }
 
-    private renderStartScenarios(): void {
+    private renderSetup(): void {
         const container = this.query(".scenario-grid");
         container.innerHTML = "";
+        this.root.querySelectorAll<HTMLElement>("[data-setup-tab]").forEach((tab) => {
+            tab.classList.toggle("active", tab.dataset.setupTab === this.setupTab);
+        });
+        if (this.setupTab === "car") this.renderCarOptions(container);
+        else if (this.setupTab === "map") this.renderMapOptions(container);
+        else this.renderScenarioOptions(container);
+        this.updateSetupSummary();
+        requestAnimationFrame(() => this.updateScenarioScrollbar());
+    }
+
+    private renderScenarioOptions(container: HTMLElement): void {
         for (const scenario of this.scenarios) {
             const button = document.createElement("button");
             button.className = "scenario-option";
@@ -1015,7 +1068,87 @@ export class AppUI {
             container.append(button);
         }
         this.setScenarioSelection(this.selectedScenario);
-        requestAnimationFrame(() => this.updateScenarioScrollbar());
+    }
+
+    private renderCarOptions(container: HTMLElement): void {
+        for (const car of CARS) {
+            const stats = this.carStats(car);
+            const button = document.createElement("button");
+            button.className = "scenario-option car-option";
+            button.dataset.carCard = car.id;
+            if (car.id === this.selectedCarId) button.classList.add("selected");
+            const tier = document.createElement("span");
+            tier.className = "car-tier";
+            tier.textContent = `T${car.tier}`;
+            const title = document.createElement("span");
+            title.className = "scenario-option-title";
+            title.textContent = car.name;
+            const description = document.createElement("span");
+            description.className = "scenario-option-description";
+            description.textContent = `${car.engineType}, ${car.drivetrain}, ${stats.zeroToHundred.toFixed(2)} s, ${stats.powerHp} hp, ${stats.torqueNm} Nm`;
+            button.append(tier, title, description);
+            button.addEventListener("click", () => {
+                this.selectedCarId = car.id;
+                this.callbacks.onCarSelect(car.id);
+                this.renderSetup();
+            });
+            container.append(button);
+        }
+    }
+
+    private renderMapOptions(container: HTMLElement): void {
+        for (const map of MAPS) {
+            const button = document.createElement("button");
+            button.className = "scenario-option map-option";
+            button.dataset.mapCard = map.id;
+            if (map.id === this.selectedMapId) button.classList.add("selected");
+            const title = document.createElement("span");
+            title.className = "scenario-option-title";
+            title.textContent = map.name;
+            const description = document.createElement("span");
+            description.className = "scenario-option-description";
+            description.textContent = map.description;
+            button.append(title, description);
+            button.addEventListener("click", () => {
+                this.selectedMapId = map.id;
+                this.callbacks.onMapSelect(map.id);
+                this.renderSetup();
+            });
+            container.append(button);
+        }
+    }
+
+    private carStats(car: CarDefinition): {
+        zeroToHundred: number;
+        powerHp: number;
+        torqueNm: number;
+    } {
+        const cached = this.carStatsCache.get(car.id);
+        if (cached) return cached;
+        const result = measureZeroToHundred(car.config);
+        let peakKw = 0;
+        let peakTorque = 0;
+        for (const [rpm, torque] of car.config.engine.torqueCurve) {
+            peakKw = Math.max(peakKw, (torque * rpm) / 9549);
+            peakTorque = Math.max(peakTorque, torque);
+        }
+        const stats = {
+            zeroToHundred: result.reached ? result.timeS : Number.POSITIVE_INFINITY,
+            powerHp: Math.round(peakKw * 1.34102),
+            torqueNm: Math.round(peakTorque),
+        };
+        this.carStatsCache.set(car.id, stats);
+        return stats;
+    }
+
+    private updateSetupSummary(): void {
+        const car = getCar(this.selectedCarId) ?? CARS[0];
+        const map = getMap(this.selectedMapId) ?? MAPS[0];
+        const stats = car ? this.carStats(car) : null;
+        this.setupSummary.textContent =
+            car && map && stats
+                ? `T${car.tier} ${car.name}, ${car.engineType}, ${car.drivetrain}, ${stats.zeroToHundred.toFixed(2)} s, ${map.name}`
+                : "";
     }
 
     private renderScenario(data: UIUpdate): void {
@@ -1046,6 +1179,11 @@ export class AppUI {
             ["Ign", state.ignition, state.ignition ? "on" : "off"],
             ["Oil", state.engineRunning, state.engineRunning ? "ok" : "warn"],
             ["Brake", state.handbrake, state.handbrake ? "warn" : "off"],
+            [
+                "Launch",
+                state.launchControlActive ?? false,
+                state.launchControlActive ? "on" : "off",
+            ],
             [
                 "Hot",
                 state.clutchTemperatureC > 300,
@@ -1241,6 +1379,7 @@ export class AppUI {
           <div class="button-row">
             <button class="button secondary" data-ui="restart">Restart session</button>
             <button class="button ghost" data-ui="recovery">Recover vehicle</button>
+            <button class="button ghost" data-ui="garage">Change car or map</button>
           </div>
         </div>
         <div class="pause-card">
@@ -1275,6 +1414,10 @@ export class AppUI {
         this.pauseContent.querySelector('[data-ui="recovery"]')?.addEventListener("click", () => {
             this.closePause();
             this.callbacks.onRecovery();
+        });
+        this.pauseContent.querySelector('[data-ui="garage"]')?.addEventListener("click", () => {
+            this.closePause();
+            this.showStart();
         });
         this.pauseContent
             .querySelector('[data-ui="camera"]')
@@ -1762,11 +1905,13 @@ export class AppUI {
 
     private promptFor(state: VehicleRenderState): string {
         const key = (action: InputAction): string => this.callbacks.getBindingLabel(action);
+        if (state.launchControlActive)
+            return "Launch control ready. Keep the throttle down and release the brake to launch.";
         if (
             state.engineRunning &&
             state.gear > 0 &&
             state.gear < 6 &&
-            state.rpm > 5700 &&
+            state.rpm > this.maxRpm * 0.9 &&
             state.clutchPedal < 0.2
         ) {
             return `Shift up: lift ${key("accelerator")}, depress ${key("clutchDepress")}, select ${state.gear + 1}, then release ${key("clutchRelease")}.`;

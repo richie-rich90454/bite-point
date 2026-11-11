@@ -1,14 +1,45 @@
+import { clamp01 } from "../core/MathUtils";
+import type { Drivetrain } from "../config/VehicleConfig";
+
+function average(values: ReadonlyArray<number>): number {
+    if (values.length === 0) return 0;
+    let sum = 0;
+    for (const value of values) sum += value;
+    return sum / values.length;
+}
+
 export class DrivelineModel {
+    readonly frontDifferential = new OpenDifferential();
+    readonly rearDifferential = new OpenDifferential();
+    private readonly frontFraction: number;
+
     constructor(
         readonly finalDriveRatio: number,
         readonly efficiency: number,
-    ) {}
+        readonly drivetrain: Drivetrain = "FWD",
+        awdTorqueSplit = 0.5,
+    ) {
+        this.frontFraction =
+            drivetrain === "FWD" ? 1 : drivetrain === "RWD" ? 0 : clamp01(awdTorqueSplit);
+    }
 
-    outputShaftOmega(frontWheelOmegas: ReadonlyArray<number>): number {
-        if (frontWheelOmegas.length === 0) return 0;
-        let sum = 0;
-        for (const omega of frontWheelOmegas) sum += omega;
-        return (sum / frontWheelOmegas.length) * this.finalDriveRatio;
+    get drivenWheelCount(): number {
+        return this.drivetrain === "AWD" ? 4 : 2;
+    }
+
+    outputShaftOmega(
+        frontWheelOmegas: ReadonlyArray<number>,
+        rearWheelOmegas: ReadonlyArray<number> = [],
+    ): number {
+        const front = average(frontWheelOmegas);
+        const rear = rearWheelOmegas.length > 0 ? average(rearWheelOmegas) : front;
+        const wheelOmega =
+            this.drivetrain === "FWD"
+                ? front
+                : this.drivetrain === "RWD"
+                  ? rear
+                  : this.frontFraction * front + (1 - this.frontFraction) * rear;
+        return wheelOmega * this.finalDriveRatio;
     }
 
     gearboxInputOmega(outputOmega: number, gearRatio: number): number {
@@ -17,6 +48,13 @@ export class DrivelineModel {
 
     totalWheelDriveTorque(clutchTorqueNm: number, gearRatio: number, torqueFactor: number): number {
         return clutchTorqueNm * gearRatio * this.finalDriveRatio * this.efficiency * torqueFactor;
+    }
+
+    driveTorqueByAxle(totalTorqueNm: number): { frontNm: number; rearNm: number } {
+        return {
+            frontNm: totalTorqueNm * this.frontFraction,
+            rearNm: totalTorqueNm * (1 - this.frontFraction),
+        };
     }
 
     reflectedInertiaKgM2(

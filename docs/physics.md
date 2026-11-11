@@ -57,7 +57,10 @@ When the clutch is open, the gearbox input shaft in neutral coasts down; when th
 T_wheel_total = T_clutch * gearRatio * finalDrive * efficiency * torqueFactor
 ```
 
-- The open differential splits total drive torque equally. Wheel speeds are free to differ.
+- The open differential splits total drive torque equally per axle. Wheel speeds are free to differ.
+- `drivetrain` selects the driven axle. FWD sends all torque to the front, RWD to the rear, and AWD splits it by `awdTorqueSplit` (front fraction) with the remainder to the rear. The output shaft speed, reflected inertia and traction-control slip use the same driven-wheel set.
+- Launch control holds the clutch just above the bite point when the car is stationary in gear with the brake and throttle held. Releasing the brake ramps the clutch in over about 0.4 s. It never changes the throttle command.
+- The handbrake applies rear-axle brake torque only. It does not cut throttle or clamp engine speed; any engine-speed change comes from the wheels through the drivetrain.
 
 ## Wheels and tires
 

@@ -4,8 +4,7 @@ import type { UserSettings } from "../settings/SettingsRepository";
 import type { TelemetrySample } from "../simulation/telemetry/TelemetryRecorder";
 import type { VehicleRenderState } from "../simulation/vehicle/VehicleTypes";
 import { gearLabel } from "../simulation/vehicle/VehicleTypes";
-import { assertValidVehicleConfig, type VehicleConfig } from "../simulation/config/VehicleConfig";
-import rawConfig from "../data/reference-compact.json";
+import { type VehicleConfig } from "../simulation/config/VehicleConfig";
 import { VehicleSimulation, type SimEvent } from "../simulation/vehicle/VehicleSimulation";
 import { RoadContactProvider } from "../simulation/road/RoadContactProvider";
 import { WorldGenerator } from "../simulation/world/WorldGenerator";
@@ -18,6 +17,10 @@ import { SettingsRepository } from "../settings/SettingsRepository";
 import { AudioDirector } from "../audio/AudioDirector";
 import { AppUI, type AppUICallbacks, type UIUpdate } from "../ui/AppUI";
 import { clamp, lerpAngle, wrapAngle } from "../simulation/core/MathUtils";
+import { CARS, DEFAULT_CAR_ID, getCar } from "../data/CarCatalog";
+import { DEFAULT_MAP_ID, getMap } from "../data/MapCatalog";
+import type { CarDefinition } from "../data/CarTypes";
+import type { MapDefinition } from "../data/MapTypes";
 
 interface ReplaySession {
     samples: TelemetrySample[];
@@ -26,12 +29,14 @@ interface ReplaySession {
 }
 
 export class SimulatorApplication {
-    private readonly config: VehicleConfig;
+    private config: VehicleConfig;
     private readonly settingsRepository: SettingsRepository;
     private readonly road: RoadContactProvider;
-    private readonly worldCurved = new WorldGenerator(2026, "curved");
-    private readonly worldStraight = new WorldGenerator(2026, "straight");
-    private readonly simulation: VehicleSimulation;
+    private world: WorldGenerator;
+    private worldStraight: WorldGenerator;
+    private simulation: VehicleSimulation;
+    private selectedCar: CarDefinition;
+    private selectedMap: MapDefinition;
     private readonly clock = new SimulationClock(1 / 250, 120);
     private readonly input: InputService;
     private readonly instructor: DrivingInstructor;
@@ -58,9 +63,21 @@ export class SimulatorApplication {
 
     constructor(canvas: HTMLCanvasElement, uiRoot: HTMLElement) {
         this.canvas = canvas;
-        this.config = assertValidVehicleConfig(rawConfig as unknown);
         this.settingsRepository = new SettingsRepository();
         const settings = this.settingsRepository.current;
+        this.selectedCar = getCar(settings.selectedCarId) ?? getCar(DEFAULT_CAR_ID) ?? CARS[0]!;
+        this.selectedMap = getMap(settings.selectedMapId) ?? getMap(DEFAULT_MAP_ID)!;
+        this.config = this.selectedCar.config;
+        this.world = new WorldGenerator(
+            this.selectedMap.seed,
+            this.selectedMap.routeMode,
+            this.selectedMap.themeSequence,
+        );
+        this.worldStraight = new WorldGenerator(
+            this.selectedMap.seed,
+            "straight",
+            this.selectedMap.themeSequence,
+        );
         this.road = new RoadContactProvider();
         this.simulation = new VehicleSimulation(this.config, this.road);
         this.instructor = new DrivingInstructor(settings.instructorEnabled);
@@ -74,20 +91,22 @@ export class SimulatorApplication {
             onMessage: (message) => this.ui.showToast(message, "info"),
         });
         this.input.setClutchZone(this.config.clutch.bitePoint, this.config.clutch.engagementWidth);
-        this.renderer = new VehicleRenderer(
-            canvas,
-            this.config,
-            this.road,
-            settings,
-            this.worldCurved,
-        );
+        this.renderer = new VehicleRenderer(canvas, this.config, this.road, settings, this.world);
+        (
+            this.renderer as VehicleRenderer & {
+                setCarModel?: (modelId: string, paintColor?: string) => void;
+            }
+        ).setCarModel?.(this.selectedCar.modelId, this.selectedCar.paintColor);
         this.audio = new AudioDirector(settings.audioEnabled, settings.masterVolume);
+        this.audio.setSoundSet(this.selectedCar.engineType);
 
         const callbacks: AppUICallbacks = {
             onStart: (scenarioId) => this.startScenario(scenarioId),
             onResume: () => this.resume(),
             onRestart: () => this.startScenario(this.scenarios.current.id),
             onScenario: (scenarioId) => this.startScenario(scenarioId),
+            onCarSelect: (carId) => this.selectCar(carId),
+            onMapSelect: (mapId) => this.selectMap(mapId),
             onRecovery: () => this.recoverVehicle(),
             onSettings: (partial) => this.updateSettings(partial),
             onRebind: (action) => this.rebind(action),
@@ -104,21 +123,9 @@ export class SimulatorApplication {
             getBindingLabel: (action) => this.input.formatBinding(action),
         };
         this.ui = new AppUI(uiRoot, this.scenarios.all, settings, callbacks);
-        const topGear = this.config.gearRatios[this.config.gearRatios.length - 1] ?? 1;
-        const wheelCircumference = 2 * Math.PI * this.config.wheelRadiusM;
-        const redlineSpeedKph =
-            (this.config.engine.redlineRpm / 60) *
-            (wheelCircumference / (topGear * this.config.finalDriveRatio)) *
-            3.6;
-        this.ui.setDashboardLimits({
-            maxRpm: this.config.engine.redlineRpm,
-            speedometerMaxKph: Math.max(
-                500,
-                Math.min(600, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
-            ),
-        });
+        this.applyDashboardLimits();
 
-        this.road.setWorld(this.worldCurved);
+        this.road.setWorld(this.world);
         this.renderer.setWorldMode("endless");
         this.scenarios.start("endless", this.simulation);
         this.input.setIgnition(true);
@@ -134,6 +141,8 @@ export class SimulatorApplication {
                     scenarioId: this.scenarios.current.id,
                     scenarioStatus: this.scenarios.status,
                     gear: state.gear,
+                    carId: this.selectedCar.id,
+                    mapId: this.selectedMap.id,
                     gearLabel: state.gearLabel,
                     speedKph: state.speedKph,
                     rpm: state.rpm,
@@ -158,6 +167,7 @@ export class SimulatorApplication {
                     throttle: state.throttle,
                     brake: state.brake,
                     handbrake: state.handbrake,
+                    launchControlActive: state.launchControlActive ?? false,
                     engineTorqueNm: state.engineTorqueNm,
                     wheelOmegas: state.wheels.map((wheel) => wheel.omega),
                     clutchModeDetail: state.clutchMode,
@@ -168,6 +178,26 @@ export class SimulatorApplication {
             pause: () => this.ui.openPause("drive"),
             resume: () => this.resume(),
             world: () => this.renderer.worldDiagnostics,
+            debug: () => {
+                const scene = this.renderer.scene;
+                const cockpit = scene.getTransformNodeByName("cockpit-interior");
+                const camera = scene.activeCamera;
+                const children = cockpit?.getChildMeshes() ?? [];
+                return {
+                    camera: camera
+                        ? [camera.position.x, camera.position.y, camera.position.z]
+                        : null,
+                    cameraMode: this.renderer.cameraMode,
+                    cockpitEnabled: cockpit?.isEnabled() ?? false,
+                    cockpitChildren: children.length,
+                    cockpitVisible: children.filter((mesh) => mesh.isEnabled() && mesh.isVisible)
+                        .length,
+                    importedCar: scene.getTransformNodeByName("imported-car")?.isEnabled() ?? false,
+                    exteriorCabin:
+                        scene.getTransformNodeByName("exterior-cabin")?.isEnabled() ?? false,
+                    activeMeshes: scene.getActiveMeshes().length,
+                };
+            },
         };
     }
 
@@ -325,7 +355,9 @@ export class SimulatorApplication {
         const definition =
             this.scenarios.all.find((item) => item.id === id) ?? this.scenarios.all[0]!;
         const endlessMode =
-            definition.id === "endless-straight" || definition.id === "sprint-100"
+            definition.id === "endless-straight" ||
+            definition.id === "sprint-100" ||
+            definition.id === "launch-control"
                 ? "straight"
                 : definition.id === "endless"
                   ? "curved"
@@ -334,12 +366,19 @@ export class SimulatorApplication {
             endlessMode === "straight"
                 ? this.worldStraight
                 : endlessMode === "curved"
-                  ? this.worldCurved
+                  ? this.world
                   : null;
         this.road.setWorld(world);
         this.renderer.setWorld(world);
         this.renderer.setWorldMode(endlessMode ? "endless" : "legacy");
-        const scenario = this.scenarios.start(id, this.simulation);
+        const startSample = world && endlessMode ? world.sample(500) : null;
+        const scenario = this.scenarios.start(
+            id,
+            this.simulation,
+            startSample
+                ? { x: startSample.x, y: startSample.y, heading: startSample.heading }
+                : undefined,
+        );
         this.started = true;
         this.replay = null;
         this.input.releaseAllForReset();
@@ -360,6 +399,57 @@ export class SimulatorApplication {
         this.renderer.setWipers(0);
         this.renderer.focusCockpit();
         this.ui.showToast(`${scenario.title}: ${scenario.description}`, "info");
+    }
+
+    private applyDashboardLimits(): void {
+        const topGear = this.config.gearRatios[this.config.gearRatios.length - 1] ?? 1;
+        const wheelCircumference = 2 * Math.PI * this.config.wheelRadiusM;
+        const redlineSpeedKph =
+            (this.config.engine.redlineRpm / 60) *
+            (wheelCircumference / (topGear * this.config.finalDriveRatio)) *
+            3.6;
+        this.ui.setDashboardLimits({
+            maxRpm: this.config.engine.redlineRpm,
+            speedometerMaxKph: Math.max(
+                200,
+                Math.min(600, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
+            ),
+        });
+    }
+
+    private selectCar(carId: string): void {
+        const car = getCar(carId);
+        if (!car || car.id === this.selectedCar.id) return;
+        this.selectedCar = car;
+        this.config = car.config;
+        this.simulation = new VehicleSimulation(this.config, this.road);
+        this.settingsRepository.save({ selectedCarId: car.id });
+        (
+            this.renderer as VehicleRenderer & {
+                setCarModel?: (modelId: string, paintColor?: string) => void;
+            }
+        ).setCarModel?.(car.modelId, car.paintColor);
+        this.audio.setSoundSet(car.engineType);
+        this.instructor.redlineRpm = this.config.engine.redlineRpm;
+        this.applyDashboardLimits();
+        this.applySettings(this.settingsRepository.current);
+        this.ui.updateSettings(this.settingsRepository.current);
+        this.ui.showToast(`${car.name} selected.`, "success");
+        if (this.started && !this.ui.startOpen) this.startScenario(this.scenarios.current.id);
+    }
+
+    private selectMap(mapId: string): void {
+        const map = getMap(mapId);
+        if (!map || map.id === this.selectedMap.id) return;
+        this.selectedMap = map;
+        this.world = new WorldGenerator(map.seed, map.routeMode, map.themeSequence);
+        this.worldStraight = new WorldGenerator(map.seed, "straight", map.themeSequence);
+        this.road.setWorld(this.world);
+        this.renderer.setWorld(this.world);
+        this.settingsRepository.save({ selectedMapId: map.id });
+        this.ui.updateSettings(this.settingsRepository.current);
+        this.ui.showToast(`${map.name} selected.`, "success");
+        if (this.started && !this.ui.startOpen) this.startScenario(this.scenarios.current.id);
     }
 
     private resume(): void {
