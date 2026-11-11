@@ -41,7 +41,7 @@ export class SimulatorApplication {
     private readonly input: InputService;
     private readonly instructor: DrivingInstructor;
     private readonly scenarios: ScenarioManager;
-    private readonly renderer: VehicleRenderer;
+    private renderer: VehicleRenderer;
     private readonly audio: AudioDirector;
     private readonly ui: AppUI;
     private readonly canvas: HTMLCanvasElement;
@@ -127,7 +127,12 @@ export class SimulatorApplication {
 
         this.road.setWorld(this.world);
         this.renderer.setWorldMode("endless");
-        this.scenarios.start("endless", this.simulation);
+        const previewStart = this.world.sample(500);
+        this.scenarios.start("endless", this.simulation, {
+            x: previewStart.x,
+            y: previewStart.y,
+            heading: previewStart.heading,
+        });
         this.input.setIgnition(true);
         this.applySettings(settings);
         this.renderer.showcaseCamera();
@@ -143,6 +148,8 @@ export class SimulatorApplication {
                     gear: state.gear,
                     carId: this.selectedCar.id,
                     mapId: this.selectedMap.id,
+                    redlineRpm: this.config.engine.redlineRpm,
+                    speedoMaxKph: this.renderer.speedometerMaxKph,
                     gearLabel: state.gearLabel,
                     speedKph: state.speedKph,
                     rpm: state.rpm,
@@ -424,18 +431,36 @@ export class SimulatorApplication {
         this.config = car.config;
         this.simulation = new VehicleSimulation(this.config, this.road);
         this.settingsRepository.save({ selectedCarId: car.id });
-        (
-            this.renderer as VehicleRenderer & {
-                setCarModel?: (modelId: string, paintColor?: string) => void;
-            }
-        ).setCarModel?.(car.modelId, car.paintColor);
+        const driving = this.started && !this.ui.startOpen;
+        this.renderer.setConfig(this.config);
+        this.renderer.setCarModel(car.modelId, car.paintColor);
+        this.renderer.setWorld(this.world);
+        this.renderer.setWorldMode("endless");
+        this.renderer.applySettings(this.settingsRepository.current);
+        this.renderer.setDrawDistance(this.settingsRepository.current.drawDistance * 1400);
+        this.input.setClutchZone(car.config.clutch.bitePoint, car.config.clutch.engagementWidth);
         this.audio.setSoundSet(car.engineType);
         this.instructor.redlineRpm = this.config.engine.redlineRpm;
         this.applyDashboardLimits();
         this.applySettings(this.settingsRepository.current);
         this.ui.updateSettings(this.settingsRepository.current);
         this.ui.showToast(`${car.name} selected.`, "success");
-        if (this.started && !this.ui.startOpen) this.startScenario(this.scenarios.current.id);
+        if (driving) {
+            this.startScenario(this.scenarios.current.id);
+        } else {
+            const preview = this.world.sample(500);
+            this.simulation.reset({
+                x: preview.x,
+                y: preview.y,
+                heading: preview.heading,
+                gear: 1,
+                engineRunning: true,
+                ignition: true,
+                clutchPedal: 1,
+            });
+            this.renderer.showcaseCamera();
+            this.renderer.sync(this.simulation.getRenderState(0), 0);
+        }
     }
 
     private selectMap(mapId: string): void {
@@ -449,7 +474,21 @@ export class SimulatorApplication {
         this.settingsRepository.save({ selectedMapId: map.id });
         this.ui.updateSettings(this.settingsRepository.current);
         this.ui.showToast(`${map.name} selected.`, "success");
-        if (this.started && !this.ui.startOpen) this.startScenario(this.scenarios.current.id);
+        if (this.started && !this.ui.startOpen) {
+            this.startScenario(this.scenarios.current.id);
+        } else {
+            const preview = this.world.sample(500);
+            this.simulation.reset({
+                x: preview.x,
+                y: preview.y,
+                heading: preview.heading,
+                gear: 1,
+                engineRunning: true,
+                ignition: true,
+                clutchPedal: 1,
+            });
+            this.renderer.sync(this.simulation.getRenderState(0), 0);
+        }
     }
 
     private resume(): void {
