@@ -14,7 +14,7 @@ The game ships a twelve-car manual-transmission roster in `src/data/cars.json`, 
 
 The other tiers cover naturally aspirated, turbo, hybrid and electric powertrains with front-, rear- and all-wheel drive. Every car is manual: electric cars use a single-speed manual.
 
-The rendered car is an original CC0 1990s five-door hatchback from Grab3D, adapted with a metallic finish, animated wheel pivots and a custom cockpit. The roster shares the hatchback shell with per-car paint and performance. No Volkswagen logos, model files or copyrighted assets are included. The licence and source URL are recorded in `src/assets/LICENSE-hatchback.txt`.
+The rendered cars use eight original CC0 Grab3D bodies: 1990s compact, 1990s sedan, hatchback, muscle car, rally car, 1990s sports car, electric car and coupe. Each keeps its authored body texture and colour, with animated wheel pivots and a shared detailed cockpit. No manufacturer logos or copyrighted branding are included. Model sources, hashes and licences are recorded in `src/assets/assets.json` and `src/assets/LICENSE-grab3d-models.txt`.
 
 The top-tier configuration also lives in `src/data/reference-compact.json`; the catalog in `src/data/CarCatalog.ts` validates every car at startup.
 
