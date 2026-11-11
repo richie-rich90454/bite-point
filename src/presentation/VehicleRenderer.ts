@@ -11,6 +11,7 @@ import {
     CreateSphere,
     CreateTorus,
     DefaultRenderingPipeline,
+    DirectionalLight,
     DynamicTexture,
     Engine,
     ImportMeshAsync,
@@ -52,7 +53,7 @@ export class VehicleRenderer {
     readonly worldStreamer: WorldStreamer | null;
     private worldMode: "legacy" | "endless" = "legacy";
     private drawDistanceM = 1400;
-    private readonly speedoMaxKph: number;
+    private speedoMaxKph: number;
     private adaptiveLevel = 0;
     private lastSettings: UserSettings;
     private pipeline: DefaultRenderingPipeline | null = null;
@@ -80,9 +81,11 @@ export class VehicleRenderer {
     private steeringSpinNode: TransformNode | null = null;
     private tachNeedleNode: TransformNode | null = null;
     private speedNeedleNode: TransformNode | null = null;
+    private speedDialMaterial: StandardMaterial | null = null;
     private readonly leverArm: Mesh;
     private readonly leverKnob: Mesh;
     private readonly leverBase = new Vector3(0.03, 0.48, -0.08);
+    private handbrakePivot: TransformNode | null = null;
     private readonly pedalMeshes: { mesh: Mesh; baseY: number; baseRotation: number }[] = [];
     private readonly headlightSpots: SpotLight[] = [];
     private readonly headlightMaterial: StandardMaterial;
@@ -100,7 +103,7 @@ export class VehicleRenderer {
 
     constructor(
         private readonly canvas: HTMLCanvasElement,
-        private readonly config: VehicleConfig,
+        private config: VehicleConfig,
         road: RoadContactProvider,
         settings: UserSettings,
         world?: WorldGenerator,
@@ -170,7 +173,8 @@ export class VehicleRenderer {
         this.reverseLightMaterial.diffuseColor = new Color3(0.1, 0.1, 0.1);
 
         this.buildCar();
-        this.loadDetailedCar(resolveCarModel(this.carModelId), this.carPaintColor);
+        this.environment.sun.excludedMeshes = this.cockpitGroup.getChildMeshes();
+        this.loadDetailedCar(resolveCarModel(this.carModelId));
         const cockpitMeshes = new Set(this.cockpitGroup.getChildMeshes());
         for (const mesh of this.carRoot.getChildMeshes()) {
             if (!cockpitMeshes.has(mesh)) this.exteriorMeshes.push(mesh);
@@ -357,6 +361,36 @@ export class VehicleRenderer {
         return this.carModelId;
     }
 
+    get speedometerMaxKph(): number {
+        return this.speedoMaxKph;
+    }
+
+    setConfig(config: VehicleConfig): void {
+        this.config = config;
+        const topGear = config.gearRatios[config.gearRatios.length - 1] ?? 1;
+        const wheelCircumference = 2 * Math.PI * config.wheelRadiusM;
+        const redlineSpeedKph =
+            (config.engine.redlineRpm / 60) *
+            (wheelCircumference / (topGear * config.finalDriveRatio)) *
+            3.6;
+        this.speedoMaxKph = Math.max(
+            200,
+            Math.min(600, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
+        );
+        if (this.speedDialMaterial) {
+            const previous = this.speedDialMaterial.diffuseTexture;
+            const texture = this.createDialTexture(
+                "gauge-speed-texture",
+                this.speedoMaxKph,
+                "km/h",
+                0.82,
+            );
+            this.speedDialMaterial.diffuseTexture = texture;
+            this.speedDialMaterial.emissiveTexture = texture;
+            if (previous instanceof DynamicTexture && previous !== texture) previous.dispose();
+        }
+    }
+
     setCarModel(modelId: string, paintColor?: string): void {
         const model = resolveCarModel(modelId);
         const nextPaint = paintColor ?? this.carPaintColor;
@@ -367,7 +401,7 @@ export class VehicleRenderer {
             if (paintChanged) this.applyPaintColor();
             return;
         }
-        this.loadDetailedCar(model, nextPaint);
+        this.loadDetailedCar(model);
     }
 
     private applyPaintColor(): void {
@@ -429,6 +463,7 @@ export class VehicleRenderer {
         }
 
         this.updateGearLever(state);
+        this.updateHandbrake(state);
         this.updatePedals(state);
         this.updateLights(state);
         this.updateWipers(dt);
@@ -459,6 +494,8 @@ export class VehicleRenderer {
     private setCameraMode(mode: CameraMode): void {
         this.lastCameraMode = mode;
         const showExterior = mode !== "cockpit";
+        for (const light of this.headlightSpots)
+            light.setEnabled(showExterior && this.headlightsOn);
         this.cockpitGroup.setEnabled(!showExterior);
         if (this.cockpitLight) this.cockpitLight.setEnabled(!showExterior);
         for (const light of this.cockpitLights) light.setEnabled(!showExterior);
@@ -512,19 +549,30 @@ export class VehicleRenderer {
     }
 
     private buildCar(): void {
-        const trim = this.material("trim", "#17191b", 0.2, 0.65);
+        const trim = this.material("trim", "#202326", 0.18, 0.6);
         const rubber = this.material("rubber", "#0b0c0d", 0.02, 0.92);
-        const chrome = this.material("chrome", "#b8bcc0", 0.95, 0.2);
-        const interior = new StandardMaterial("interior", this.scene);
-        interior.diffuseColor = new Color3(0.012, 0.016, 0.02);
-        interior.specularColor = new Color3(0.02, 0.02, 0.02);
-        const carpet = new StandardMaterial("carpet", this.scene);
-        carpet.diffuseColor = new Color3(0.008, 0.009, 0.01);
-        carpet.specularColor = Color3.Black();
-        const seatMaterial = new StandardMaterial("seat", this.scene);
-        seatMaterial.diffuseColor = new Color3(0.025, 0.028, 0.03);
-        seatMaterial.specularColor = new Color3(0.02, 0.02, 0.02);
-        const rim = this.material("rim", "#9fa4a8", 0.82, 0.32);
+        const chrome = this.material("chrome", "#c3c8cc", 1, 0.14);
+        const interior = this.material("interior", "#171a1c", 0.04, 0.72);
+        const carpet = this.material("carpet", "#0f1113", 0, 0.95);
+        const seatMaterial = this.material("seat", "#22262a", 0.02, 0.8);
+        const rim = this.material("rim", "#aab0b5", 0.9, 0.2);
+        // PBR albedo is linear: scale the authored sRGB hexes down to real interior values.
+        trim.albedoColor.scaleInPlace(0.24);
+        interior.albedoColor.scaleInPlace(0.4);
+        carpet.albedoColor.scaleInPlace(0.4);
+        seatMaterial.albedoColor.scaleInPlace(0.3);
+        rubber.albedoColor.scaleInPlace(0.2);
+        seatMaterial.emissiveColor = new Color3(0.01, 0.011, 0.012);
+        trim.environmentIntensity = 0.55;
+        interior.environmentIntensity = 0.35;
+        carpet.environmentIntensity = 0.3;
+        seatMaterial.environmentIntensity = 0.45;
+        chrome.environmentIntensity = 1.2;
+        rim.environmentIntensity = 1.2;
+        rubber.environmentIntensity = 0.4;
+        for (const material of [trim, chrome, interior, carpet, seatMaterial, rim, rubber]) {
+            material.maxSimultaneousLights = 8;
+        }
 
         const halfWidth = this.config.trackM / 2;
         const frontAxle = this.config.wheelbaseM * (1 - this.config.frontWeightBias);
@@ -1340,7 +1388,7 @@ export class VehicleRenderer {
         this.buildInterior(trim, interior, seatMaterial, carpet, chrome);
     }
 
-    private loadDetailedCar(model: CarModelDefinition, paintColor?: string): void {
+    private loadDetailedCar(model: CarModelDefinition): void {
         const token = ++this.carLoadToken;
         if (this.importedCar) {
             this.importedCar.dispose(false, false);
@@ -1361,67 +1409,29 @@ export class VehicleRenderer {
                 if (!assetRoot) throw new Error("The car asset has no root mesh.");
 
                 const root = new TransformNode("imported-car", this.scene);
-                root.parent = this.carRoot;
                 root.scaling.setAll(model.scale);
                 root.position.set(model.offset[0], model.offset[1], model.offset[2]);
                 assetRoot.parent = root;
-
-                const shadowTexture = new DynamicTexture(
-                    "car-contact-shadow",
-                    { width: 256, height: 512 },
-                    this.scene,
-                    true,
-                );
-                const shadowContext = shadowTexture.getContext();
-                shadowContext.clearRect(0, 0, 256, 512);
-                const shadowGradient = shadowContext.createRadialGradient(
-                    128,
-                    256,
-                    28,
-                    128,
-                    256,
-                    180,
-                );
-                shadowGradient.addColorStop(0, "rgba(0,0,0,0.60)");
-                shadowGradient.addColorStop(0.55, "rgba(0,0,0,0.32)");
-                shadowGradient.addColorStop(1, "rgba(0,0,0,0)");
-                shadowContext.fillStyle = shadowGradient;
-                shadowContext.fillRect(0, 0, 256, 512);
-                shadowTexture.update(false);
-                shadowTexture.hasAlpha = true;
-                const shadowMaterial = new StandardMaterial(
-                    "car-contact-shadow-material",
-                    this.scene,
-                );
-                shadowMaterial.diffuseTexture = shadowTexture;
-                shadowMaterial.useAlphaFromDiffuseTexture = true;
-                shadowMaterial.disableLighting = true;
-                shadowMaterial.diffuseColor = Color3.White();
-                shadowMaterial.emissiveColor = Color3.Black();
-                shadowMaterial.specularColor = Color3.Black();
-                shadowMaterial.backFaceCulling = false;
-                const shadowPlane = CreatePlane(
-                    "car-contact-shadow-plane",
-                    { width: 2.45, height: 4.6 },
-                    this.scene,
-                );
-                shadowPlane.rotation.x = Math.PI / 2;
-                shadowPlane.position.y = 0.018;
-                shadowPlane.material = shadowMaterial;
-                shadowPlane.parent = root;
-                shadowPlane.isPickable = false;
+                for (const mesh of result.meshes) mesh.computeWorldMatrix(true);
+                const bounds = root.getHierarchyBoundingVectors(true);
+                const minY = bounds.min.y;
+                if (Number.isFinite(minY) && Math.abs(minY) > 0.004) root.position.y -= minY;
 
                 const wheelEntries: Array<{
                     spin: TransformNode;
                     steer: TransformNode | null;
                     angle: number;
                 } | null> = [null, null, null, null];
+                const wheelGround: Array<{ x: number; z: number; radius: number }> = [];
                 for (const mesh of result.meshes) {
                     mesh.isPickable = false;
                     mesh.receiveShadows = true;
                     const wheelMatch = /wheel_(fl|fr|rl|rr)/i.exec(mesh.name);
                     if (wheelMatch) {
                         const node = mesh as Mesh;
+                        node.computeWorldMatrix(true);
+                        const groundPosition = node.getAbsolutePosition();
+                        const extend = node.getBoundingInfo().boundingBox.extendSize;
                         const originalPosition = node.position.clone();
                         const parent = node.parent ?? assetRoot;
                         const pivot = new TransformNode(
@@ -1438,13 +1448,106 @@ export class VehicleRenderer {
                         const front = wheelMatch[1]!.toLowerCase().startsWith("f");
                         const index = (front ? 0 : 2) + (originalPosition.x > 0 ? 1 : 0);
                         wheelEntries[index] = { spin: node, steer: front ? pivot : null, angle: 0 };
+                        wheelGround.push({
+                            x: groundPosition.x,
+                            z: groundPosition.z,
+                            radius: Math.max(extend.y, extend.z),
+                        });
                         this.environment.shadows.addShadowCaster(mesh, true);
                         continue;
                     }
-                    if (mesh.getTotalVertices() > 0 && mesh.material?.alpha === 1) {
+                    const materialName = (mesh.material?.name ?? "").toLowerCase();
+                    const isGlass = materialName.includes("window_glass");
+                    if (!isGlass && mesh.getTotalVertices() > 0) {
                         this.environment.shadows.addShadowCaster(mesh, true);
                     }
                 }
+                root.parent = this.carRoot;
+
+                const centerX = (bounds.min.x + bounds.max.x) / 2;
+                const centerZ = (bounds.min.z + bounds.max.z) / 2;
+                const modelWidth = Math.max(0.6, bounds.max.x - bounds.min.x);
+                const modelLength = Math.max(0.6, bounds.max.z - bounds.min.z);
+                const shadowTexture = new DynamicTexture(
+                    "car-contact-shadow",
+                    { width: 512, height: 1024 },
+                    this.scene,
+                    true,
+                );
+                const shadowContext = shadowTexture.getContext();
+                const shadowW = 512;
+                const shadowH = 1024;
+                shadowContext.clearRect(0, 0, shadowW, shadowH);
+                const left = centerX - (modelWidth * 1.3) / 2;
+                const planeWidth = modelWidth * 1.3;
+                const planeHeight = modelLength * 1.06;
+                const maxZ = centerZ + planeHeight / 2;
+                const toCanvas = (x: number, z: number): [number, number] => [
+                    ((x - left) / planeWidth) * shadowW,
+                    ((maxZ - z) / planeHeight) * shadowH,
+                ];
+                const bodyShadow = shadowContext.createRadialGradient(
+                    shadowW / 2,
+                    shadowH / 2,
+                    shadowW * 0.04,
+                    shadowW / 2,
+                    shadowH / 2,
+                    shadowW * 0.52,
+                );
+                bodyShadow.addColorStop(0, "rgba(0,0,0,0.72)");
+                bodyShadow.addColorStop(0.55, "rgba(0,0,0,0.5)");
+                bodyShadow.addColorStop(0.82, "rgba(0,0,0,0.24)");
+                bodyShadow.addColorStop(1, "rgba(0,0,0,0)");
+                shadowContext.save();
+                shadowContext.translate(shadowW / 2, shadowH / 2);
+                shadowContext.scale(1, planeHeight / planeWidth);
+                shadowContext.translate(-shadowW / 2, -shadowH / 2);
+                shadowContext.fillStyle = bodyShadow;
+                shadowContext.fillRect(0, 0, shadowW, shadowH);
+                shadowContext.restore();
+                for (const wheel of wheelGround) {
+                    const [wheelX, wheelY] = toCanvas(wheel.x, wheel.z);
+                    const wheelRadius = Math.min(70, (wheel.radius * 2.4 * shadowH) / planeHeight);
+                    const wheelShadow = shadowContext.createRadialGradient(
+                        wheelX,
+                        wheelY,
+                        wheelRadius * 0.1,
+                        wheelX,
+                        wheelY,
+                        wheelRadius,
+                    );
+                    wheelShadow.addColorStop(0, "rgba(0,0,0,0.76)");
+                    wheelShadow.addColorStop(0.7, "rgba(0,0,0,0.38)");
+                    wheelShadow.addColorStop(1, "rgba(0,0,0,0)");
+                    shadowContext.fillStyle = wheelShadow;
+                    shadowContext.beginPath();
+                    shadowContext.arc(wheelX, wheelY, wheelRadius, 0, Math.PI * 2);
+                    shadowContext.fill();
+                }
+                shadowTexture.update(false);
+                shadowTexture.hasAlpha = true;
+                const shadowMaterial = new PBRMaterial("car-contact-shadow-material", this.scene);
+                shadowMaterial.albedoTexture = shadowTexture;
+                shadowMaterial.albedoColor = Color3.White();
+                shadowMaterial.useAlphaFromAlbedoTexture = true;
+                shadowMaterial.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
+                shadowMaterial.unlit = true;
+                shadowMaterial.backFaceCulling = false;
+                shadowMaterial.disableLighting = true;
+                const shadowPlane = CreatePlane(
+                    "car-contact-shadow-plane",
+                    { width: planeWidth / model.scale, height: planeHeight / model.scale },
+                    this.scene,
+                );
+                shadowPlane.rotation.x = Math.PI / 2;
+                shadowPlane.position.set(
+                    (centerX - root.position.x) / model.scale,
+                    (0.035 - root.position.y) / model.scale,
+                    (centerZ - root.position.z) / model.scale,
+                );
+                shadowPlane.material = shadowMaterial;
+                shadowPlane.parent = root;
+                shadowPlane.isPickable = false;
 
                 const materials = new Set<PBRMaterial>();
                 for (const mesh of result.meshes) {
@@ -1453,32 +1556,81 @@ export class VehicleRenderer {
                 this.importedPaintMaterials.length = 0;
                 for (const material of materials) {
                     const name = material.name.toLowerCase();
+                    material.maxSimultaneousLights = 6;
                     if (name.includes(model.paintMaterial.toLowerCase())) {
-                        material.albedoColor = Color3.FromHexString(
-                            paintColor ?? model.defaultPaint,
-                        );
-                        material.metallic = 0.85;
-                        material.roughness = 0.28;
+                        // Grab3D body textures carry their authored paint and trim.
+                        // Keep the texture colours instead of multiplying a tint over them.
+                        material.albedoColor = Color3.White();
+                        material.metallic = 0.72;
+                        material.roughness = 0.22;
                         material.clearCoat.isEnabled = true;
-                        material.clearCoat.intensity = 0.65;
-                        material.clearCoat.roughness = 0.12;
-                        material.environmentIntensity = 1;
-                        this.importedPaintMaterials.push(material);
+                        material.clearCoat.intensity = 1;
+                        material.clearCoat.roughness = 0.045;
+                        material.clearCoat.indexOfRefraction = 1.52;
+                        material.environmentIntensity = 1.2;
                     } else if (name.includes("window_glass")) {
-                        material.albedoColor = new Color3(0.018, 0.028, 0.034);
-                        material.metallic = 0.08;
-                        material.roughness = 0.08;
-                        material.alpha = 0.58;
+                        material.albedoColor = new Color3(0.045, 0.06, 0.072);
+                        material.metallic = 0.12;
+                        material.roughness = 0.035;
+                        material.alpha = 0.45;
+                        material.transparencyMode = PBRMaterial.PBRMATERIAL_ALPHABLEND;
                         material.backFaceCulling = false;
-                        material.environmentIntensity = 0.7;
+                        material.environmentIntensity = 1.55;
+                        material.indexOfRefraction = 1.5;
                     } else if (name.includes("tire")) {
-                        material.environmentIntensity = 0.25;
-                        material.roughness = 0.92;
-                    } else if (name.includes("rim") || name.includes("hubcap")) {
-                        material.albedoColor = new Color3(0.52, 0.55, 0.58);
-                        material.metallic = 0.7;
-                        material.roughness = 0.24;
-                        material.environmentIntensity = 0.9;
+                        material.metallic = 0;
+                        material.roughness = 0.95;
+                        material.environmentIntensity = 0.4;
+                        material.clearCoat.isEnabled = false;
+                    } else if (name.includes("hubcap")) {
+                        material.albedoColor = new Color3(0.6, 0.62, 0.64);
+                        material.metallic = 0.55;
+                        material.roughness = 0.3;
+                        material.environmentIntensity = 1.1;
+                    } else if (name.includes("rim")) {
+                        material.albedoColor = new Color3(0.72, 0.75, 0.78);
+                        material.metallic = 0.95;
+                        material.roughness = 0.16;
+                        material.environmentIntensity = 1.35;
+                        material.clearCoat.isEnabled = true;
+                        material.clearCoat.intensity = 0.5;
+                        material.clearCoat.roughness = 0.1;
+                    } else if (name.includes("trim_charcoal")) {
+                        material.albedoColor = new Color3(0.032, 0.034, 0.04);
+                        material.metallic = 0.25;
+                        material.roughness = 0.42;
+                        material.environmentIntensity = 1;
+                        material.clearCoat.isEnabled = true;
+                        material.clearCoat.intensity = 0.4;
+                        material.clearCoat.roughness = 0.22;
+                    } else if (name.includes("trim_white")) {
+                        material.albedoColor = new Color3(0.9, 0.89, 0.86);
+                        material.metallic = 0.05;
+                        material.roughness = 0.32;
+                        material.environmentIntensity = 1.1;
+                    } else if (
+                        name.includes("light") ||
+                        name.includes("lamp") ||
+                        name.includes("lens")
+                    ) {
+                        material.metallic = 0.1;
+                        material.roughness = 0.12;
+                        material.clearCoat.isEnabled = true;
+                        material.clearCoat.intensity = 1;
+                        material.emissiveColor = new Color3(0.5, 0.48, 0.42);
+                        material.emissiveIntensity = 0.6;
+                        material.environmentIntensity = 1.3;
+                    } else if (name.includes("paint_")) {
+                        material.metallic = 0.6;
+                        material.roughness = 0.25;
+                        material.clearCoat.isEnabled = true;
+                        material.clearCoat.intensity = 0.8;
+                        material.clearCoat.roughness = 0.08;
+                        material.environmentIntensity = 1.15;
+                    } else if (name.includes("charge_port_ring")) {
+                        material.emissiveColor = new Color3(0.12, 0.55, 0.42);
+                        material.emissiveIntensity = 1.2;
+                        material.roughness = 0.25;
                     }
                 }
 
@@ -1600,28 +1752,104 @@ export class VehicleRenderer {
 
     private buildInterior(
         trim: PBRMaterial,
-        interior: StandardMaterial,
-        seatMaterial: StandardMaterial,
-        carpet: StandardMaterial,
+        interior: PBRMaterial,
+        seatMaterial: PBRMaterial,
+        carpet: PBRMaterial,
         chrome: PBRMaterial,
     ): void {
-        const leather = new StandardMaterial("cockpit-leather", this.scene);
-        leather.diffuseColor = new Color3(0.04, 0.038, 0.035);
-        leather.specularColor = new Color3(0.05, 0.048, 0.043);
-        leather.emissiveColor = new Color3(0.012, 0.011, 0.009);
-        leather.specularPower = 24;
-        const softTrim = new StandardMaterial("cockpit-soft-trim", this.scene);
-        softTrim.diffuseColor = new Color3(0.09, 0.086, 0.08);
-        softTrim.specularColor = new Color3(0.03, 0.03, 0.03);
-        softTrim.emissiveColor = new Color3(0.016, 0.014, 0.011);
-        const brushedMetal = new StandardMaterial("cockpit-brushed-metal", this.scene);
-        brushedMetal.diffuseColor = new Color3(0.36, 0.35, 0.32);
-        brushedMetal.specularColor = new Color3(0.7, 0.67, 0.6);
-        brushedMetal.specularPower = 64;
+        const leather = this.material("cockpit-leather", "#2a2523", 0.04, 0.5);
+        leather.clearCoat.isEnabled = true;
+        leather.clearCoat.intensity = 0.35;
+        leather.clearCoat.roughness = 0.38;
+        leather.albedoColor.scaleInPlace(0.3);
+        leather.emissiveColor = new Color3(0.014, 0.011, 0.009);
+        const softTrim = this.material("cockpit-soft-trim", "#33373b", 0.06, 0.62);
+        softTrim.albedoColor.scaleInPlace(0.33);
+        softTrim.emissiveColor = new Color3(0.012, 0.013, 0.015);
+        const headliner = this.material("cockpit-headliner", "#3f4347", 0.02, 0.88);
+        headliner.albedoColor.scaleInPlace(0.45);
+        headliner.emissiveColor = new Color3(0.02, 0.021, 0.024);
+        const brushedMetal = this.material("cockpit-brushed-metal", "#8b9197", 1, 0.32);
+        const rubber = this.material("cockpit-rubber", "#141619", 0.02, 0.8);
+        brushedMetal.albedoColor.scaleInPlace(0.8);
+        rubber.albedoColor.scaleInPlace(0.2);
+        leather.environmentIntensity = 0.35;
+        softTrim.environmentIntensity = 0.4;
+        headliner.environmentIntensity = 0.5;
+        brushedMetal.environmentIntensity = 1.05;
+        rubber.environmentIntensity = 0.3;
+        for (const material of [
+            leather,
+            softTrim,
+            headliner,
+            rubber,
+            trim,
+            interior,
+            seatMaterial,
+            carpet,
+            chrome,
+        ]) {
+            material.maxSimultaneousLights = 8;
+        }
+
+        const ambientStripMaterial = new StandardMaterial("cockpit-ambient-strip", this.scene);
+        ambientStripMaterial.diffuseColor = Color3.Black();
+        ambientStripMaterial.specularColor = Color3.Black();
+        ambientStripMaterial.emissiveColor = new Color3(0.85, 0.42, 0.16);
+        ambientStripMaterial.disableLighting = true;
+
         const screenMaterial = new StandardMaterial("cockpit-display", this.scene);
-        screenMaterial.diffuseColor = new Color3(0.008, 0.012, 0.016);
-        screenMaterial.emissiveColor = new Color3(0.07, 0.18, 0.23);
-        screenMaterial.specularColor = new Color3(0.04, 0.05, 0.055);
+        const screenTexture = new DynamicTexture(
+            "cockpit-display-texture",
+            { width: 512, height: 320 },
+            this.scene,
+            true,
+        );
+        const screenContext = screenTexture.getContext();
+        const screenGradient = screenContext.createLinearGradient(0, 0, 0, 320);
+        screenGradient.addColorStop(0, "#0d1a24");
+        screenGradient.addColorStop(1, "#050a0e");
+        screenContext.fillStyle = screenGradient;
+        screenContext.fillRect(0, 0, 512, 320);
+        screenContext.fillStyle = "rgba(90, 190, 220, 0.16)";
+        screenContext.fillRect(0, 44, 512, 2);
+        screenContext.fillStyle = "#dfe9ee";
+        screenContext.font = '600 30px "Noto Sans", sans-serif';
+        screenContext.fillText("BITE POINT", 26, 34);
+        screenContext.fillStyle = "#6f8794";
+        screenContext.font = '400 17px "Noto Sans", sans-serif';
+        screenContext.fillText("DRIVE MODE  /  SPORT", 300, 32);
+        for (let index = 0; index < 6; index += 1) {
+            const height = 26 + ((index * 37) % 74);
+            screenContext.fillStyle = index < 4 ? "#5fc0df" : "#2c4a59";
+            screenContext.fillRect(40 + index * 46, 236 - height, 26, height);
+        }
+        screenContext.fillStyle = "#a8bcc7";
+        screenContext.font = '500 18px "Noto Sans", sans-serif';
+        screenContext.fillText("21.5 C", 360, 132);
+        screenContext.fillText("TRIP  128.4 km", 360, 172);
+        screenContext.fillText("RANGE 412 km", 360, 212);
+        screenContext.fillStyle = "#e8b04b";
+        screenContext.fillRect(360, 240, 108, 4);
+        screenTexture.update(false);
+        screenTexture.hasAlpha = false;
+        screenMaterial.diffuseTexture = screenTexture;
+        screenMaterial.emissiveTexture = screenTexture;
+        screenMaterial.emissiveColor = new Color3(0.72, 0.78, 0.82);
+        screenMaterial.diffuseColor = Color3.White();
+        screenMaterial.specularColor = new Color3(0.05, 0.06, 0.07);
+        screenMaterial.maxSimultaneousLights = 8;
+
+        const needleMaterial = new StandardMaterial("cockpit-needle", this.scene);
+        needleMaterial.diffuseColor = Color3.Black();
+        needleMaterial.specularColor = Color3.Black();
+        needleMaterial.emissiveColor = new Color3(1, 0.32, 0.14);
+        needleMaterial.disableLighting = true;
+        const speedNeedleMaterial = new StandardMaterial("cockpit-speed-needle", this.scene);
+        speedNeedleMaterial.diffuseColor = Color3.Black();
+        speedNeedleMaterial.specularColor = Color3.Black();
+        speedNeedleMaterial.emissiveColor = new Color3(1, 0.62, 0.22);
+        speedNeedleMaterial.disableLighting = true;
 
         const addBox = (
             name: string,
@@ -1642,13 +1870,13 @@ export class VehicleRenderer {
             return mesh;
         };
 
-        // Lower cabin shell. The camera sits at 1.22 m, above the seat cushion and
+        // Lower cabin shell. The camera sits at 1.20 m, above the seat cushion and
         // below the roof, with the dash top well under the eye line.
         addBox("cockpit-floor", 1.42, 0.035, 1.55, 0, 0.22, 0.0, carpet);
         addBox("driver-footwell", 0.58, 0.02, 0.62, -0.36, 0.25, 0.38, carpet);
         addBox("passenger-footwell", 0.58, 0.02, 0.62, 0.42, 0.25, 0.38, carpet);
         addBox("transmission-tunnel", 0.26, 0.18, 1.35, 0.02, 0.36, -0.18, carpet);
-        addBox("centre-console", 0.24, 0.22, 0.72, 0.02, 0.52, -0.03, leather);
+        addBox("centre-console", 0.24, 0.22, 0.72, 0.02, 0.52, -0.03, interior);
         addBox("console-trim", 0.2, 0.018, 0.55, 0.02, 0.635, -0.02, brushedMetal);
 
         addBox("cockpit-hood", 1.48, 0.03, 1.34, 0, 0.91, 1.45, this.paintMaterial);
@@ -1661,68 +1889,126 @@ export class VehicleRenderer {
 
         const cabinLamp = new PointLight(
             "cockpit-ambient",
-            new Vector3(-0.16, 1.3, 0.28),
+            new Vector3(-0.04, 1.18, 0.02),
             this.scene,
         );
         cabinLamp.parent = this.cockpitGroup;
-        cabinLamp.diffuse = new Color3(1, 0.8, 0.6);
-        cabinLamp.specular = new Color3(0.8, 0.6, 0.4);
-        cabinLamp.intensity = 2.8;
+        cabinLamp.diffuse = new Color3(1, 0.87, 0.71);
+        cabinLamp.specular = new Color3(1, 0.85, 0.68);
+        cabinLamp.intensity = 0.5;
         cabinLamp.range = 3.6;
         this.cockpitLight = cabinLamp;
+
+        const roofLampMaterial = new StandardMaterial("cockpit-roof-lamp", this.scene);
+        roofLampMaterial.diffuseColor = Color3.Black();
+        roofLampMaterial.specularColor = Color3.Black();
+        roofLampMaterial.emissiveColor = new Color3(1, 0.85, 0.62);
+        roofLampMaterial.disableLighting = true;
 
         // Main dashboard: a low, deep shelf rather than a vertical slab.
         addBox("dashboard-lower", 1.4, 0.2, 0.18, 0, 0.78, 0.52, leather);
         addBox("dashboard-main", 1.46, 0.16, 0.4, 0, 0.91, 0.7, leather);
         addBox("dashboard-top", 1.48, 0.045, 0.5, 0, 1.0, 0.69, leather).rotation.x = -0.035;
         addBox("dashboard-cowl", 1.42, 0.035, 0.16, 0, 1.015, 0.89, softTrim).rotation.x = -0.08;
-        addBox("dash-chrome-rule", 1.0, 0.012, 0.02, 0.08, 0.985, 0.545, brushedMetal);
-        addBox("dash-passenger-trim", 0.46, 0.034, 0.02, 0.36, 0.975, 0.55, softTrim);
+        addBox("dash-chrome-rule", 1.24, 0.012, 0.02, 0.0, 0.955, 0.492, brushedMetal);
+        addBox("dash-ambient-strip", 1.16, 0.006, 0.012, 0.02, 0.945, 0.4915, ambientStripMaterial);
+        addBox("dash-passenger-trim", 0.46, 0.03, 0.02, 0.36, 0.952, 0.492, softTrim);
 
-        for (const [x, y, z] of [
-            [-0.61, 0.985, 0.555],
-            [-0.45, 0.985, 0.555],
-            [0.18, 0.985, 0.555],
-            [0.34, 0.985, 0.555],
-        ] as Array<[number, number, number]>) {
-            const vent = addBox("dash-vent", 0.075, 0.045, 0.018, x, y, z, softTrim);
+        for (const x of [-0.61, -0.45, 0.18, 0.34]) {
+            const vent = addBox("dash-vent", 0.085, 0.05, 0.02, x, 0.925, 0.492, leather);
             vent.rotation.x = -0.1;
-            addBox("dash-vent-slat", 0.065, 0.006, 0.022, x, y + 0.008, z + 0.002, brushedMetal);
+            addBox("dash-vent-slat", 0.072, 0.005, 0.006, x, 0.934, 0.481, brushedMetal);
+            addBox("dash-vent-slat", 0.072, 0.005, 0.006, x, 0.916, 0.481, brushedMetal);
         }
 
-        addBox("driver-binnacle", 0.46, 0.055, 0.24, -0.36, 1.045, 0.57, leather).rotation.x =
-            -0.13;
-        addBox("driver-cluster", 0.36, 0.13, 0.015, -0.36, 1.03, 0.5, screenMaterial).rotation.x =
-            -0.16;
-        addBox("cluster-bezel", 0.39, 0.155, 0.02, -0.36, 1.03, 0.508, softTrim).rotation.x = -0.16;
+        const binnacle = addBox("driver-binnacle", 0.53, 0.07, 0.3, -0.36, 1.058, 0.585, leather);
+        binnacle.rotation.x = -0.14;
 
-        const infoScreen = addBox(
-            "infotainment-screen",
-            0.29,
-            0.17,
-            0.012,
-            0.04,
-            1.005,
-            0.54,
-            screenMaterial,
+        const gaugeTilt = new TransformNode("gauge-tilt", this.scene);
+        gaugeTilt.parent = this.cockpitGroup;
+        gaugeTilt.position.set(-0.36, 1.05, 0.53);
+        gaugeTilt.rotation.x = -0.17;
+        const tachMaterial = this.createDialMaterial(
+            "gauge-tach",
+            this.createDialTexture("gauge-tach-texture", 8, "rpm x1000", 0.8),
         );
-        infoScreen.rotation.x = -0.12;
-        addBox("infotainment-bezel", 0.33, 0.205, 0.012, 0.04, 1.0, 0.552, softTrim).rotation.x =
+        const speedMaterial = this.createDialMaterial(
+            "gauge-speed",
+            this.createDialTexture("gauge-speed-texture", this.speedoMaxKph, "km/h", 0.82),
+        );
+        const dials: Array<{
+            name: string;
+            offset: number;
+            face: StandardMaterial;
+            needle: StandardMaterial;
+        }> = [
+            { name: "tach", offset: -0.088, face: tachMaterial, needle: needleMaterial },
+            { name: "speed", offset: 0.088, face: speedMaterial, needle: speedNeedleMaterial },
+        ];
+        for (const dial of dials) {
+            const bezel = CreateTorus(
+                `gauge-bezel-${dial.name}`,
+                { diameter: 0.152, thickness: 0.01, tessellation: 28 },
+                this.scene,
+            );
+            bezel.rotation.x = Math.PI / 2;
+            bezel.position.set(dial.offset, 0, 0.002);
+            bezel.material = brushedMetal;
+            bezel.parent = gaugeTilt;
+            bezel.isPickable = false;
+            const face = this.createPanel(
+                `gauge-face-${dial.name}`,
+                0.14,
+                0.14,
+                dial.face,
+                gaugeTilt,
+            );
+            face.position.set(dial.offset, 0, 0.008);
+            const needlePivot = new TransformNode(`gauge-needle-${dial.name}`, this.scene);
+            needlePivot.parent = gaugeTilt;
+            needlePivot.position.set(dial.offset, 0, 0.013);
+            needlePivot.rotation.z = 2.4;
+            const needle = CreateBox(
+                `gauge-needle-mesh-${dial.name}`,
+                { width: 0.005, height: 0.058, depth: 0.003 },
+                this.scene,
+            );
+            needle.position.y = 0.027;
+            needle.material = dial.needle;
+            needle.parent = needlePivot;
+            needle.isPickable = false;
+            if (dial.name === "tach") this.tachNeedleNode = needlePivot;
+            else this.speedNeedleNode = needlePivot;
+        }
+
+        addBox("infotainment-bezel", 0.34, 0.2, 0.024, 0.04, 0.94, 0.478, softTrim).rotation.x =
             -0.12;
-        addBox("hazard-button", 0.05, 0.022, 0.01, 0.04, 0.965, 0.57, this.brakeLightMaterial);
-        addBox("start-button", 0.03, 0.03, 0.01, 0.19, 0.92, 0.56, chrome);
+        const infoScreen = this.createPanel(
+            "infotainment-screen",
+            0.3,
+            0.17,
+            screenMaterial,
+            this.cockpitGroup,
+        );
+        infoScreen.position.set(0.04, 0.94, 0.4645);
+        infoScreen.rotation.x = -0.12;
+        addBox("hazard-button", 0.05, 0.022, 0.012, 0.04, 0.845, 0.465, this.brakeLightMaterial);
+        addBox("start-button", 0.032, 0.032, 0.012, 0.19, 0.865, 0.466, chrome).rotation.z = 0.1;
 
         // Screen surround and windshield frame. These establish the cabin volume.
-        addBox("windshield-header", 1.27, 0.028, 0.075, 0, 1.405, 0.35, softTrim);
-        addBox("headliner", 1.25, 0.025, 1.4, 0, 1.425, -0.38, softTrim);
+        addBox("windshield-header", 1.27, 0.022, 0.07, 0, 1.428, 0.35, headliner);
+        addBox("headliner", 1.25, 0.025, 1.4, 0, 1.443, -0.38, headliner);
+        addBox("roof-console", 0.24, 0.028, 0.12, 0, 1.421, 0.16, headliner);
+        addBox("roof-lamp-left", 0.06, 0.006, 0.045, -0.05, 1.404, 0.16, roofLampMaterial);
+        addBox("roof-lamp-right", 0.06, 0.006, 0.045, 0.05, 1.404, 0.16, roofLampMaterial);
         for (const side of [-1, 1]) {
             addBox(
                 `windshield-pillar-${side}`,
-                0.028,
+                0.026,
                 0.47,
                 0.04,
                 side * 0.68,
-                1.215,
+                1.225,
                 0.535,
                 softTrim,
             ).rotation.x = -0.68;
@@ -1730,8 +2016,28 @@ export class VehicleRenderer {
             addBox(`door-card-${side}`, 0.06, 0.5, 1.35, side * 0.72, 0.72, -0.22, leather);
             addBox(`door-armrest-${side}`, 0.14, 0.06, 0.44, side * 0.655, 0.82, -0.24, softTrim);
             addBox(`door-handle-${side}`, 0.08, 0.018, 0.12, side * 0.69, 0.92, 0.18, brushedMetal);
+            addBox(
+                `door-trim-${side}`,
+                0.014,
+                0.016,
+                1.06,
+                side * 0.688,
+                0.782,
+                -0.26,
+                brushedMetal,
+            );
+            const speaker = CreateTorus(
+                `door-speaker-${side}`,
+                { diameter: 0.15, thickness: 0.011, tessellation: 24 },
+                this.scene,
+            );
+            speaker.rotation.z = Math.PI / 2;
+            speaker.position.set(side * 0.694, 0.6, -0.24);
+            speaker.material = brushedMetal;
+            speaker.parent = this.cockpitGroup;
+            speaker.isPickable = false;
             addBox(`b-pillar-trim-${side}`, 0.04, 0.4, 0.055, side * 0.68, 1.18, -0.68, softTrim);
-            addBox(`sun-visor-${side}`, 0.42, 0.02, 0.16, side * 0.35, 1.385, 0.2, softTrim);
+            addBox(`sun-visor-${side}`, 0.42, 0.02, 0.16, side * 0.35, 1.4, 0.2, headliner);
         }
 
         // Seats sit below the eye line and behind the driver, not in the sight line.
@@ -1740,6 +2046,7 @@ export class VehicleRenderer {
             ["passenger", 0.42],
         ] as Array<[string, number]>) {
             addBox(`${side}-seat-base`, 0.49, 0.13, 0.5, x, 0.46, -0.35, seatMaterial);
+            addBox(`${side}-seat-thigh`, 0.47, 0.08, 0.18, x, 0.5, -0.1, seatMaterial);
             const back = addBox(
                 `${side}-seat-back`,
                 0.48,
@@ -1751,7 +2058,38 @@ export class VehicleRenderer {
                 seatMaterial,
             );
             back.rotation.x = 0.12;
-            addBox(`${side}-headrest`, 0.25, 0.2, 0.11, x, 1.07, -0.77, seatMaterial);
+            const shoulder = addBox(
+                `${side}-seat-shoulder`,
+                0.44,
+                0.2,
+                0.13,
+                x,
+                0.98,
+                -0.75,
+                seatMaterial,
+            );
+            shoulder.rotation.x = 0.12;
+            addBox(`${side}-headrest`, 0.26, 0.21, 0.115, x, 1.1, -0.775, seatMaterial);
+            addBox(
+                `${side}-headrest-post`,
+                0.016,
+                0.09,
+                0.016,
+                x - 0.07,
+                1.0,
+                -0.775,
+                brushedMetal,
+            );
+            addBox(
+                `${side}-headrest-post`,
+                0.016,
+                0.09,
+                0.016,
+                x + 0.07,
+                1.0,
+                -0.775,
+                brushedMetal,
+            );
             addBox(
                 `${side}-seat-bolster-left`,
                 0.06,
@@ -1797,7 +2135,9 @@ export class VehicleRenderer {
         const plaidMaterial = new PBRMaterial("golf-plaid-material", this.scene);
         plaidMaterial.albedoTexture = plaidTexture;
         plaidMaterial.metallic = 0;
-        plaidMaterial.roughness = 0.94;
+        plaidMaterial.roughness = 0.92;
+        plaidMaterial.environmentIntensity = 0.9;
+        plaidMaterial.maxSimultaneousLights = 8;
         for (const x of [-0.36, 0.42]) {
             const centre = addBox(
                 "seat-plaid-panel",
@@ -1815,24 +2155,24 @@ export class VehicleRenderer {
 
         const wheelPivot = new TransformNode("steering-pivot", this.scene);
         wheelPivot.parent = this.cockpitGroup;
-        wheelPivot.position.set(-0.36, 0.94, 0.33);
-        wheelPivot.rotation.x = -0.4;
+        wheelPivot.position.set(-0.36, 0.9, 0.34);
+        wheelPivot.rotation.x = -0.42;
         const steeringSpin = new TransformNode("steering-spin", this.scene);
         steeringSpin.parent = wheelPivot;
         this.steeringSpinNode = steeringSpin;
         const column = CreateCylinder(
             "steering-column",
-            { diameter: 0.048, height: 0.3, tessellation: 12 },
+            { diameter: 0.05, height: 0.3, tessellation: 14 },
             this.scene,
         );
         column.rotation.x = Math.PI / 2;
-        column.position.set(-0.36, 0.89, 0.48);
+        column.position.set(-0.36, 0.86, 0.47);
         column.material = softTrim;
         column.parent = this.cockpitGroup;
         column.isPickable = false;
         const wheel = CreateTorus(
             "steering-wheel",
-            { diameter: 0.345, thickness: 0.028, tessellation: 32 },
+            { diameter: 0.335, thickness: 0.033, tessellation: 36 },
             this.scene,
         );
         wheel.rotation.x = Math.PI / 2;
@@ -1842,47 +2182,108 @@ export class VehicleRenderer {
         for (const angle of [0, Math.PI, Math.PI * 1.5]) {
             const spoke = CreateBox(
                 "steering-spoke",
-                { width: 0.13, height: 0.024, depth: 0.025 },
+                { width: 0.132, height: 0.027, depth: 0.03 },
                 this.scene,
             );
             spoke.rotation.z = angle;
-            spoke.position.set(Math.cos(angle) * 0.065, Math.sin(angle) * 0.065, 0);
-            spoke.material = softTrim;
+            spoke.position.set(Math.cos(angle) * 0.068, Math.sin(angle) * 0.068, 0);
+            spoke.material = angle === Math.PI * 1.5 ? softTrim : brushedMetal;
             spoke.parent = steeringSpin;
             spoke.isPickable = false;
         }
         const hub = CreateCylinder(
             "steering-hub",
-            { diameter: 0.085, height: 0.034, tessellation: 20 },
+            { diameter: 0.09, height: 0.036, tessellation: 24 },
             this.scene,
         );
         hub.rotation.x = Math.PI / 2;
         hub.material = softTrim;
         hub.parent = steeringSpin;
         hub.isPickable = false;
-        addBox("stalk-left", 0.12, 0.018, 0.02, -0.49, 0.86, 0.35, softTrim);
-        addBox("stalk-right", 0.1, 0.018, 0.02, -0.24, 0.83, 0.35, softTrim);
+        const hubBadge = CreateCylinder(
+            "steering-badge",
+            { diameter: 0.05, height: 0.008, tessellation: 24 },
+            this.scene,
+        );
+        hubBadge.rotation.x = Math.PI / 2;
+        hubBadge.position.z = 0.02;
+        hubBadge.material = brushedMetal;
+        hubBadge.parent = steeringSpin;
+        hubBadge.isPickable = false;
+        addBox("stalk-left", 0.12, 0.018, 0.02, -0.49, 0.84, 0.36, softTrim);
+        addBox("stalk-right", 0.1, 0.018, 0.02, -0.24, 0.81, 0.36, softTrim);
 
         const leverBoot = CreateCylinder(
             "gear-boot",
-            { diameterTop: 0.055, diameterBottom: 0.14, height: 0.1, tessellation: 14 },
+            { diameterTop: 0.058, diameterBottom: 0.15, height: 0.11, tessellation: 16 },
             this.scene,
         );
-        leverBoot.position.set(this.leverBase.x, this.leverBase.y - 0.04, this.leverBase.z);
+        leverBoot.position.set(this.leverBase.x, this.leverBase.y - 0.045, this.leverBase.z);
         leverBoot.material = leather;
         leverBoot.parent = this.cockpitGroup;
         const arm = CreateCylinder(
             "gear-lever-arm",
-            { diameter: 0.022, height: 1, tessellation: 8 },
+            { diameter: 0.022, height: 1, tessellation: 10 },
             this.scene,
         );
         arm.material = brushedMetal;
         arm.parent = this.cockpitGroup;
         arm.isPickable = false;
-        const knob = CreateSphere("gear-knob", { diameter: 0.068, segments: 16 }, this.scene);
+        const knob = CreateSphere("gear-knob", { diameter: 0.07, segments: 18 }, this.scene);
         knob.material = leather;
         knob.parent = this.cockpitGroup;
         knob.isPickable = false;
+        const knobCollar = CreateCylinder(
+            "gear-knob-collar",
+            { diameterTop: 0.038, diameterBottom: 0.032, height: 0.035, tessellation: 16 },
+            this.scene,
+        );
+        knobCollar.position.y = -0.035;
+        knobCollar.material = brushedMetal;
+        knobCollar.parent = knob;
+        knobCollar.isPickable = false;
+
+        const handbrakePivot = new TransformNode("handbrake-pivot", this.scene);
+        handbrakePivot.parent = this.cockpitGroup;
+        handbrakePivot.position.set(0.25, 0.5, 0.04);
+        handbrakePivot.rotation.x = -0.18;
+        this.handbrakePivot = handbrakePivot;
+        const handbrakeBoot = CreateCylinder(
+            "handbrake-boot",
+            { diameterTop: 0.03, diameterBottom: 0.09, height: 0.07, tessellation: 14 },
+            this.scene,
+        );
+        handbrakeBoot.position.y = 0.02;
+        handbrakeBoot.material = leather;
+        handbrakeBoot.parent = handbrakePivot;
+        handbrakeBoot.isPickable = false;
+        const handbrakeShaft = CreateCylinder(
+            "handbrake-shaft",
+            { diameter: 0.016, height: 0.18, tessellation: 12 },
+            this.scene,
+        );
+        handbrakeShaft.position.y = 0.11;
+        handbrakeShaft.material = brushedMetal;
+        handbrakeShaft.parent = handbrakePivot;
+        handbrakeShaft.isPickable = false;
+        const handbrakeGrip = CreateCylinder(
+            "handbrake-grip",
+            { diameterTop: 0.026, diameterBottom: 0.033, height: 0.11, tessellation: 16 },
+            this.scene,
+        );
+        handbrakeGrip.position.y = 0.215;
+        handbrakeGrip.material = rubber;
+        handbrakeGrip.parent = handbrakePivot;
+        handbrakeGrip.isPickable = false;
+        const handbrakeButton = CreateCylinder(
+            "handbrake-button",
+            { diameter: 0.014, height: 0.022, tessellation: 12 },
+            this.scene,
+        );
+        handbrakeButton.position.set(0, 0.272, 0.006);
+        handbrakeButton.material = chrome;
+        handbrakeButton.parent = handbrakePivot;
+        handbrakeButton.isPickable = false;
 
         const pedalPositions: Array<[string, number, PBRMaterial | StandardMaterial]> = [
             ["clutch", -0.55, brushedMetal],
@@ -1892,7 +2293,7 @@ export class VehicleRenderer {
         for (const [name, x, material] of pedalPositions) {
             const pedal = CreateBox(
                 `pedal-${name}`,
-                { width: 0.075, height: 0.13, depth: 0.025 },
+                { width: 0.078, height: 0.135, depth: 0.026 },
                 this.scene,
             );
             pedal.position.set(x, 0.29, 0.42);
@@ -1900,8 +2301,185 @@ export class VehicleRenderer {
             pedal.material = material;
             pedal.parent = this.cockpitGroup;
             pedal.isPickable = false;
+            for (const offset of [-0.036, 0, 0.036]) {
+                const grip = CreateBox(
+                    `pedal-grip-${name}`,
+                    { width: 0.062, height: 0.009, depth: 0.009 },
+                    this.scene,
+                );
+                grip.position.set(0, offset, 0.015);
+                grip.material = rubber;
+                grip.parent = pedal;
+                grip.isPickable = false;
+            }
             this.pedalMeshes.push({ mesh: pedal, baseY: 0.29, baseRotation: -0.35 });
         }
+        const deadPedal = CreateBox(
+            "dead-pedal",
+            { width: 0.1, height: 0.17, depth: 0.024 },
+            this.scene,
+        );
+        deadPedal.position.set(-0.65, 0.31, 0.44);
+        deadPedal.rotation.x = -0.35;
+        deadPedal.rotation.z = 0.12;
+        deadPedal.material = brushedMetal;
+        deadPedal.parent = this.cockpitGroup;
+        deadPedal.isPickable = false;
+        for (const offset of [-0.045, 0, 0.045]) {
+            const grip = CreateBox(
+                "dead-pedal-grip",
+                { width: 0.08, height: 0.009, depth: 0.009 },
+                this.scene,
+            );
+            grip.position.set(0, offset, 0.014);
+            grip.material = rubber;
+            grip.parent = deadPedal;
+            grip.isPickable = false;
+        }
+
+        // Even fill so the cabin reads without the sun (which is blocked by the roof).
+        const cockpitFill = new DirectionalLight(
+            "cockpit-fill",
+            new Vector3(0.25, -0.9, 0.3),
+            this.scene,
+        );
+        cockpitFill.diffuse = new Color3(1, 0.94, 0.86);
+        cockpitFill.specular = new Color3(0.5, 0.47, 0.42);
+        cockpitFill.intensity = 1.6;
+        cockpitFill.includedOnlyMeshes = this.cockpitGroup.getChildMeshes();
+    }
+
+    private createPanel(
+        name: string,
+        width: number,
+        height: number,
+        material: StandardMaterial,
+        parent: TransformNode,
+    ): Mesh {
+        const mesh = new Mesh(name, this.scene);
+        const halfWidth = width / 2;
+        const halfHeight = height / 2;
+        const positions = [
+            -halfWidth,
+            halfHeight,
+            0,
+            halfWidth,
+            halfHeight,
+            0,
+            halfWidth,
+            -halfHeight,
+            0,
+            -halfWidth,
+            -halfHeight,
+            0,
+        ];
+        const indices = [0, 1, 2, 0, 2, 3];
+        const uvs = [0, 1, 1, 1, 1, 0, 0, 0];
+        const normals: number[] = [];
+        VertexData.ComputeNormals(positions, indices, normals);
+        const vertexData = new VertexData();
+        vertexData.positions = positions;
+        vertexData.indices = indices;
+        vertexData.normals = normals;
+        vertexData.uvs = uvs;
+        vertexData.applyToMesh(mesh);
+        mesh.material = material;
+        mesh.parent = parent;
+        mesh.isPickable = false;
+        return mesh;
+    }
+
+    private createDialMaterial(name: string, texture: DynamicTexture): StandardMaterial {
+        const material = new StandardMaterial(name, this.scene);
+        material.diffuseTexture = texture;
+        material.emissiveTexture = texture;
+        material.diffuseColor = Color3.White();
+        material.emissiveColor = new Color3(0.85, 0.88, 0.9);
+        material.specularColor = Color3.Black();
+        material.useAlphaFromDiffuseTexture = true;
+        material.backFaceCulling = false;
+        return material;
+    }
+
+    private createDialTexture(
+        name: string,
+        maxValue: number,
+        label: string,
+        redlineFraction: number,
+    ): DynamicTexture {
+        const size = 256;
+        const texture = new DynamicTexture(name, { width: size, height: size }, this.scene, true);
+        const context = texture.getContext();
+        const textContext = context as unknown as CanvasRenderingContext2D;
+        textContext.textAlign = "center";
+        textContext.textBaseline = "middle";
+        const cx = size / 2;
+        const cy = size / 2;
+        const radius = size / 2 - 5;
+        context.clearRect(0, 0, size, size);
+        const face = context.createRadialGradient(cx, cy - 34, 10, cx, cy, radius);
+        face.addColorStop(0, "#3a4147");
+        face.addColorStop(0.68, "#1b1f23");
+        face.addColorStop(1, "#080a0c");
+        context.beginPath();
+        context.arc(cx, cy, radius, 0, Math.PI * 2);
+        context.fillStyle = face;
+        context.fill();
+        context.lineWidth = 5;
+        context.strokeStyle = "#8f969d";
+        context.beginPath();
+        context.arc(cx, cy, radius - 2, 0, Math.PI * 2);
+        context.stroke();
+
+        const pointAt = (fraction: number, r: number): [number, number] => {
+            const angle = Math.PI / 2 + 2.4 - 4.8 * fraction;
+            return [cx + Math.cos(angle) * r, cy - Math.sin(angle) * r];
+        };
+        const majorCount = 6;
+        const minorPerMajor = 5;
+        const tickCount = majorCount * minorPerMajor;
+        for (let index = 0; index <= tickCount; index += 1) {
+            const fraction = index / tickCount;
+            const major = index % minorPerMajor === 0;
+            const inner = pointAt(fraction, radius - (major ? 28 : 20));
+            const outer = pointAt(fraction, radius - 9);
+            context.beginPath();
+            context.moveTo(inner[0], inner[1]);
+            context.lineTo(outer[0], outer[1]);
+            context.lineWidth = major ? 4 : 2;
+            context.strokeStyle = major ? "#e2e5e7" : "#889097";
+            context.stroke();
+        }
+        for (let major = 0; major <= majorCount; major += 1) {
+            const fraction = major / majorCount;
+            const [x, y] = pointAt(fraction, radius - 48);
+            context.fillStyle = "#e8ebed";
+            context.font = '600 25px "Noto Sans", sans-serif';
+            context.fillText(String(Math.round(maxValue * fraction)), x, y);
+        }
+        context.beginPath();
+        for (let step = 0; step <= 20; step += 1) {
+            const fraction = redlineFraction + (1 - redlineFraction) * (step / 20);
+            const [x, y] = pointAt(fraction, radius - 12);
+            if (step === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+        }
+        context.lineWidth = 7;
+        context.strokeStyle = "#c8331d";
+        context.stroke();
+        context.fillStyle = "#8d959c";
+        context.font = '500 16px "Noto Sans", sans-serif';
+        context.fillText(label, cx, cy + 54);
+        context.fillStyle = "#0b0d0f";
+        context.beginPath();
+        context.arc(cx, cy, 12, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = "#9aa1a8";
+        context.lineWidth = 3;
+        context.stroke();
+        texture.update(false);
+        texture.hasAlpha = true;
+        return texture;
     }
 
     private updateGearLever(state: VehicleRenderState): void {
@@ -1924,6 +2502,11 @@ export class VehicleRenderer {
             this.leverBase.y + direction.y * length,
             this.leverBase.z + direction.z * length,
         );
+    }
+
+    private updateHandbrake(state: VehicleRenderState): void {
+        if (!this.handbrakePivot) return;
+        this.handbrakePivot.rotation.x = -0.18 - (state.handbrake ? 1 : 0) * 0.42;
     }
 
     private updatePedals(state: VehicleRenderState): void {
@@ -1951,7 +2534,9 @@ export class VehicleRenderer {
             const world = Vector3.TransformCoordinates(local, this.carRoot.getWorldMatrix());
             light.position.copyFrom(world);
             light.direction.copyFrom(forward.add(new Vector3(0, -0.1, 0)).normalize());
-            light.intensity = this.headlightsOn ? 80 : 0;
+            const on = this.headlightsOn && this.lastCameraMode !== "cockpit";
+            light.setEnabled(on);
+            light.intensity = on ? 90 : 0;
         }
         this.headlightMaterial.emissiveColor = this.headlightsOn
             ? new Color3(1, 0.94, 0.8)
