@@ -34,6 +34,14 @@ test("selects a car and map and applies them to the session", async ({ page }) =
     await page.locator('[data-map-card="forest-run"]').click();
     await expect(page.locator(".setup-summary")).toContainText("Forest Run");
 
+    const preview = await page.evaluate(() => window.bitePoint!.snapshot());
+    const previewWorld = await page.evaluate(() => window.bitePoint!.world());
+    expect(preview.x).toBeGreaterThan(400);
+    expect(preview.redlineRpm).toBe(6500);
+    expect(preview.speedoMaxKph).toBeGreaterThan(200);
+    expect(preview.speedoMaxKph).toBeLessThan(320);
+    expect(previewWorld.terrainMaterial).toBe("terrain-forest");
+
     await page.locator('[data-setup-tab="session"]').click();
     await page.locator('[data-scenario-card="endless"]').click();
     await page.locator('[data-ui="start"]').click();
@@ -45,6 +53,9 @@ test("selects a car and map and applies them to the session", async ({ page }) =
     expect(snapshot.mapId).toBe("forest-run");
     expect(snapshot.worldMode).toBe("endless");
     expect(snapshot.activeChunks).toBeGreaterThan(3);
+    expect(snapshot.redlineRpm).toBe(6500);
+    expect(snapshot.speedoMaxKph).toBeGreaterThan(200);
+    expect(snapshot.speedoMaxKph).toBeLessThan(320);
     expect(debug.cameraMode).toBe("cockpit");
     expect(debug.cockpitEnabled).toBe(true);
     expect(debug.cockpitVisible).toBeGreaterThan(20);
