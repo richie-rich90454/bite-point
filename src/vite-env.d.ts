@@ -8,6 +8,8 @@ export interface BitePointSnapshot {
     gearLabel: string;
     carId: string;
     mapId: string;
+    redlineRpm: number;
+    speedoMaxKph: number;
     speedKph: number;
     rpm: number;
     running: boolean;
