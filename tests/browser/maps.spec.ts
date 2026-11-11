@@ -2,6 +2,20 @@ import { expect, test, type Page } from "@playwright/test";
 
 test.use({ viewport: { width: 1280, height: 800 } });
 
+const TERRAIN: Record<string, string> = {
+    "city-center": "terrain-city",
+    "industrial-district": "terrain-industrial",
+    "coastal-highway": "terrain-coast",
+    "alpine-pass": "terrain-mountain",
+    "forest-run": "terrain-forest",
+    "tunnel-run": "terrain-tunnel",
+    "bridge-crossing": "terrain-bridge",
+    summit: "terrain-mountain",
+    "endless-straight": "terrain-proving",
+    "endless-curves": "terrain-coast",
+    "world-tour": "terrain-city",
+};
+
 async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
     const errors: string[] = [];
     page.on("pageerror", (error) => errors.push(error.message));
@@ -32,8 +46,10 @@ async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
         await page.waitForTimeout(700);
 
         const snapshot = await page.evaluate(() => window.bitePoint!.snapshot());
+        const world = await page.evaluate(() => window.bitePoint!.world());
         expect(snapshot.mapId).toBe(mapId);
         expect(snapshot.activeChunks).toBeGreaterThan(2);
+        expect(world.terrainMaterial).toBe(TERRAIN[mapId]);
         expect(errors).toEqual([]);
 
         await page.keyboard.press("Escape");
