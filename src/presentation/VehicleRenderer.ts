@@ -82,6 +82,8 @@ export class VehicleRenderer {
     private tachNeedleNode: TransformNode | null = null;
     private speedNeedleNode: TransformNode | null = null;
     private speedDialMaterial: StandardMaterial | null = null;
+    private tachDialMaterial: StandardMaterial | null = null;
+    private tachMaxRpm = 8000;
     private readonly leverArm: Mesh;
     private readonly leverKnob: Mesh;
     private readonly leverBase = new Vector3(0.03, 0.48, -0.08);
@@ -119,6 +121,7 @@ export class VehicleRenderer {
             500,
             Math.min(600, Math.ceil((redlineSpeedKph * 1.15) / 20) * 20),
         );
+        this.tachMaxRpm = Math.ceil((config.engine.redlineRpm * 1.15) / 1000) * 1000;
         this.engine = new Engine(
             canvas,
             true,
@@ -389,6 +392,19 @@ export class VehicleRenderer {
             this.speedDialMaterial.emissiveTexture = texture;
             if (previous instanceof DynamicTexture && previous !== texture) previous.dispose();
         }
+        this.tachMaxRpm = Math.ceil((config.engine.redlineRpm * 1.15) / 1000) * 1000;
+        if (this.tachDialMaterial) {
+            const previous = this.tachDialMaterial.diffuseTexture;
+            const texture = this.createDialTexture(
+                "gauge-tach-texture",
+                this.tachMaxRpm / 1000,
+                "rpm x1000",
+                Math.min(0.95, config.engine.redlineRpm / this.tachMaxRpm),
+            );
+            this.tachDialMaterial.diffuseTexture = texture;
+            this.tachDialMaterial.emissiveTexture = texture;
+            if (previous instanceof DynamicTexture && previous !== texture) previous.dispose();
+        }
     }
 
     setCarModel(modelId: string, paintColor?: string): void {
@@ -454,7 +470,7 @@ export class VehicleRenderer {
             this.steeringSpinNode.rotation.z = -state.steeringWheelAngleRad;
         }
         if (this.tachNeedleNode) {
-            const rpmFraction = Math.min(1, state.rpm / this.config.engine.redlineRpm);
+            const rpmFraction = Math.min(1, state.rpm / this.tachMaxRpm);
             this.tachNeedleNode.rotation.z = 2.4 - rpmFraction * 4.8;
         }
         if (this.speedNeedleNode) {
@@ -1587,7 +1603,7 @@ export class VehicleRenderer {
                         material.metallic = 0.55;
                         material.roughness = 0.3;
                         material.environmentIntensity = 1.1;
-                    } else if (name.includes("rim")) {
+                    } else if (name.includes("_rim")) {
                         material.albedoColor = new Color3(0.72, 0.75, 0.78);
                         material.metallic = 0.95;
                         material.roughness = 0.16;
@@ -1930,12 +1946,19 @@ export class VehicleRenderer {
         gaugeTilt.rotation.x = -0.17;
         const tachMaterial = this.createDialMaterial(
             "gauge-tach",
-            this.createDialTexture("gauge-tach-texture", 8, "rpm x1000", 0.8),
+            this.createDialTexture(
+                "gauge-tach-texture",
+                this.tachMaxRpm / 1000,
+                "rpm x1000",
+                Math.min(0.95, this.config.engine.redlineRpm / this.tachMaxRpm),
+            ),
         );
+        this.tachDialMaterial = tachMaterial;
         const speedMaterial = this.createDialMaterial(
             "gauge-speed",
             this.createDialTexture("gauge-speed-texture", this.speedoMaxKph, "km/h", 0.82),
         );
+        this.speedDialMaterial = speedMaterial;
         const dials: Array<{
             name: string;
             offset: number;
