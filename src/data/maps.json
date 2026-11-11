@@ -5,7 +5,7 @@
         "description": "Endless downtown blocks: sidewalks, streetlights and towers on both sides.",
         "seed": 1101,
         "routeMode": "curved",
-        "themeSequence": ["city", "city", "sweep"],
+        "themeSequence": ["city"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
@@ -14,7 +14,7 @@
         "description": "Warehouses, container yards, chimneys and chain-link fences.",
         "seed": 1202,
         "routeMode": "curved",
-        "themeSequence": ["industrial", "industrial", "sweep"],
+        "themeSequence": ["industrial"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
@@ -23,7 +23,7 @@
         "description": "Seaside sweepers with water, beaches, palms and the odd bridge.",
         "seed": 1303,
         "routeMode": "curved",
-        "themeSequence": ["coast", "bridge", "coast", "sweep"],
+        "themeSequence": ["coast", "bridge", "coast"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
@@ -41,7 +41,7 @@
         "description": "Tight forest roads walled with broadleaf trees and undergrowth.",
         "seed": 1505,
         "routeMode": "curved",
-        "themeSequence": ["forest", "forest", "sweep", "esses"],
+        "themeSequence": ["forest"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
@@ -50,7 +50,7 @@
         "description": "Long concrete galleries with ceiling lights and no daylight.",
         "seed": 1606,
         "routeMode": "curved",
-        "themeSequence": ["tunnel", "tunnel", "sweep"],
+        "themeSequence": ["tunnel"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
@@ -59,7 +59,7 @@
         "description": "Elevated decks, pylons and railings over open water.",
         "seed": 1707,
         "routeMode": "curved",
-        "themeSequence": ["bridge", "bridge", "sweep"],
+        "themeSequence": ["bridge", "bridge", "coast"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {
