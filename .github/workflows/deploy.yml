@@ -111,8 +111,6 @@ jobs:
             # 10. Install browser dependencies
             - name: Install Playwright Chromium
               run: pnpm exec playwright install chromium
-            - name: Install Playwright system dependencies (best effort)
-              run: pnpm exec playwright install-deps chromium || true
 
             # 11. Build for the existing Playwright preview server.
             # Playwright currently starts Vite preview at the root URL.
