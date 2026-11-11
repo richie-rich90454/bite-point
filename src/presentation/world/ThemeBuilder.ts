@@ -77,6 +77,8 @@ export class ThemeBuilder {
         this.buildCurbs();
         for (const side of [-1, 1] as const) {
             this.buildStreetlights(side);
+            this.buildSidewalkTrees(side);
+            this.buildParkedCars(side);
             for (const s of this.slots(30, 8)) {
                 if (!this.isTheme(s, "city")) continue;
                 const random = this.slotRandom(s, side === 1 ? 0x1a2b3c : 0x4d5e6f);
@@ -84,6 +86,7 @@ export class ThemeBuilder {
                 this.buildBuilding(s, side, random);
             }
         }
+        this.buildTrafficLights();
     }
 
     private buildBuilding(s: number, side: number, random: () => number): void {
@@ -98,6 +101,12 @@ export class ThemeBuilder {
         const { base, bottom } = this.footprint(s, frontage, side, inner, depth);
         const walls = [this.materials.wallA, this.materials.wallB, this.materials.wallC];
         const wall = walls[Math.floor(random() * walls.length)]!;
+        const setback = floors >= 4 && random() < 0.4;
+        const podiumFloors = setback ? 2 : floors;
+        const podiumHeight = podiumFloors * floorHeight;
+        const towerFrontage = setback ? frontage * (0.62 + random() * 0.16) : frontage;
+        const towerDepth = setback ? depth * (0.66 + random() * 0.16) : depth;
+        const towerInset = (depth - towerDepth) * 0.5;
 
         this.addBox(
             "building-foundation",
@@ -109,18 +118,201 @@ export class ThemeBuilder {
             frontage + 0.2,
             bottom - 1.5,
         );
-        this.addBox("building-wall", wall, s, lateral, depth, height, frontage, base);
+        this.addBox("building-wall", wall, s, lateral, depth, podiumHeight, frontage, base);
+
+        let roofTop = base + podiumHeight;
+        let roofFrontage = frontage;
+        let roofDepth = depth;
+        if (setback) {
+            this.addBox(
+                "building-podium",
+                this.materials.roof,
+                s,
+                lateral,
+                depth + 0.3,
+                0.3,
+                frontage + 0.3,
+                base + podiumHeight,
+            );
+            const towerBase = base + podiumHeight + 0.3;
+            const towerHeight = height - podiumHeight;
+            this.addBox(
+                "building-tower",
+                wall,
+                s,
+                lateral,
+                towerDepth,
+                towerHeight,
+                towerFrontage,
+                towerBase,
+            );
+            roofTop = towerBase + towerHeight;
+            roofFrontage = towerFrontage;
+            roofDepth = towerDepth;
+        }
         this.addBox(
             "building-roof",
             this.materials.roof,
             s,
             lateral,
-            depth + 0.6,
+            roofDepth + 0.6,
             0.32,
-            frontage + 0.6,
-            base + height,
+            roofFrontage + 0.6,
+            roofTop,
         );
-        if (random() > 0.45) {
+        roofTop += 0.32;
+
+        const face = side * (inner - 0.06);
+        for (let floor = 1; floor < floors; floor += 1) {
+            const towerFloor = setback && floor >= podiumFloors;
+            const bandFrontage = towerFloor ? towerFrontage : frontage;
+            const floorFace = towerFloor ? side * (inner + towerInset - 0.06) : face;
+            const centerY = base + floor * floorHeight + floorHeight * 0.55;
+            if (random() < 0.22) {
+                this.addBox(
+                    "building-window-band",
+                    this.materials.window,
+                    s,
+                    floorFace,
+                    0.12,
+                    1.25,
+                    Math.max(1.5, bandFrontage - 2.4),
+                    centerY - 0.625,
+                );
+            } else {
+                const columns = Math.max(1, Math.floor((bandFrontage - 2.4) / 2.6));
+                const step = (bandFrontage - 3) / columns;
+                for (let column = 0; column < columns; column += 1) {
+                    const windowS = s - bandFrontage * 0.5 + 1.5 + (column + 0.5) * step;
+                    this.addBox(
+                        "building-window",
+                        this.materials.window,
+                        windowS,
+                        floorFace,
+                        0.14,
+                        1.25,
+                        1.15,
+                        centerY - 0.625,
+                    );
+                }
+            }
+            if (!towerFloor && floor >= 2 && random() < 0.32) {
+                const balconyLength = bandFrontage * 0.5;
+                this.addBox(
+                    "building-balcony",
+                    this.materials.curb,
+                    s,
+                    side * (inner - 0.5),
+                    1,
+                    0.16,
+                    balconyLength,
+                    centerY - 0.78,
+                );
+                this.addBox(
+                    "building-balcony-rail",
+                    this.materials.fence,
+                    s,
+                    side * (inner - 0.95),
+                    0.08,
+                    0.72,
+                    balconyLength,
+                    centerY - 0.62,
+                );
+            }
+        }
+
+        const glassLength = Math.max(2, frontage * 0.62);
+        this.addBox(
+            "storefront-glass",
+            this.materials.storefrontGlass,
+            s,
+            face,
+            0.16,
+            2.5,
+            glassLength,
+            base,
+        );
+        this.addBox(
+            "building-door",
+            this.materials.roof,
+            s,
+            face,
+            0.2,
+            2.4,
+            Math.min(1.8, glassLength * 0.32),
+            base,
+        );
+        this.addBox(
+            "storefront-awning",
+            this.materials.awning,
+            s,
+            side * (inner - 0.55),
+            1.1,
+            0.2,
+            glassLength + 0.4,
+            base + 2.75,
+        );
+        this.addBox(
+            "storefront-sign",
+            this.materials.signLit,
+            s,
+            side * (inner - 0.16),
+            0.16,
+            0.5,
+            Math.min(4.2, frontage * 0.42),
+            base + 3.1,
+        );
+        this.addBox(
+            "building-blade-sign",
+            this.materials.signage,
+            s + frontage * 0.32,
+            side * (inner - 0.55),
+            1,
+            0.7,
+            0.16,
+            base + 3.6,
+        );
+
+        this.buildRoofDetails(s, side, lateral, roofFrontage, roofDepth, roofTop, random);
+    }
+
+    private buildRoofDetails(
+        s: number,
+        side: number,
+        lateral: number,
+        frontage: number,
+        depth: number,
+        top: number,
+        random: () => number,
+    ): void {
+        const roadEdge = lateral - side * (depth * 0.5 - 0.15);
+        const backEdge = lateral + side * (depth * 0.5 - 0.15);
+        for (const edge of [roadEdge, backEdge]) {
+            this.addBox(
+                "building-parapet",
+                this.materials.curb,
+                s,
+                edge,
+                0.3,
+                0.55,
+                frontage + 0.6,
+                top,
+            );
+        }
+        for (const offset of [-frontage * 0.5, frontage * 0.5]) {
+            this.addBox(
+                "building-parapet-side",
+                this.materials.curb,
+                s + offset,
+                lateral,
+                depth + 0.6,
+                0.55,
+                0.3,
+                top,
+            );
+        }
+
+        if (random() < 0.45) {
             this.addBox(
                 "building-roof-unit",
                 this.materials.foundation,
@@ -129,40 +321,193 @@ export class ThemeBuilder {
                 depth * 0.3,
                 0.9,
                 frontage * 0.25,
-                base + height + 0.32,
+                top,
             );
         }
+        if (random() < 0.55) {
+            const antennaS = s + (random() - 0.5) * frontage * 0.5;
+            const antennaLateral = lateral + (random() - 0.5) * depth * 0.4;
+            const antennaHeight = 2.5 + random() * 3.5;
+            this.addCylinder(
+                "building-antenna",
+                this.materials.fence,
+                antennaS,
+                antennaLateral,
+                0.12,
+                antennaHeight,
+                top,
+                6,
+            );
+            this.addBox(
+                "building-beacon",
+                this.materials.signalRed,
+                antennaS,
+                antennaLateral,
+                0.2,
+                0.2,
+                0.2,
+                top + antennaHeight,
+            );
+        }
+        if (random() < 0.4) {
+            const tankS = s + (random() - 0.5) * frontage * 0.4;
+            const tankLateral = lateral + (random() - 0.5) * depth * 0.4;
+            this.addBox(
+                "building-tank-stand",
+                this.materials.fence,
+                tankS,
+                tankLateral,
+                1.8,
+                0.7,
+                1.8,
+                top,
+            );
+            this.addCylinder(
+                "building-water-tank",
+                this.materials.tank,
+                tankS,
+                tankLateral,
+                2.2,
+                2.4,
+                top + 0.7,
+                10,
+            );
+            this.place(
+                this.materials.coneSource("roof-tank-cone", this.materials.tank, 10),
+                tankS,
+                tankLateral,
+                top + 0.7 + 2.4 + 0.4,
+                2.3,
+                0.8,
+                2.3,
+                0,
+            );
+        }
+    }
 
-        const face = side * (inner - 0.06);
-        const columns = Math.max(1, Math.floor((frontage - 2.4) / 2.6));
-        const step = (frontage - 3) / columns;
-        for (let floor = 1; floor < floors; floor += 1) {
-            const centerY = base + floor * floorHeight + floorHeight * 0.55;
-            for (let column = 0; column < columns; column += 1) {
-                const windowS = s - frontage * 0.5 + 1.5 + (column + 0.5) * step;
+    private buildSidewalkTrees(side: number): void {
+        for (const s of this.slots(23, 7)) {
+            if (!this.isTheme(s, "city")) continue;
+            const random = this.slotRandom(s, side === 1 ? 0x61a1 : 0x62a2);
+            if (random() < 0.25) continue;
+            const road = this.world.sample(s);
+            const lateral = side * (road.halfWidthM + 1.7 + random() * 1.1);
+            const base = this.world.sampleAt(s, lateral).heightM + 0.13;
+            const trunkHeight = 2.6 + random() * 1.8;
+            const canopyHeight = 2.4 + random();
+            const canopyWidth = 0.85 + random() * 0.3;
+            this.addBox("tree-planter", this.materials.curb, s, lateral, 1.1, 0.3, 1.1, base);
+            this.place(
+                this.materials.treeTrunk,
+                s,
+                lateral,
+                base + 0.3 + trunkHeight * 0.5,
+                0.55,
+                trunkHeight / 5,
+                0.55,
+                random() * Math.PI * 2,
+            );
+            this.place(
+                this.materials.treeCanopy,
+                s,
+                lateral,
+                base + 0.3 + trunkHeight + canopyHeight * 0.5,
+                canopyWidth,
+                canopyHeight / 5.5,
+                canopyWidth,
+                random() * Math.PI * 2,
+            );
+        }
+    }
+
+    private buildParkedCars(side: number): void {
+        const bodies = [this.materials.carBodyA, this.materials.carBodyB, this.materials.carBodyC];
+        for (const s of this.slots(13, 5)) {
+            if (!this.isTheme(s, "city")) continue;
+            const random = this.slotRandom(s, side === 1 ? 0x71b1 : 0x72b2);
+            if (random() < 0.45) continue;
+            const road = this.world.sample(s);
+            const lateral = side * (road.halfWidthM - 1.15);
+            const base = this.world.sampleAt(s, lateral).heightM + 0.03;
+            const body = bodies[Math.floor(random() * bodies.length)]!;
+            for (const along of [-1.4, 1.4]) {
                 this.addBox(
-                    "building-window",
-                    this.materials.window,
-                    windowS,
-                    face,
-                    0.14,
-                    1.25,
-                    1.15,
-                    centerY - 0.625,
+                    "car-wheel",
+                    this.materials.roof,
+                    s + along,
+                    lateral,
+                    1.86,
+                    0.5,
+                    0.62,
+                    base,
                 );
             }
+            this.addBox("car-body", body, s, lateral, 1.8, 0.68, 4.3, base + 0.3);
+            this.addBox(
+                "car-cabin",
+                this.materials.storefrontGlass,
+                s - 0.2,
+                lateral,
+                1.62,
+                0.6,
+                2.2,
+                base + 0.98,
+            );
+            this.addBox("car-roof", body, s - 0.2, lateral, 1.5, 0.1, 2.0, base + 1.58);
         }
-        this.addBox("building-entrance", this.materials.window, s, face, 0.18, 2.5, 2.6, base);
-        this.addBox(
-            "building-sign",
-            this.materials.signage,
-            s,
-            side * (inner - 0.14),
-            0.16,
-            0.55,
-            3,
-            base + 2.7,
-        );
+    }
+
+    private buildTrafficLights(): void {
+        for (const s of this.slots(54, 10)) {
+            if (!this.isTheme(s, "city")) continue;
+            const random = this.slotRandom(s, 0x5a5a);
+            const side = random() < 0.5 ? -1 : 1;
+            const road = this.world.sample(s);
+            const postLateral = side * (road.halfWidthM + 1.1);
+            const base = this.world.sampleAt(s, postLateral).heightM + 0.13;
+            const tip = side * (road.halfWidthM - 1.3);
+            this.addCylinder("signal-post", this.materials.fence, s, postLateral, 0.18, 6, base, 8);
+            this.addBox(
+                "signal-arm",
+                this.materials.fence,
+                s,
+                side * (road.halfWidthM - 0.1),
+                2.4,
+                0.12,
+                0.12,
+                base + 5.7,
+            );
+            this.addBox(
+                "signal-housing",
+                this.materials.roof,
+                s,
+                tip,
+                0.34,
+                0.95,
+                0.4,
+                base + 4.75,
+            );
+            this.addBox(
+                "signal-red",
+                this.materials.signalRed,
+                s,
+                tip - side * 0.19,
+                0.06,
+                0.28,
+                0.24,
+                base + 5.3,
+            );
+            this.addBox(
+                "signal-green",
+                this.materials.signalGreen,
+                s,
+                tip - side * 0.19,
+                0.06,
+                0.28,
+                0.24,
+                base + 4.85,
+            );
+        }
     }
 
     private buildSidewalks(): void {
@@ -238,12 +583,22 @@ export class ThemeBuilder {
     private buildIndustrial(): void {
         for (const side of [-1, 1] as const) {
             this.buildFence(side);
+            this.buildPipeRack(side);
+            this.buildWarningPosts(side);
+            const factories: number[] = [];
             for (const s of this.slots(58, 26)) {
                 if (!this.isTheme(s, "industrial")) continue;
                 const random = this.slotRandom(s, side === 1 ? 0x7711 : 0x9922);
                 this.buildWarehouse(s, side, random);
+                factories.push(s);
             }
-            for (const s of this.slots(16, 6)) {
+            for (const s of this.slots(120, 40)) {
+                if (!this.isTheme(s, "industrial")) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x8a1b : 0x8b2c);
+                this.buildFactoryHall(s, side, random);
+                factories.push(s);
+            }
+            for (const s of this.slots(11, 5)) {
                 if (!this.isTheme(s, "industrial")) continue;
                 const random = this.slotRandom(s, side === 1 ? 0x33aa : 0x55bb);
                 this.buildContainers(s, side, random);
@@ -252,7 +607,7 @@ export class ThemeBuilder {
                 if (!this.isTheme(s, "industrial")) continue;
                 const random = this.slotRandom(s, side === 1 ? 0x1234 : 0x5678);
                 const road = this.world.sample(s);
-                const lateral = side * (road.halfWidthM + 36 + random() * 14);
+                const lateral = side * (road.halfWidthM + 46 + random() * 8);
                 const base = this.world.sampleAt(s, lateral).heightM;
                 this.addCylinder(
                     "chimney",
@@ -265,6 +620,22 @@ export class ThemeBuilder {
                     12,
                 );
             }
+            for (const s of this.slots(96, 34)) {
+                if (!this.isTheme(s, "industrial")) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x2f3a : 0x2f3b);
+                this.buildStorageTank(s, side, random);
+            }
+            for (const s of this.slots(70, 22)) {
+                if (!this.isTheme(s, "industrial")) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x4c1d : 0x4c2e);
+                this.buildFloodlight(s, side, random);
+            }
+            for (const s of this.slots(96, 28)) {
+                if (!this.isTheme(s, "industrial")) continue;
+                if (factories.some((factory) => Math.abs(factory - s) < 40)) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x6e31 : 0x6e32);
+                this.buildGantryCrane(s, side, random);
+            }
         }
         this.addRocks(4);
         this.addGrassTufts(10);
@@ -274,7 +645,7 @@ export class ThemeBuilder {
         const road = this.world.sample(s);
         const frontage = 26 + random() * 22;
         const depth = 14 + random() * 12;
-        const height = 6 + random() * 5;
+        const height = 7 + random() * 4;
         const inner = road.halfWidthM + 10;
         const lateral = side * (inner + depth * 0.5);
         const { base, bottom } = this.footprint(s, frontage, side, inner, depth);
@@ -298,16 +669,20 @@ export class ThemeBuilder {
             frontage,
             base,
         );
-        this.addBox(
-            "warehouse-roof",
-            this.materials.roof,
-            s,
-            lateral,
-            depth + 0.8,
-            0.4,
-            frontage + 0.8,
-            base + height,
-        );
+        if (random() < 0.5) {
+            this.buildSawtoothRoof(s, side, inner, depth, frontage, base + height);
+        } else {
+            this.addBox(
+                "warehouse-roof",
+                this.materials.roof,
+                s,
+                lateral,
+                depth + 0.8,
+                0.4,
+                frontage + 0.8,
+                base + height,
+            );
+        }
         this.addBox(
             "warehouse-door",
             this.materials.roof,
@@ -318,13 +693,127 @@ export class ThemeBuilder {
             8,
             base,
         );
+        this.addBox(
+            "warehouse-window",
+            this.materials.window,
+            s,
+            side * (inner - 0.08),
+            0.12,
+            1.2,
+            frontage * 0.6,
+            base + 5.2,
+        );
+    }
+
+    private buildFactoryHall(s: number, side: number, random: () => number): void {
+        const road = this.world.sample(s);
+        const frontage = 42 + random() * 24;
+        const depth = 20 + random() * 10;
+        const height = 8 + random() * 4;
+        const inner = road.halfWidthM + 12;
+        const lateral = side * (inner + depth * 0.5);
+        const { base, bottom } = this.footprint(s, frontage, side, inner, depth);
+        this.addBox(
+            "factory-base",
+            this.materials.foundation,
+            s,
+            lateral,
+            depth + 0.2,
+            base - bottom + 1.4,
+            frontage + 0.2,
+            bottom - 1.4,
+        );
+        this.addBox(
+            "factory-hall",
+            this.materials.warehouse,
+            s,
+            lateral,
+            depth,
+            height,
+            frontage,
+            base,
+        );
+        this.addBox(
+            "factory-roof",
+            this.materials.roof,
+            s,
+            lateral,
+            depth + 0.9,
+            0.4,
+            frontage + 0.9,
+            base + height,
+        );
+        this.addBox(
+            "factory-window",
+            this.materials.window,
+            s,
+            side * (inner - 0.08),
+            0.12,
+            1.4,
+            frontage * 0.78,
+            base + height * 0.62,
+        );
+        for (const offset of [-frontage * 0.28, 0, frontage * 0.28]) {
+            this.addBox(
+                "factory-door",
+                this.materials.roof,
+                s + offset,
+                side * (inner - 0.07),
+                0.18,
+                5,
+                6,
+                base,
+            );
+        }
+        for (const offset of [-frontage * 0.3, 0, frontage * 0.3]) {
+            this.addBox(
+                "factory-vent",
+                this.materials.fence,
+                s + offset + (random() - 0.5) * 3,
+                lateral + (random() - 0.5) * depth * 0.4,
+                2.4,
+                0.8,
+                2.4,
+                base + height + 0.4,
+            );
+        }
+    }
+
+    private buildSawtoothRoof(
+        s: number,
+        side: number,
+        inner: number,
+        depth: number,
+        frontage: number,
+        top: number,
+    ): void {
+        const teeth = Math.max(2, Math.round(depth / 5));
+        const toothDepth = depth / teeth;
+        const rise = 1.4;
+        const profile: Array<{ d: number; y: number }> = [];
+        for (let tooth = 0; tooth < teeth; tooth += 1) {
+            const start = tooth * toothDepth;
+            const crest = start + toothDepth * 0.76;
+            profile.push({ d: start, y: top });
+            profile.push({ d: crest, y: top + rise });
+            profile.push({ d: crest, y: top });
+        }
+        profile.push({ d: depth, y: top });
+        const steps = Math.max(2, Math.round(frontage / 6));
+        const rows: Vec3[][] = [];
+        for (let step = 0; step <= steps; step += 1) {
+            const rowS = s - frontage * 0.5 + (step / steps) * frontage;
+            const road = this.world.sample(rowS);
+            rows.push(profile.map((point) => this.point(road, side * (inner + point.d), point.y)));
+        }
+        this.surface(`sawtooth-${this.index}-${Math.round(s)}`, rows, this.materials.roof, 1 / 3);
     }
 
     private buildContainers(s: number, side: number, random: () => number): void {
         const road = this.world.sample(s);
         const lateral = side * (road.halfWidthM + 8.2);
         const base = this.world.sampleAt(s, lateral).heightM;
-        const stack = 1 + Math.floor(random() * 3);
+        const stack = 1 + Math.floor(random() * 4);
         const colors = [
             this.materials.containerA,
             this.materials.containerB,
@@ -333,6 +822,206 @@ export class ThemeBuilder {
         for (let level = 0; level < stack; level += 1) {
             const color = colors[Math.floor(random() * colors.length)]!;
             this.addBox("container", color, s, lateral, 2.4, 2.6, 6, base + level * 2.6);
+        }
+    }
+
+    private buildStorageTank(s: number, side: number, random: () => number): void {
+        const road = this.world.sample(s);
+        const offset = road.halfWidthM + 64 + random() * 12;
+        const diameter = 9 + random() * 4;
+        const height = 9 + random() * 6;
+        const lateral = side * offset;
+        const { base } = this.footprint(s, diameter, side, offset - diameter * 0.5, diameter);
+        this.addCylinder(
+            "storage-tank",
+            this.materials.tank,
+            s,
+            lateral,
+            diameter,
+            height,
+            base,
+            16,
+        );
+        this.place(
+            this.materials.coneSource("storage-tank-roof", this.materials.tank, 16),
+            s,
+            lateral,
+            base + height + 0.8,
+            diameter * 1.03,
+            1.6,
+            diameter * 1.03,
+            0,
+        );
+        for (let ring = 2.4; ring < height - 0.6; ring += 2.4) {
+            this.addCylinder(
+                "storage-tank-ring",
+                this.materials.tank,
+                s,
+                lateral,
+                diameter + 0.28,
+                0.16,
+                base + ring,
+                16,
+            );
+        }
+        const ladderLateral = lateral - side * (diameter * 0.5 + 0.12);
+        this.addBox(
+            "tank-ladder",
+            this.materials.fence,
+            s,
+            ladderLateral,
+            0.12,
+            height + 0.4,
+            0.9,
+            base,
+        );
+        this.addBox(
+            "tank-platform",
+            this.materials.fence,
+            s,
+            lateral - side * (diameter * 0.5 - 0.4),
+            1.4,
+            0.14,
+            2.2,
+            base + height - 0.1,
+        );
+    }
+
+    private buildPipeRack(side: number): void {
+        const step = 12;
+        const first = Math.ceil((this.startS + 2) / step) * step;
+        for (let s = first; s < this.startS + this.lengthM; s += step) {
+            if (!this.isTheme(s, "industrial")) continue;
+            const road = this.world.sample(s);
+            const lateral = side * (road.halfWidthM + 5.1);
+            const base = this.world.sampleAt(s, lateral).heightM;
+            this.addBox("rack-post", this.materials.fence, s, lateral, 0.18, 3.4, 0.18, base);
+            this.addBox("rack-beam", this.materials.fence, s, lateral, 1.7, 0.16, 0.3, base + 3.3);
+            for (const offset of [-0.5, 0.5]) {
+                this.place(
+                    this.materials.cylinderSource("rack-pipe", this.materials.pipe, 8),
+                    s + step * 0.5,
+                    lateral + offset,
+                    base + 3.65,
+                    0.34,
+                    step + 0.05,
+                    0.34,
+                    0,
+                    Math.PI / 2,
+                );
+            }
+        }
+    }
+
+    private buildWarningPosts(side: number): void {
+        const step = 24;
+        const first = Math.ceil((this.startS + 4) / step) * step;
+        for (let s = first; s < this.startS + this.lengthM; s += step) {
+            if (!this.isTheme(s, "industrial")) continue;
+            const road = this.world.sample(s);
+            const lateral = side * (road.halfWidthM + 7);
+            const base = this.world.sampleAt(s, lateral).heightM;
+            this.addBox("warning-post", this.materials.hazard, s, lateral, 0.2, 1.2, 0.2, base);
+            for (const height of [0.28, 0.68]) {
+                this.addBox(
+                    "warning-band",
+                    this.materials.roof,
+                    s,
+                    lateral,
+                    0.26,
+                    0.16,
+                    0.26,
+                    base + height,
+                );
+            }
+        }
+    }
+
+    private buildFloodlight(s: number, side: number, random: () => number): void {
+        const road = this.world.sample(s);
+        const lateral = side * (road.halfWidthM + 43 + random() * 1.5);
+        const base = this.world.sampleAt(s, lateral).heightM;
+        const poleHeight = 18 + random() * 6;
+        this.addCylinder(
+            "floodlight-pole",
+            this.materials.fence,
+            s,
+            lateral,
+            0.35,
+            poleHeight,
+            base,
+            8,
+        );
+        this.addBox(
+            "floodlight-head",
+            this.materials.fence,
+            s,
+            lateral,
+            2.4,
+            0.2,
+            0.6,
+            base + poleHeight,
+        );
+        for (const offset of [-0.7, 0.7]) {
+            this.addBox(
+                "floodlight-lamp",
+                this.materials.tunnelLamp,
+                s,
+                lateral + offset,
+                0.7,
+                0.4,
+                0.35,
+                base + poleHeight + 0.2,
+            );
+        }
+    }
+
+    private buildGantryCrane(s: number, side: number, random: () => number): void {
+        const road = this.world.sample(s);
+        const near = side * (road.halfWidthM + 7.4);
+        const far = side * (road.halfWidthM + 14.2);
+        const nearBase = this.world.sampleAt(s, near).heightM;
+        const farBase = this.world.sampleAt(s, far).heightM;
+        const mid = side * (road.halfWidthM + 10.8);
+        const top = Math.max(nearBase, farBase) + 11 + random() * 2;
+        for (const along of [-2.5, 2.5]) {
+            this.addCylinder(
+                "crane-leg",
+                this.materials.fence,
+                s + along,
+                near,
+                0.45,
+                top - nearBase,
+                nearBase,
+                8,
+            );
+            this.addCylinder(
+                "crane-leg",
+                this.materials.fence,
+                s + along,
+                far,
+                0.45,
+                top - farBase,
+                farBase,
+                8,
+            );
+            this.addBox(
+                "crane-crossbeam",
+                this.materials.fence,
+                s + along,
+                mid,
+                Math.abs(far - near) + 0.9,
+                0.6,
+                0.7,
+                top - 0.6,
+            );
+        }
+        this.addBox("crane-trolley", this.materials.containerA, s, mid, 1.4, 0.7, 2.4, top);
+        this.addBox("crane-cable", this.materials.fence, s, mid, 0.1, 4, 0.1, top - 4.7);
+        this.addBox("crane-spreader", this.materials.hazard, s, mid, 2.2, 0.25, 1.2, top - 4.95);
+        for (const track of [near, far]) {
+            const trackBase = this.world.sampleAt(s, track).heightM;
+            this.addBox("crane-rail", this.materials.fence, s, track, 0.2, 0.14, 26, trackBase);
         }
     }
 
@@ -763,12 +1452,14 @@ export class ThemeBuilder {
         scaleY: number,
         scaleZ: number,
         rotation: number,
+        rotationX = 0,
     ): void {
         const road = this.world.sample(s);
         const mesh = source.createInstance(`${source.name}-${this.index}-${this.serial++}`);
         mesh.position.set(road.y + road.normalY * lateral, y, road.x + road.normalX * lateral);
         mesh.scaling.set(scaleX, scaleY, scaleZ);
         mesh.rotation.y = road.heading + rotation;
+        mesh.rotation.x = rotationX;
         mesh.isPickable = false;
         mesh.parent = this.root;
     }
