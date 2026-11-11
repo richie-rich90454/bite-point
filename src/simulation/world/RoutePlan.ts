@@ -117,7 +117,7 @@ export class RoutePlan {
             bankRad: 0,
             halfWidthM: 7,
             surface: "asphalt",
-            theme: THEME_BY_KIND.straight,
+            theme: themeSequence[0] ? THEME_BY_KIND[themeSequence[0]] : THEME_BY_KIND.straight,
         };
     }
 
