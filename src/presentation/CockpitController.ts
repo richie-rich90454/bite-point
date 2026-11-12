@@ -18,7 +18,7 @@ export class CockpitController {
     private lookPitchSmooth = 0;
     private steerLook = 0;
     private chasePosition: Vector3 | null = null;
-    private readonly eyeLocal = new Vector3(-0.35, 1.2, -0.46);
+    private readonly eyeLocal = new Vector3(-0.35, 1.22, -0.42);
     private readonly hoodLocal = new Vector3(0, 1.14, 1.55);
     private readonly forward = new Vector3(0, 0, 1);
 
