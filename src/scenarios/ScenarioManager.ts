@@ -42,6 +42,8 @@ export interface ScenarioDefinition {
     title: string;
     description: string;
     instructions: string[];
+    world: "endless" | "legacy";
+    routeMode?: "curved" | "straight";
     start: ScenarioStart;
     update: (context: ScenarioUpdate) => ScenarioResult;
 }
@@ -82,6 +84,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Pick a gear that fits the corner ahead. The road keeps going.",
             "There is no finish line and no artificial speed cap.",
         ],
+        world: "endless",
+        routeMode: "curved",
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
         update: endlessUpdate,
     },
@@ -96,6 +100,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "The road never ends and the speed limit is physical.",
             "Use the curved mode when you want corners.",
         ],
+        world: "endless",
+        routeMode: "straight",
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
         update: endlessUpdate,
     },
@@ -110,6 +116,8 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Shift at the redline and keep the car straight.",
             "The clock stops when the car reaches 100 km/h.",
         ],
+        world: "endless",
+        routeMode: "straight",
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
             const speed = context.stats.maxSpeedMps * 3.6;
@@ -124,25 +132,64 @@ export const SCENARIOS: ScenarioDefinition[] = [
     },
     {
         id: "launch-control",
-        title: "Launch control",
+        title: "Launch control tutorial",
         description:
-            "Hold the brake and throttle together, let launch control sit on the bite point, then release the brake for a clean standing start.",
+            "A guided standing start with launch control: arm it on the brake, let it hold the launch RPM with the clutch open, release the brake to launch and shift out of first.",
         instructions: [
-            "The car starts in first gear on the endless straight.",
-            "Hold S (brake) and W (throttle) together until the launch light appears.",
-            "Release S and keep W down. The clutch will feed itself in.",
-            "Shift at the redline and keep the car straight.",
+            "The car starts in first gear on the endless straight, engine running.",
+            "Hold S (brake) and W (throttle) together. Launch control arms and holds the launch RPM.",
+            "Keep W down and release S. The clutch engages automatically and the car launches.",
+            "After the launch, shift at the redline and keep the car straight.",
         ],
+        world: "endless",
+        routeMode: "straight",
         start: { x: 0, y: 0, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
+            const phase = context.state.launchControlPhase ?? "idle";
             const speed = context.stats.maxSpeedMps * 3.6;
+            if (context.stats.stalled) {
+                return {
+                    status: "failed",
+                    message: "The engine stalled. Restart the lesson and keep the throttle down.",
+                };
+            }
             if (speed >= 100) {
                 return {
                     status: "success",
                     message: `Launch complete. 0-100 km/h in ${context.stats.elapsedS.toFixed(2)} s.`,
                 };
             }
-            return { status: "running", progress: Math.min(0.98, speed / 100) };
+            if (phase === "holding") {
+                return {
+                    status: "running",
+                    progress: 0.2,
+                    message:
+                        "Armed. The clutch is open and the launch RPM is held. Release the brake.",
+                };
+            }
+            if (phase === "releasing") {
+                return {
+                    status: "running",
+                    progress: 0.45,
+                    message: "Launching. Keep the throttle down while the clutch engages.",
+                };
+            }
+            if (phase === "launched" || context.state.speedKph > 10) {
+                return {
+                    status: "running",
+                    progress: Math.min(0.95, 0.5 + speed / 200),
+                    message:
+                        context.state.gear === 1 &&
+                        context.state.rpm > context.sim.config.engine.redlineRpm * 0.9
+                            ? "Shift to second: clutch in, select second, clutch out."
+                            : "Keep the throttle down and shift at the redline.",
+                };
+            }
+            return {
+                status: "running",
+                progress: 0,
+                message: "Step 1: hold S (brake) and W (throttle) together until armed.",
+            };
         },
     },
     {
@@ -155,6 +202,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Clutch: Z to press, X to release.",
             "Enter grabs the lever, arrows move it.",
         ],
+        world: "legacy",
         start: { x: -14, y: -12, heading: 0, gear: 0, engineRunning: true },
         update: (context) => {
             if (context.stats.stalled) {
@@ -177,6 +225,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Keep straight. Reach 200 km/h, then brake with S and depress the clutch before stopping.",
             "The distance boards mark the braking space. This is a closed course.",
         ],
+        world: "legacy",
         start: { x: -200, y: -114.5, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
@@ -218,6 +267,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Release the clutch slowly with X while adding a little throttle with W.",
             "Reach 20 km/h without stalling.",
         ],
+        world: "legacy",
         start: { x: -18, y: -8, heading: 0, gear: 0, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
@@ -239,6 +289,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Find the bite point, then release the brake as the car begins to pull.",
             "Reach the top without rolling back more than 1 metre.",
         ],
+        world: "legacy",
         start: { x: 30, y: -9.5, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
@@ -274,6 +325,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Remember the neutral corridor between gears.",
             "Reach 5th gear and 60 km/h without stalling.",
         ],
+        world: "legacy",
         start: { x: -200, y: -114.5, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
@@ -300,6 +352,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Do not stall.",
             "Come to a full stop and select neutral.",
         ],
+        world: "legacy",
         start: { x: -30, y: -2, heading: 0, gear: 1, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
@@ -333,6 +386,7 @@ export const SCENARIOS: ScenarioDefinition[] = [
             "Ease the clutch out and reverse straight into the marked bay.",
             "Stop inside the bay and select neutral.",
         ],
+        world: "legacy",
         start: { x: 0, y: 30, heading: 0, gear: 0, engineRunning: true },
         update: (context) => {
             const failed = failOnStall(context);
