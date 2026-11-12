@@ -1,5 +1,5 @@
 import rawMaps from "./maps.json";
-import type { MapDefinition, MapKind } from "./MapTypes";
+import type { MapDefinition, MapKind, MapLayout } from "./MapTypes";
 import type { RouteKind, RouteMode } from "../simulation/world/WorldTypes";
 
 const ROUTE_KINDS: readonly RouteKind[] = [
@@ -20,10 +20,12 @@ const ROUTE_KINDS: readonly RouteKind[] = [
 
 const ROUTE_MODES: readonly RouteMode[] = ["curved", "straight"];
 const MAP_KINDS: readonly MapKind[] = ["endless", "legacy"];
+const MAP_LAYOUTS: readonly MapLayout[] = ["route", "grid"];
 
 const ROUTE_KIND_SET = new Set<string>(ROUTE_KINDS);
 const ROUTE_MODE_SET = new Set<string>(ROUTE_MODES);
 const MAP_KIND_SET = new Set<string>(MAP_KINDS);
+const MAP_LAYOUT_SET = new Set<string>(MAP_LAYOUTS);
 
 function fail(index: number, message: string): never {
     throw new Error(`maps.json[${index}]: ${message}`);
@@ -52,13 +54,17 @@ function parseStart(value: unknown, index: number): MapDefinition["start"] {
 function parseMap(value: unknown, index: number): MapDefinition {
     if (!isRecord(value)) fail(index, "map must be an object");
     const record = value as Record<string, unknown>;
-    const { id, name, description, kind, seed, routeMode, themeSequence } = record;
+    const { id, name, description, kind, layout, seed, routeMode, themeSequence } = record;
     if (typeof id !== "string" || id.length === 0) fail(index, "id must be a non-empty string");
     if (typeof name !== "string" || name.length === 0)
         fail(index, "name must be a non-empty string");
     if (typeof description !== "string") fail(index, "description must be a string");
     if (typeof kind !== "string" || !MAP_KIND_SET.has(kind)) {
         fail(index, `kind must be one of ${MAP_KINDS.join(", ")}`);
+    }
+    const layoutValue = layout ?? "route";
+    if (typeof layoutValue !== "string" || !MAP_LAYOUT_SET.has(layoutValue)) {
+        fail(index, `layout must be one of ${MAP_LAYOUTS.join(", ")}`);
     }
     if (typeof seed !== "number" || !Number.isFinite(seed)) fail(index, "seed must be finite");
     if (typeof routeMode !== "string" || !ROUTE_MODE_SET.has(routeMode)) {
@@ -77,6 +83,7 @@ function parseMap(value: unknown, index: number): MapDefinition {
         name,
         description,
         kind: kind as MapKind,
+        layout: layoutValue as MapLayout,
         seed: Math.floor(seed as number) >>> 0,
         routeMode: routeMode as RouteMode,
         themeSequence: themeSequence as RouteKind[],
