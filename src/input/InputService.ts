@@ -83,6 +83,12 @@ export class InputService {
     private throttlePedal = 0;
     private brakePedal = 0;
     private clutchPedal = 1;
+    private virtualThrottle = 0;
+    private virtualBrake = 0;
+    private virtualSteering = 0;
+    private virtualClutch: number | null = null;
+    private virtualHandbrake = false;
+    private virtualStarter = false;
     private steeringAxis = 0;
     private ignition = false;
     private starter = false;
@@ -215,9 +221,27 @@ export class InputService {
             }
         }
 
+        this.throttlePedal = Math.max(this.throttlePedal, this.virtualThrottle);
+        this.brakePedal = Math.max(this.brakePedal, this.virtualBrake);
+        if (this.virtualClutch !== null) {
+            const target = this.virtualClutch;
+            if (target >= this.clutchPedal) {
+                this.clutchPedal = moveTowards(this.clutchPedal, target, 1.9 * step);
+            } else {
+                const low = this.clutchBitePoint - this.clutchEngagementWidth / 2;
+                const high = this.clutchBitePoint + this.clutchEngagementWidth / 2;
+                const inBiteZone = this.clutchPedal <= high && this.clutchPedal >= low;
+                const rate = inBiteZone ? 0.5 : this.clutchPedal > high ? 1.9 : 2.2;
+                this.clutchPedal = moveTowards(this.clutchPedal, target, rate * step);
+            }
+        }
+
         const keyboardSteer =
             (this.held.has("steerRight") ? 1 : 0) - (this.held.has("steerLeft") ? 1 : 0);
-        if (pad.connected && Math.abs(pad.steerAxis) > 0.02) {
+        const virtualSteer = this.virtualSteering;
+        if (Math.abs(virtualSteer) > Math.abs(keyboardSteer)) {
+            this.steeringAxis = clamp(virtualSteer, -1, 1);
+        } else if (pad.connected && Math.abs(pad.steerAxis) > 0.02) {
             this.steeringAxis = this.calibration.steering(pad.steerAxis);
         } else {
             this.steeringAxis = keyboardSteer;
@@ -225,6 +249,8 @@ export class InputService {
 
         this.handbrake = this.held.has("handbrake") || (pad.connected && pad.handbrake);
         this.starter = this.held.has("starter") || (pad.connected && pad.starter);
+        if (this.virtualHandbrake) this.handbrake = true;
+        if (this.virtualStarter) this.starter = true;
 
         if (this.held.has("recovery")) {
             if (!this.recoverySent) {
@@ -275,6 +301,39 @@ export class InputService {
         this.handbrake = on;
     }
 
+    setVirtualThrottle(value: number): void {
+        this.virtualThrottle = Math.max(0, Math.min(1, value));
+    }
+
+    setVirtualBrake(value: number): void {
+        this.virtualBrake = Math.max(0, Math.min(1, value));
+    }
+
+    setVirtualSteering(value: number): void {
+        this.virtualSteering = Math.max(-1, Math.min(1, value));
+    }
+
+    setVirtualClutch(value: number | null): void {
+        this.virtualClutch = value === null ? null : Math.max(0, Math.min(1, value));
+    }
+
+    setVirtualHandbrake(on: boolean): void {
+        this.virtualHandbrake = on;
+    }
+
+    setVirtualStarter(on: boolean): void {
+        this.virtualStarter = on;
+    }
+
+    clearVirtualControls(): void {
+        this.virtualThrottle = 0;
+        this.virtualBrake = 0;
+        this.virtualSteering = 0;
+        this.virtualClutch = null;
+        this.virtualHandbrake = false;
+        this.virtualStarter = false;
+    }
+
     releaseAllForReset(): void {
         this.throttlePedal = 0;
         this.brakePedal = 0;
@@ -284,6 +343,7 @@ export class InputService {
         this.handbrake = true;
         this.held.clear();
         this.repeatAction = null;
+        this.clearVirtualControls();
     }
 
     async rebind(action: InputAction): Promise<RebindResult> {
@@ -418,6 +478,7 @@ export class InputService {
         this.held.clear();
         this.repeatAction = null;
         this.recoveryHold = 0;
+        this.clearVirtualControls();
         this.callbacks.onSafetyStop?.(message);
     }
 
