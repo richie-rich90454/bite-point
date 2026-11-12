@@ -12,7 +12,7 @@ import { SuspensionModel } from "../suspension/SuspensionModel";
 import { WheelModel } from "./WheelModel";
 import { VehicleBodyModel } from "./VehicleBodyModel";
 import { RoadContactProvider } from "../road/RoadContactProvider";
-import { clamp, clamp01, GRAVITY, ShapePreservingCurve } from "../core/MathUtils";
+import { clamp, clamp01, GRAVITY, moveTowards, ShapePreservingCurve } from "../core/MathUtils";
 import { TelemetryRecorder, type TelemetrySample } from "../telemetry/TelemetryRecorder";
 import { gearLabel, type VehicleRenderState } from "./VehicleTypes";
 
@@ -466,6 +466,25 @@ export class VehicleSimulation {
             slopeLateral,
             steerAngleRad: steerAngle,
         });
+        if (this.stabilityAssist) {
+            const stabilitySpeed = Math.abs(this.body.state.vx);
+            const maxYawRate = clamp(15 / Math.max(5, stabilitySpeed), 0.03, 3.2);
+            if (Math.abs(this.body.state.yawRate) > maxYawRate) {
+                this.body.state.yawRate = moveTowards(
+                    this.body.state.yawRate,
+                    Math.sign(this.body.state.yawRate) * maxYawRate,
+                    24 * dt,
+                );
+            }
+            const maxLateralSpeed = clamp(0.4 + stabilitySpeed * 0.12, 1, 8);
+            if (Math.abs(this.body.state.vy) > maxLateralSpeed) {
+                this.body.state.vy = moveTowards(
+                    this.body.state.vy,
+                    Math.sign(this.body.state.vy) * maxLateralSpeed,
+                    16 * dt,
+                );
+            }
+        }
         // No default top-speed clamp: maximum road speed emerges from engine power,
         // aerodynamic drag, gearing, rolling resistance and the rev limiter. The
         // optional limiter exists only for players who explicitly enable it.
