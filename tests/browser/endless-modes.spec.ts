@@ -23,6 +23,7 @@ test("switches between the curved and straight endless modes", async ({ page }) 
 
     await page.goto("/");
     await page.locator('[data-setup-tab="drive"]').click();
+    await page.locator('[data-map-card="endless-straight"]').click();
     await page.locator('[data-scenario-card="endless-straight"]').click();
     await page.locator('[data-ui="start"]').click();
     await page.waitForTimeout(1500);
@@ -31,7 +32,8 @@ test("switches between the curved and straight endless modes", async ({ page }) 
     expect(snapshot.scenarioId).toBe("endless-straight");
     expect(snapshot.worldMode).toBe("endless");
     expect(snapshot.activeChunks).toBeGreaterThan(3);
-    expect(Math.abs(snapshot.y)).toBeLessThan(0.25);
+    expect(snapshot.y).toBeLessThan(-6);
+    expect(snapshot.y).toBeGreaterThan(-9);
 
     await page.evaluate(() => window.bitePoint!.startScenario("endless"));
     await page.waitForTimeout(1500);
