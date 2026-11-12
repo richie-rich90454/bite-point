@@ -90,8 +90,10 @@ export class VehicleSimulation {
     lastClutchResult: ClutchResult;
     lastEngagement: EngagementResult | null = null;
     private neutralInputOmega = 0;
-    private launchState: "idle" | "holding" | "releasing" = "idle";
+    private launchState: "idle" | "holding" | "releasing" | "launched" = "idle";
     private launchClutchPedal = 1;
+    private autoClutchPedalValue = 1;
+    private readonly launchRpm: number;
     private events: SimEvent[] = [];
     private eventCooldowns = new Map<SimEventType, number>();
     private wheelLoads: [number, number, number, number] = [0, 0, 0, 0];
@@ -113,6 +115,7 @@ export class VehicleSimulation {
             0,
             0,
         );
+        this.launchRpm = Math.min(5200, config.engine.redlineRpm * 0.55);
         const curve = new ShapePreservingCurve(config.engine.torqueCurve);
         this.engine = new EngineModel({
             ...config.engine,
@@ -209,8 +212,9 @@ export class VehicleSimulation {
 
         this.shifter.update(dt);
         this.gearbox.update(dt);
-        if (this.autoClutch) this.controls.clutchPedal = this.autoClutchPedal();
-        this.applyLaunchControl(dt);
+        const playerThrottle = this.controls.throttle;
+        if (this.autoClutch) this.controls.clutchPedal = this.autoClutchPedal(dt);
+        this.applyLaunchControl(dt, playerThrottle);
         this.steering.update(dt, this.controls.steering, this.body.state.vx);
         this.surfaceMu = this.road.surfaceMuAt(this.body.state.x, this.body.state.y);
 
@@ -629,32 +633,68 @@ export class VehicleSimulation {
         return result;
     }
 
-    private applyLaunchControl(dt: number): void {
+    private applyLaunchControl(dt: number, playerThrottle: number): void {
         if (!this.launchControl) {
             this.launchState = "idle";
             return;
         }
-        const wantsLaunch =
-            this.gearbox.gear > 0 &&
-            Math.abs(this.body.state.vx) < 1 &&
-            this.controls.brake > 0.5 &&
-            this.controls.throttle > 0.5;
-        if (wantsLaunch) {
-            this.launchState = "holding";
-            this.launchClutchPedal = clamp01(
-                this.config.clutch.bitePoint + this.config.clutch.engagementWidth * 0.25,
-            );
-        } else if (this.launchState === "holding") {
-            // Throttle lift while still braking aborts and hands the clutch back.
-            this.launchState =
-                this.controls.brake > 0.5 && this.controls.throttle <= 0.5 ? "idle" : "releasing";
-            if (this.launchState === "idle") this.launchClutchPedal = 1;
+        const speed = Math.abs(this.body.state.vx);
+        const inGear = this.gearbox.gear > 0 && this.gearbox.torqueFactor > 0.5;
+
+        if (this.launchState === "idle") {
+            if (
+                inGear &&
+                this.engine.running &&
+                speed < 1.2 &&
+                this.controls.brake > 0.35 &&
+                playerThrottle > 0.35
+            ) {
+                this.launchState = "holding";
+                this.launchClutchPedal = 1;
+            }
+            return;
         }
+
+        if (this.launchState === "holding") {
+            if (!inGear || !this.engine.running || playerThrottle < 0.15) {
+                this.launchState = "idle";
+                this.launchClutchPedal = 1;
+                return;
+            }
+            // Clutch fully open so the engine revs freely to the launch RPM.
+            this.launchClutchPedal = 1;
+            this.controls.clutchPedal = 1;
+            const error = this.launchRpm - this.engine.rpm;
+            this.controls.throttle = clamp(0.5 + error / 900, 0, 1);
+            // Releasing the brake starts the launch; the clutch stays open until then.
+            if (this.controls.brake <= 0.25) this.launchState = "releasing";
+            return;
+        }
+
         if (this.launchState === "releasing") {
-            this.launchClutchPedal = Math.max(0, this.launchClutchPedal - dt * 1.2);
-            if (this.launchClutchPedal <= 0) this.launchState = "idle";
+            this.launchClutchPedal = Math.max(0, this.launchClutchPedal - dt / 0.45);
+            this.controls.clutchPedal = this.launchClutchPedal;
+            // Feed the engine through the clutch so the launch does not bog or stall.
+            this.controls.throttle = Math.max(playerThrottle, 0.5);
+            if (this.launchClutchPedal <= 0) {
+                this.launchState = "launched";
+                this.controls.clutchPedal = 0;
+            }
+            return;
         }
-        if (this.launchState !== "idle") this.controls.clutchPedal = this.launchClutchPedal;
+
+        // Launched: keep the clutch fully engaged until the driver grabs the lever,
+        // selects neutral, stops, or the drivetrain stops making torque.
+        if (
+            this.gearbox.gear <= 0 ||
+            this.shifter.grabbed ||
+            !inGear ||
+            (speed < 0.6 && this.controls.brake > 0.2)
+        ) {
+            this.launchState = "idle";
+            return;
+        }
+        this.controls.clutchPedal = 0;
     }
 
     private outputShaftOmega(): number {
@@ -670,20 +710,45 @@ export class VehicleSimulation {
         return [0, 1, 2, 3];
     }
 
-    private autoClutchPedal(): number {
+    private autoClutchPedal(dt: number): number {
+        const open = (): number => this.moveAutoClutch(1, dt);
         if (this.shifter.grabbed || this.gearbox.gear === 0 || this.gearbox.torqueFactor < 0.99) {
-            return 1;
+            return open();
         }
+        if (!this.engine.running) return open();
         const speed = Math.abs(this.body.state.vx);
-        if (speed < 0.4 && this.controls.brake > 0.02) return 1;
-        if (speed < 0.6 && this.controls.throttle < 0.02) return 1;
-        if (speed < 2.2) {
-            return clamp(0.52 - this.controls.throttle * 0.08, 0.4, 0.58);
+        const throttle = this.controls.throttle;
+        const brake = this.controls.brake + (this.controls.handbrake ? 1 : 0);
+        const bite = this.config.clutch.bitePoint;
+        const width = this.config.clutch.engagementWidth;
+        if (speed < 0.35 && brake > 0.05) return open();
+
+        const rpm = this.engine.rpm;
+        const idle = this.config.engine.idleRpm;
+        if (rpm < idle * 0.78) return open();
+        if (throttle < 0.04 && speed < 4) {
+            // Creep engagement: enough bite to move at idle without stalling.
+            let target = (bite + width * 0.3) * clamp(1 - speed / 4, 0, 1);
+            if (rpm < idle * 0.9) target = Math.min(1, target + 0.08);
+            return this.moveAutoClutch(clamp(target, 0, 1), dt);
         }
-        const engagement = clamp(0.55 - (speed - 2.2) / 6, 0, 0.55);
-        return this.engine.rpm < this.config.engine.idleRpm * 0.85
-            ? Math.max(engagement, 0.6)
-            : engagement;
+
+        const targetRpm = idle + 350 + throttle * 2200;
+        const launchPedal = clamp(bite + width * (0.32 - 0.27 * throttle), bite, 1);
+        const closeWindow = 6 + throttle * 4;
+        const closing = clamp(1 - speed / closeWindow, 0, 1);
+        let target = clamp(launchPedal * closing, 0, 1);
+        if (rpm < idle * 0.9) target = Math.min(1, target + 0.12);
+        else if (rpm > targetRpm + 450) target = Math.min(1, target + 0.08);
+        return this.moveAutoClutch(clamp(target, 0, 1), dt);
+    }
+
+    private moveAutoClutch(target: number, dt: number): number {
+        const current = this.autoClutchPedalValue;
+        const rate = target > current ? 7 : 2.6;
+        const maxStep = rate * dt;
+        this.autoClutchPedalValue = current + clamp(target - current, -maxStep, maxStep);
+        return this.autoClutchPedalValue;
     }
 
     private engagementContext() {
@@ -743,7 +808,8 @@ export class VehicleSimulation {
             clutchBitePedal: this.config.clutch.bitePoint,
             clutchEngagementWidth: this.config.clutch.engagementWidth,
             handbrake: this.controls.handbrake,
-            launchControlActive: this.launchState !== "idle",
+            launchControlActive: this.launchState === "holding" || this.launchState === "releasing",
+            launchControlPhase: this.launchState,
             steeringInput: this.controls.steering,
             steeringAngleRad: this.steering.angleRad,
             steeringWheelAngleRad: this.steering.steeringWheelAngleRad,
@@ -810,6 +876,7 @@ export class VehicleSimulation {
         this.lastEngagement = null;
         this.launchState = "idle";
         this.launchClutchPedal = 1;
+        this.autoClutchPedalValue = 1;
         this.events = [];
         this.eventCooldowns.clear();
         this.recorder.clear();
