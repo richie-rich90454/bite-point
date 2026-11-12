@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 test.use({ viewport: { width: 1280, height: 800 } });
 
 const TERRAIN: Record<string, string> = {
-    "city-center": "terrain-city",
+    "city-center": "city-ground",
     "industrial-district": "terrain-industrial",
     "coastal-highway": "terrain-coast",
     "alpine-pass": "terrain-mountain",
@@ -11,6 +11,7 @@ const TERRAIN: Record<string, string> = {
     "tunnel-run": "terrain-tunnel",
     "bridge-crossing": "terrain-bridge",
     summit: "terrain-mountain",
+    "serpentine-pass": "terrain-mountain",
     "endless-straight": "terrain-proving",
     "endless-curves": "terrain-coast",
     "world-tour": "terrain-city",
@@ -47,8 +48,11 @@ async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
         const snapshot = await page.evaluate(() => window.bitePoint!.snapshot());
         const world = await page.evaluate(() => window.bitePoint!.world());
         expect(snapshot.mapId).toBe(mapId);
+        expect(snapshot.worldMode).toBe(mapId === "city-center" ? "city" : "endless");
         expect(snapshot.activeChunks).toBeGreaterThan(2);
-        expect(world.terrainMaterial).toBe(TERRAIN[mapId]);
+        expect(world.terrainMaterial).toBe(
+            mapId === "city-center" ? "city-ground" : TERRAIN[mapId],
+        );
         expect(errors).toEqual([]);
 
         await page.keyboard.press("Escape");
@@ -67,6 +71,7 @@ test("starts the city, industrial, coastal, alpine and forest maps", async ({ pa
         "industrial-district",
         "coastal-highway",
         "alpine-pass",
+        "serpentine-pass",
         "forest-run",
     ]);
 });
