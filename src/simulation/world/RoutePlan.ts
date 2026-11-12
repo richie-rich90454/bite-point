@@ -115,7 +115,7 @@ export class RoutePlan {
             curvature: 0,
             grade: 0,
             bankRad: 0,
-            halfWidthM: 7,
+            halfWidthM: 16,
             surface: "asphalt",
             theme: themeSequence[0] ? THEME_BY_KIND[themeSequence[0]] : THEME_BY_KIND.straight,
         };
@@ -285,7 +285,7 @@ export class RoutePlan {
                 : kinds[Math.floor(random() * kinds.length)]!;
         const length = MIN_SEGMENT_LENGTH + random() * (MAX_SEGMENT_LENGTH - MIN_SEGMENT_LENGTH);
         const rampM = Math.min(60 + random() * 90, length / 3);
-        const halfWidthM = 6 + random() * 2;
+        const halfWidthM = 15.5 + random() * 2;
 
         let desired: number;
         let wavelengthM = 0;
