@@ -45,6 +45,9 @@ export class ThemeBuilder {
     }
 
     build(theme: string): void {
+        if (theme !== "tunnel" && theme !== "bridge" && theme !== "city") {
+            this.buildDelineators();
+        }
         switch (theme) {
             case "city":
                 this.buildCity();
@@ -94,6 +97,36 @@ export class ThemeBuilder {
             this.buildFarBlocks(side);
         }
         this.buildTrafficLights();
+    }
+
+    private buildDelineators(): void {
+        for (const s of this.slots(18, 7)) {
+            const road = this.world.sample(s);
+            for (const side of [-1, 1] as const) {
+                const lateral = side * (road.halfWidthM + 2.5);
+                const base = this.world.sampleAt(s, lateral).heightM;
+                this.addBox(
+                    "delineator-post",
+                    this.materials.curb,
+                    s,
+                    lateral,
+                    0.1,
+                    0.9,
+                    0.1,
+                    base,
+                );
+                this.addBox(
+                    "delineator-reflector",
+                    this.materials.markings,
+                    s,
+                    lateral,
+                    0.08,
+                    0.12,
+                    0.05,
+                    base + 0.74,
+                );
+            }
+        }
     }
 
     private distanceToCrossStreet(s: number): number {
@@ -1444,10 +1477,116 @@ export class ThemeBuilder {
     }
 
     private buildAlpine(summit: boolean): void {
-        this.addTrees(18, true);
-        this.addRocks(9);
-        this.addSnowPatches(summit ? 30 : 14);
-        this.addGrassTufts(10);
+        this.addTrees(24, true);
+        this.addRocks(12);
+        this.addSnowPatches(summit ? 34 : 16);
+        this.addGrassTufts(8);
+        this.buildMountainCliffs(summit);
+        this.buildChevronSigns();
+        this.buildPassMarkers();
+    }
+
+    private buildMountainCliffs(summit: boolean): void {
+        for (const side of [-1, 1] as const) {
+            for (const s of this.slots(26, 10)) {
+                if (!this.isTheme(s, "alpine", "mountain", "summit")) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x3c1d : 0x3d2e);
+                if (random() < 0.25) continue;
+                const road = this.world.sample(s);
+                const distance = 22 + random() * 34;
+                const lateral = side * (road.halfWidthM + distance);
+                const base = this.world.sampleAt(s, lateral).heightM;
+                const height = 6 + random() * (summit ? 24 : 16);
+                const width = 5 + random() * 9;
+                const depth = 5 + random() * 10;
+                this.place(
+                    this.materials.rock,
+                    s,
+                    lateral,
+                    base + height * 0.35,
+                    width,
+                    height,
+                    depth,
+                    random() * Math.PI * 2,
+                );
+                if (random() < 0.45) {
+                    this.place(
+                        this.materials.rock,
+                        s + 6 + random() * 5,
+                        lateral + side * (3 + random() * 6),
+                        base + height * 0.2,
+                        width * 0.7,
+                        height * 0.7,
+                        depth * 0.8,
+                        random() * Math.PI * 2,
+                    );
+                }
+            }
+        }
+    }
+
+    private buildChevronSigns(): void {
+        for (const s of this.slots(42, 14)) {
+            if (!this.isTheme(s, "alpine", "mountain", "summit")) continue;
+            const random = this.slotRandom(s, 0x6c31);
+            if (random() < 0.5) continue;
+            const road = this.world.sample(s);
+            const side = random() < 0.5 ? -1 : 1;
+            const lateral = side * (road.halfWidthM + 2.6);
+            const base = this.world.sampleAt(s, lateral).heightM;
+            this.addCylinder("chevron-post", this.materials.fence, s, lateral, 0.1, 1.8, base, 6);
+            this.addBox(
+                "chevron-board",
+                this.materials.hazard,
+                s,
+                lateral,
+                1.4,
+                0.75,
+                0.12,
+                base + 1.25,
+            );
+            this.addBox(
+                "chevron-stripe",
+                this.materials.roof,
+                s,
+                lateral + side * 0.08,
+                1.2,
+                0.16,
+                0.03,
+                base + 1.6,
+            );
+        }
+    }
+
+    private buildPassMarkers(): void {
+        for (const s of this.slots(18, 6)) {
+            if (!this.isTheme(s, "alpine", "mountain", "summit")) continue;
+            const road = this.world.sample(s);
+            for (const side of [-1, 1] as const) {
+                const lateral = side * (road.halfWidthM + 1.6);
+                const base = this.world.sampleAt(s, lateral).heightM;
+                this.addBox(
+                    "pass-marker",
+                    this.materials.hazard,
+                    s,
+                    lateral,
+                    0.12,
+                    1.1,
+                    0.12,
+                    base,
+                );
+                this.addBox(
+                    "pass-marker-reflector",
+                    this.materials.tunnelLamp,
+                    s,
+                    lateral,
+                    0.08,
+                    0.16,
+                    0.05,
+                    base + 0.86,
+                );
+            }
+        }
     }
 
     private buildDefault(): void {
