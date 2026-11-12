@@ -20,6 +20,7 @@ import { CARS, DEFAULT_CAR_ID, getCar } from "../data/CarCatalog";
 import { DEFAULT_MAP_ID, MAPS, getMap } from "../data/MapCatalog";
 import { measureZeroToHundred } from "../simulation/measure/ZeroToHundred";
 import type { CarDefinition } from "../data/CarTypes";
+import type { MapDefinition } from "../data/MapTypes";
 
 export interface UIScenarioInfo {
     id: string;
@@ -71,7 +72,7 @@ export interface AppUICallbacks {
 }
 
 type PauseTab = "drive" | "lessons" | "controls" | "settings" | "input" | "diagnostics";
-type SetupTab = "car" | "map" | "session";
+type SetupTab = "car" | "drive";
 
 const TAB_LABELS: Record<PauseTab, string> = {
     drive: "Drive",
@@ -946,8 +947,7 @@ export class AppUI {
             <div class="panel-label">Choose your setup</div>
             <div class="setup-tabs" role="tablist" aria-label="Setup">
               <button class="setup-tab active" data-setup-tab="car" role="tab">Car</button>
-              <button class="setup-tab" data-setup-tab="map" role="tab">Map</button>
-              <button class="setup-tab" data-setup-tab="session" role="tab">Session</button>
+              <button class="setup-tab" data-setup-tab="drive" role="tab">Drive</button>
             </div>
             <div class="scenario-scroll">
               <div class="scenario-grid"></div>
@@ -1049,14 +1049,35 @@ export class AppUI {
             tab.classList.toggle("active", tab.dataset.setupTab === this.setupTab);
         });
         if (this.setupTab === "car") this.renderCarOptions(container);
-        else if (this.setupTab === "map") this.renderMapOptions(container);
-        else this.renderScenarioOptions(container);
+        else this.renderDriveOptions(container);
         this.updateSetupSummary();
         requestAnimationFrame(() => this.updateScenarioScrollbar());
     }
 
-    private renderScenarioOptions(container: HTMLElement): void {
-        for (const scenario of this.scenarios) {
+    private renderDriveOptions(container: HTMLElement): void {
+        const map = getMap(this.selectedMapId) ?? MAPS[0]!;
+        const compatible = this.scenarios.filter((scenario) => scenario.world === map.kind);
+        if (!compatible.some((scenario) => scenario.id === this.selectedScenario)) {
+            this.selectedScenario = compatible[0]!.id;
+        }
+
+        const appendLabel = (text: string): void => {
+            const label = document.createElement("div");
+            label.className = "setup-group-label";
+            label.textContent = text;
+            container.append(label);
+        };
+
+        appendLabel("Endless roads");
+        for (const option of MAPS.filter((candidate) => candidate.kind === "endless")) {
+            this.appendMapOption(container, option);
+        }
+        appendLabel("Practice lot");
+        for (const option of MAPS.filter((candidate) => candidate.kind === "legacy")) {
+            this.appendMapOption(container, option);
+        }
+        appendLabel(`Session · ${map.name}`);
+        for (const scenario of compatible) {
             const button = document.createElement("button");
             button.className = "scenario-option";
             button.dataset.scenarioCard = scenario.id;
@@ -1064,10 +1085,51 @@ export class AppUI {
             button.querySelector(".scenario-option-title")!.textContent = scenario.title;
             button.querySelector(".scenario-option-description")!.textContent =
                 scenario.description;
-            button.addEventListener("click", () => this.setScenarioSelection(scenario.id));
+            button.addEventListener("click", () => {
+                this.setScenarioSelection(scenario.id);
+                this.updateSetupSummary();
+            });
             container.append(button);
         }
         this.setScenarioSelection(this.selectedScenario);
+    }
+
+    private appendMapOption(container: HTMLElement, map: MapDefinition): void {
+        const button = document.createElement("button");
+        button.className = "scenario-option map-option";
+        button.dataset.mapCard = map.id;
+        if (map.id === this.selectedMapId) button.classList.add("selected");
+        const title = document.createElement("span");
+        title.className = "scenario-option-title";
+        title.textContent = map.name;
+        const description = document.createElement("span");
+        description.className = "scenario-option-description";
+        description.textContent = map.description;
+        const meta = document.createElement("span");
+        meta.className = "map-kind";
+        meta.textContent =
+            map.kind === "legacy"
+                ? "Practice lot"
+                : map.routeMode === "straight"
+                  ? "Endless straight"
+                  : "Endless road";
+        button.append(title, description, meta);
+        button.addEventListener("click", () => {
+            this.selectedMapId = map.id;
+            this.callbacks.onMapSelect(map.id);
+            const scenarios = this.scenarios.filter((scenario) => scenario.world === map.kind);
+            if (!scenarios.some((scenario) => scenario.id === this.selectedScenario)) {
+                this.selectedScenario = scenarios[0]!.id;
+            }
+            this.renderSetup();
+        });
+        container.append(button);
+    }
+
+    setMapSelection(id: string): void {
+        if (!getMap(id)) return;
+        this.selectedMapId = id;
+        this.renderSetup();
     }
 
     private renderCarOptions(container: HTMLElement): void {
@@ -1086,32 +1148,28 @@ export class AppUI {
             const description = document.createElement("span");
             description.className = "scenario-option-description";
             description.textContent = `${car.engineType}, ${car.drivetrain}, ${stats.zeroToHundred.toFixed(2)} s, ${stats.powerHp} hp, ${stats.torqueNm} Nm`;
-            button.append(tier, title, description);
+            const metrics = document.createElement("span");
+            metrics.className = "car-metrics";
+            const finiteTime = Number.isFinite(stats.zeroToHundred);
+            const rows: Array<[string, number, string]> = [
+                ["Power", Math.min(1, stats.powerHp / 1400), `${stats.powerHp} hp`],
+                ["Torque", Math.min(1, stats.torqueNm / 1400), `${stats.torqueNm} Nm`],
+                [
+                    "0-100",
+                    finiteTime ? Math.max(0.05, 1 - stats.zeroToHundred / 12) : 0,
+                    finiteTime ? `${stats.zeroToHundred.toFixed(1)} s` : "n/a",
+                ],
+            ];
+            for (const [label, value, readout] of rows) {
+                const metric = document.createElement("span");
+                metric.className = "car-metric";
+                metric.innerHTML = `<span>${label}<b>${readout}</b></span><i style="--value:${Math.round(value * 100)}%"></i>`;
+                metrics.append(metric);
+            }
+            button.append(tier, title, description, metrics);
             button.addEventListener("click", () => {
                 this.selectedCarId = car.id;
                 this.callbacks.onCarSelect(car.id);
-                this.renderSetup();
-            });
-            container.append(button);
-        }
-    }
-
-    private renderMapOptions(container: HTMLElement): void {
-        for (const map of MAPS) {
-            const button = document.createElement("button");
-            button.className = "scenario-option map-option";
-            button.dataset.mapCard = map.id;
-            if (map.id === this.selectedMapId) button.classList.add("selected");
-            const title = document.createElement("span");
-            title.className = "scenario-option-title";
-            title.textContent = map.name;
-            const description = document.createElement("span");
-            description.className = "scenario-option-description";
-            description.textContent = map.description;
-            button.append(title, description);
-            button.addEventListener("click", () => {
-                this.selectedMapId = map.id;
-                this.callbacks.onMapSelect(map.id);
                 this.renderSetup();
             });
             container.append(button);
@@ -1144,10 +1202,11 @@ export class AppUI {
     private updateSetupSummary(): void {
         const car = getCar(this.selectedCarId) ?? CARS[0];
         const map = getMap(this.selectedMapId) ?? MAPS[0];
+        const scenario = this.scenarios.find((item) => item.id === this.selectedScenario);
         const stats = car ? this.carStats(car) : null;
         this.setupSummary.textContent =
             car && map && stats
-                ? `T${car.tier} ${car.name}, ${car.engineType}, ${car.drivetrain}, ${stats.zeroToHundred.toFixed(2)} s, ${map.name}`
+                ? `T${car.tier} ${car.name}, ${map.name}, ${scenario?.title ?? "Free drive"}`
                 : "";
     }
 
@@ -1194,7 +1253,7 @@ export class AppUI {
         this.statusLights.innerHTML = lights
             .map(
                 ([label, active, cls]) =>
-                    `<span class="light light-${active ? cls : "off"}">${label}</span>`,
+                    `<span class="light light-${active ? cls : "off"}"><i></i>${label}</span>`,
             )
             .join("");
 
@@ -1905,8 +1964,13 @@ export class AppUI {
 
     private promptFor(state: VehicleRenderState): string {
         const key = (action: InputAction): string => this.callbacks.getBindingLabel(action);
-        if (state.launchControlActive)
-            return "Launch control ready. Keep the throttle down and release the brake to launch.";
+        const launchPhase = state.launchControlPhase ?? "idle";
+        if (launchPhase === "holding")
+            return "Launch control armed. Keep the throttle down and release the brake to launch.";
+        if (launchPhase === "releasing")
+            return "Launching. Keep the throttle down while the clutch engages.";
+        if (launchPhase === "launched")
+            return "Launched. Keep the clutch engaged and shift at the redline.";
         if (
             state.engineRunning &&
             state.gear > 0 &&
