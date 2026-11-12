@@ -25,6 +25,7 @@ export interface VehicleRenderState {
     clutchEngagementWidth: number;
     handbrake: boolean;
     launchControlActive?: boolean;
+    launchControlPhase?: "idle" | "holding" | "releasing" | "launched";
     steeringInput: number;
     steeringAngleRad: number;
     steeringWheelAngleRad: number;

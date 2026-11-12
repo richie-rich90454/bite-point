@@ -14,6 +14,8 @@ export class AudioDirector {
     private tire: NoiseLayer | null = null;
     private starterGain: GainNode | null = null;
     private starterOsc: OscillatorNode | null = null;
+    private cabinFilter: BiquadFilterNode | null = null;
+    private cabin = false;
     private noiseBuffer: AudioBuffer | null = null;
     private enabled: boolean;
     private volume: number;
@@ -41,7 +43,13 @@ export class AudioDirector {
         this.context = context;
         this.master = context.createGain();
         this.master.gain.value = this.enabled ? this.volume : 0;
-        this.master.connect(context.destination);
+        const cabinFilter = context.createBiquadFilter();
+        cabinFilter.type = "lowpass";
+        cabinFilter.frequency.value = 18000;
+        cabinFilter.Q.value = 0.7;
+        this.master.connect(cabinFilter);
+        cabinFilter.connect(context.destination);
+        this.cabinFilter = cabinFilter;
 
         this.noiseBuffer = this.createNoiseBuffer(context);
         this.engineAudio.attach(context, this.master, this.noiseBuffer);
@@ -60,6 +68,7 @@ export class AudioDirector {
 
         this.initialized = true;
         await context.resume();
+        this.setCabin(this.cabin);
     }
 
     setEnabled(enabled: boolean): void {
@@ -90,21 +99,38 @@ export class AudioDirector {
         this.engineAudio.setSoundSet(soundSet);
     }
 
+    setCabin(enabled: boolean): void {
+        this.cabin = enabled;
+        if (this.cabinFilter && this.context) {
+            this.cabinFilter.frequency.setTargetAtTime(
+                enabled ? 2400 : 18000,
+                this.context.currentTime,
+                0.08,
+            );
+        }
+    }
+
     update(state: VehicleRenderState, dt: number): void {
         if (!this.context) return;
         const context = this.context;
         const now = context.currentTime;
 
-        this.engineAudio.update(state, this.engineLevel);
+        this.engineAudio.update(state, this.engineLevel, dt);
 
         if (this.wind) {
-            const windGain = Math.min(0.14, (state.speedMps / 42) ** 2 * 0.14) * this.windLevel;
+            const cabinScale = this.cabin ? 0.45 : 1;
+            const windGain =
+                Math.min(0.14, (state.speedMps / 42) ** 2 * 0.14) * this.windLevel * cabinScale;
             this.wind.gain.gain.setTargetAtTime(windGain, now, 0.2);
         }
         if (this.tire) {
             const surfaceFactor = state.sessionSurfaceMu < 0.8 ? 1.7 : 1;
+            const cabinScale = this.cabin ? 0.5 : 1;
             const tireGain =
-                Math.min(0.1, (state.speedMps / 32) * 0.1) * surfaceFactor * this.tireLevel;
+                Math.min(0.1, (state.speedMps / 32) * 0.1) *
+                surfaceFactor *
+                this.tireLevel *
+                cabinScale;
             this.tire.gain.gain.setTargetAtTime(tireGain, now, 0.15);
         }
         if (this.starterGain) {
@@ -220,6 +246,7 @@ export class AudioDirector {
         }
         void this.context?.close();
         this.context = null;
+        this.cabinFilter = null;
         this.initialized = false;
     }
 }

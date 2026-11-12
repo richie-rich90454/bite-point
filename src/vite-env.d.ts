@@ -34,6 +34,7 @@ export interface BitePointSnapshot {
     brake: number;
     handbrake: boolean;
     launchControlActive: boolean;
+    launchControlPhase: "idle" | "holding" | "releasing" | "launched";
     engineTorqueNm: number;
     wheelOmegas: number[];
     clutchModeDetail: string;

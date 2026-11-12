@@ -86,6 +86,7 @@ export class DashboardPresenter {
         context.scale(scale, scale);
 
         this.drawPlaque();
+        this.drawShiftLights(state);
         this.drawTachometer(state, 122, 106);
         this.drawSpeedometer(state, 282, 101);
         this.drawGear(state, 426, 74, shifterGrabbed);
@@ -93,6 +94,35 @@ export class DashboardPresenter {
         this.drawShifter(state, 347, 160);
 
         context.restore();
+    }
+
+    private drawShiftLights(state: VehicleRenderState): void {
+        const context = this.context;
+        const count = 9;
+        const width = 9;
+        const gap = 3;
+        const total = count * width + (count - 1) * gap;
+        const startX = 280 - total / 2;
+        const fraction = Math.min(1, Math.max(0, state.rpm / this.maxRpm));
+        for (let index = 0; index < count; index += 1) {
+            const threshold = 0.68 + (0.97 - 0.68) * (index / (count - 1));
+            const lit = state.engineRunning && fraction >= threshold;
+            const color = index < 3 ? SAGE : index < 7 ? AMBER : RED;
+            context.fillStyle = lit ? color : "rgba(255,255,255,0.08)";
+            if (lit) {
+                context.shadowColor = color;
+                context.shadowBlur = 10;
+            }
+            context.fillRect(startX + index * (width + gap), 36, width, 5);
+            context.shadowBlur = 0;
+        }
+        if (state.fuelCut) {
+            context.fillStyle = RED;
+            context.font = `700 6px ${FONT}`;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText("LIMITER", 280, 47);
+        }
     }
 
     private drawPlaque(): void {
@@ -273,6 +303,17 @@ export class DashboardPresenter {
         context.textAlign = "center";
         context.textBaseline = "middle";
         context.fillText(state.gearLabel, x, y - 2);
+        const phase = state.launchControlPhase ?? "idle";
+        if (phase !== "idle") {
+            context.fillStyle = phase === "launched" ? SAGE : AMBER_BRIGHT;
+            context.font = `700 7px ${FONT}`;
+            context.fillText(
+                phase === "holding" ? "ARMED" : phase === "releasing" ? "LAUNCH" : "GO",
+                x,
+                y + 30,
+            );
+            return;
+        }
         context.fillStyle = MUTED;
         context.font = `600 7px ${FONT}`;
         context.fillText(grabbed ? "Lever" : "Gear", x, y + 23);

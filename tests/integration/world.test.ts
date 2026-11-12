@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_MAP_ID, getMap, MAPS } from "../../src/data/MapCatalog";
 import type { MapDefinition } from "../../src/data/MapTypes";
 import { WorldGenerator } from "../../src/simulation/world/WorldGenerator";
+import { SCENARIOS } from "../../src/scenarios/ScenarioManager";
 
 const CHUNK_LENGTH_M = 160;
 const LATERALS = [-100, -42, -12, 0, 12, 42, 100];
@@ -12,13 +13,14 @@ function worldFor(map: MapDefinition): WorldGenerator {
 
 describe("map catalog", () => {
     it("exposes the selectable infinite maps", () => {
-        expect(MAPS.length).toBeGreaterThanOrEqual(11);
+        expect(MAPS.length).toBeGreaterThanOrEqual(12);
         expect(new Set(MAPS.map((map) => map.id)).size).toBe(MAPS.length);
         expect(getMap(DEFAULT_MAP_ID)?.name).toBe("City Center");
         expect(getMap("missing-map")).toBeUndefined();
         for (const map of MAPS) {
             expect(map.name.length).toBeGreaterThan(0);
             expect(map.description.length).toBeGreaterThan(0);
+            expect(map.kind === "endless" || map.kind === "legacy").toBe(true);
             expect(map.themeSequence.length).toBeGreaterThan(0);
             expect(Number.isFinite(map.seed)).toBe(true);
             expect(map.routeMode === "curved" || map.routeMode === "straight").toBe(true);
@@ -42,9 +44,28 @@ describe("map catalog", () => {
             "endless-straight",
             "endless-curves",
             "world-tour",
+            "proving-ground",
         ]) {
             expect(ids.has(id)).toBe(true);
         }
+        expect(getMap("proving-ground")?.kind).toBe("legacy");
+        expect(MAPS.filter((map) => map.kind === "legacy")).toHaveLength(1);
+    });
+});
+
+describe("scenario world routing", () => {
+    it("keeps the launch tutorial on the endless straight and practice on the legacy lot", () => {
+        expect(SCENARIOS.find((scenario) => scenario.id === "launch-control")?.routeMode).toBe(
+            "straight",
+        );
+        expect(SCENARIOS.find((scenario) => scenario.id === "launch-control")?.world).toBe(
+            "endless",
+        );
+        expect(SCENARIOS.find((scenario) => scenario.id === "proving-run")?.world).toBe("legacy");
+        expect(SCENARIOS.filter((scenario) => scenario.world === "legacy").length).toBeGreaterThan(
+            3,
+        );
+        for (const scenario of SCENARIOS) expect(scenario.world).toBeTruthy();
     });
 });
 

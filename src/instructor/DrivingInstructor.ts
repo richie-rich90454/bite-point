@@ -150,13 +150,29 @@ export class DrivingInstructor {
             );
         }
 
-        if (state.launchControlActive) {
+        if (state.launchControlPhase === "holding") {
             this.push(
-                "Launch control is holding the clutch. Keep the throttle down and release the brake to launch.",
+                "Launch control is holding the launch RPM with the clutch open. Keep the throttle down and release the brake to launch.",
                 "info",
                 this.timeS,
                 6,
-                "launch",
+                "launch-armed",
+            );
+        } else if (state.launchControlPhase === "releasing") {
+            this.push(
+                "Launching. Keep the throttle down while the clutch engages.",
+                "info",
+                this.timeS,
+                4,
+                "launch-release",
+            );
+        } else if (state.launchControlPhase === "launched") {
+            this.push(
+                "Launched. Keep the clutch engaged and shift at the redline.",
+                "info",
+                this.timeS,
+                5,
+                "launch-done",
             );
         }
 

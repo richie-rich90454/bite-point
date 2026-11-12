@@ -114,6 +114,12 @@ export class EngineAudio {
     private motorHighOscillator: OscillatorNode | null = null;
     private motorGain: GainNode | null = null;
     private motorHighGain: GainNode | null = null;
+    private exhaustPulseOscillator: OscillatorNode | null = null;
+    private exhaustPulseDepth: GainNode | null = null;
+    private noiseBuffer: AudioBuffer | null = null;
+    private lastThrottle = 0;
+    private crackleCooldown = 0;
+    private blowOffCooldown = 0;
     private soundSet: EngineSoundSet = "na";
     private profile: Profile = PROFILES.na;
 
@@ -202,6 +208,16 @@ export class EngineAudio {
         this.exhaustFilter.connect(this.exhaustGain);
         this.exhaustGain.connect(compressor);
         this.exhaustSource.start();
+        this.noiseBuffer = noiseBuffer;
+
+        this.exhaustPulseOscillator = context.createOscillator();
+        this.exhaustPulseOscillator.type = "square";
+        this.exhaustPulseOscillator.frequency.value = 60;
+        this.exhaustPulseDepth = context.createGain();
+        this.exhaustPulseDepth.gain.value = 0;
+        this.exhaustPulseOscillator.connect(this.exhaustPulseDepth);
+        this.exhaustPulseDepth.connect(this.exhaustGain.gain);
+        this.exhaustPulseOscillator.start();
 
         this.whistleOscillator = context.createOscillator();
         this.whistleOscillator.type = "sine";
@@ -233,7 +249,7 @@ export class EngineAudio {
         this.applyProfile();
     }
 
-    update(state: VehicleRenderState, engineLevel: number): void {
+    update(state: VehicleRenderState, engineLevel: number, dt = 1 / 60): void {
         const context = this.context;
         if (!context || !this.harmonicBus) return;
         const now = context.currentTime;
@@ -247,6 +263,7 @@ export class EngineAudio {
             profile.firingPerRev === null
                 ? 0
                 : Math.min(320, Math.max(20, (rpm / 60) * profile.firingPerRev));
+        const limiterPulse = state.fuelCut ? (Math.sin(now * Math.PI * 2 * 14) > 0 ? 1 : 0.32) : 1;
 
         for (let index = 0; index < this.harmonicOscillators.length; index += 1) {
             const spec = profile.harmonics[index];
@@ -262,7 +279,7 @@ export class EngineAudio {
 
         const engineTarget =
             running && profile.firingPerRev !== null
-                ? (profile.gain.idle + throttle * profile.gain.load) * level
+                ? (profile.gain.idle + throttle * profile.gain.load) * level * limiterPulse
                 : 0;
         this.harmonicBus.gain.setTargetAtTime(engineTarget, now, 0.07);
 
@@ -287,11 +304,14 @@ export class EngineAudio {
             }
         }
 
+        let exhaustTarget = 0;
         if (this.exhaustGain && this.exhaustFilter) {
             const exhaust = profile.exhaust;
-            const target =
-                exhaust && running ? (exhaust.idle + throttle * exhaust.load) * level : 0;
-            this.exhaustGain.gain.setTargetAtTime(target, now, 0.09);
+            exhaustTarget =
+                exhaust && running
+                    ? (exhaust.idle + throttle * exhaust.load) * level * limiterPulse
+                    : 0;
+            this.exhaustGain.gain.setTargetAtTime(exhaustTarget, now, 0.09);
             if (exhaust) {
                 this.exhaustFilter.frequency.setTargetAtTime(
                     exhaust.frequency + rpm * 0.02 + throttle * 90,
@@ -299,6 +319,11 @@ export class EngineAudio {
                     0.09,
                 );
             }
+        }
+        if (this.exhaustPulseOscillator && this.exhaustPulseDepth) {
+            const pulseHz = Math.max(20, firing * 0.5);
+            this.exhaustPulseOscillator.frequency.setTargetAtTime(pulseHz, now, 0.03);
+            this.exhaustPulseDepth.gain.setTargetAtTime(exhaustTarget * 0.62, now, 0.06);
         }
 
         if (this.whistleGain && this.whistleOscillator) {
@@ -339,6 +364,63 @@ export class EngineAudio {
             this.motorGain.gain.setTargetAtTime(target, now, 0.09);
             this.motorHighGain.gain.setTargetAtTime(target * 0.35, now, 0.09);
         }
+
+        this.crackleCooldown = Math.max(0, this.crackleCooldown - dt);
+        this.blowOffCooldown = Math.max(0, this.blowOffCooldown - dt);
+        const lifting = this.lastThrottle > 0.35 && throttle < 0.08;
+        if (running && rpm > 2200 && (lifting || state.fuelCut) && this.crackleCooldown <= 0) {
+            this.playCrackle(now, rpm);
+            this.crackleCooldown = 0.035 + Math.random() * 0.13;
+        }
+        if (running && profile.whistle && lifting && rpm > 2800 && this.blowOffCooldown <= 0) {
+            this.playBlowOff(now);
+            this.blowOffCooldown = 0.35;
+        }
+        this.lastThrottle = throttle;
+    }
+
+    private playCrackle(now: number, rpm: number): void {
+        const context = this.context;
+        if (!context || !this.output || !this.noiseBuffer) return;
+        const source = context.createBufferSource();
+        source.buffer = this.noiseBuffer;
+        const highpass = context.createBiquadFilter();
+        highpass.type = "highpass";
+        highpass.frequency.value = 700;
+        const lowpass = context.createBiquadFilter();
+        lowpass.type = "lowpass";
+        lowpass.frequency.value = 2200 + Math.min(2600, rpm * 0.35);
+        const gain = context.createGain();
+        const peak = 0.018 + Math.random() * 0.035;
+        const duration = 0.035 + Math.random() * 0.06;
+        gain.gain.setValueAtTime(peak, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+        source.connect(highpass);
+        highpass.connect(lowpass);
+        lowpass.connect(gain);
+        gain.connect(this.output);
+        source.start(now);
+        source.stop(now + duration + 0.02);
+    }
+
+    private playBlowOff(now: number): void {
+        const context = this.context;
+        if (!context || !this.output || !this.noiseBuffer) return;
+        const source = context.createBufferSource();
+        source.buffer = this.noiseBuffer;
+        const filter = context.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 1500;
+        filter.Q.value = 0.9;
+        const gain = context.createGain();
+        gain.gain.setValueAtTime(0.0001, now);
+        gain.gain.exponentialRampToValueAtTime(0.055, now + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.24);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.output);
+        source.start(now);
+        source.stop(now + 0.26);
     }
 
     dispose(): void {
@@ -378,6 +460,7 @@ export class EngineAudio {
         stop(this.whistleOscillator);
         stop(this.motorOscillator);
         stop(this.motorHighOscillator);
+        stop(this.exhaustPulseOscillator);
         try {
             this.output?.disconnect();
         } catch {
@@ -397,6 +480,12 @@ export class EngineAudio {
         this.motorHighOscillator = null;
         this.motorGain = null;
         this.motorHighGain = null;
+        this.exhaustPulseOscillator = null;
+        this.exhaustPulseDepth = null;
+        this.noiseBuffer = null;
+        this.lastThrottle = 0;
+        this.crackleCooldown = 0;
+        this.blowOffCooldown = 0;
         this.toneFilter = null;
         this.harmonicBus = null;
         this.output = null;

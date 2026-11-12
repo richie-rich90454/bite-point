@@ -23,7 +23,8 @@ test("selects the proving lesson and uses sans-serif instruments", async ({ page
         .evaluate((element) => getComputedStyle(element).fontFamily);
     expect(font).toContain("Noto Sans");
     expect(font).not.toMatch(/Georgia|Bodoni|Didot|Palatino|Baskerville/);
-    await page.locator('[data-setup-tab="session"]').click();
+    await page.locator('[data-setup-tab="drive"]').click();
+    await page.locator('[data-map-card="proving-ground"]').click();
     await page.locator('[data-scenario-card="proving-run"]').click();
     await page.locator('[data-ui="start"]').click();
     await expect(page.locator(".scenario-title")).toHaveText("Six gears, 200 km/h");

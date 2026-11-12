@@ -11,6 +11,10 @@ interface Vec3 {
 }
 
 const WATER_LEVELS = new WeakMap<WorldGenerator, number>();
+const CITY_BLOCK_LENGTH_M = 160;
+const CITY_CROSS_HALF_M = 7.2;
+const CITY_AVENUE_OFFSET_M = 30;
+const CITY_AVENUE_HALF_M = 4.2;
 
 function waterLevelFor(world: WorldGenerator): number {
     const cached = WATER_LEVELS.get(world);
@@ -73,6 +77,7 @@ export class ThemeBuilder {
     }
 
     private buildCity(): void {
+        this.buildCityGrid();
         this.buildSidewalks();
         this.buildCurbs();
         for (const side of [-1, 1] as const) {
@@ -81,19 +86,223 @@ export class ThemeBuilder {
             this.buildParkedCars(side);
             for (const s of this.slots(30, 8)) {
                 if (!this.isTheme(s, "city")) continue;
+                if (this.distanceToCrossStreet(s) < 15) continue;
                 const random = this.slotRandom(s, side === 1 ? 0x1a2b3c : 0x4d5e6f);
-                if (random() < 0.16) continue;
+                if (random() < 0.08) continue;
                 this.buildBuilding(s, side, random);
             }
+            this.buildFarBlocks(side);
         }
         this.buildTrafficLights();
+    }
+
+    private distanceToCrossStreet(s: number): number {
+        const cross = (Math.floor(s / CITY_BLOCK_LENGTH_M) + 0.5) * CITY_BLOCK_LENGTH_M;
+        return Math.abs(s - cross);
+    }
+
+    private buildCityGrid(): void {
+        const crossS = this.startS + this.lengthM * 0.5;
+        if (this.isTheme(crossS, "city")) this.buildCrossStreet(crossS);
+        for (const side of [-1, 1] as const) this.buildParallelAvenue(side);
+    }
+
+    private buildCrossStreet(sCross: number): void {
+        for (const side of [-1, 1] as const) {
+            const road = this.world.sample(sCross);
+            const inner = road.halfWidthM + 0.3;
+            const distances = [inner, inner + 9, inner + 24, inner + 44, inner + 68, 104];
+            const laterals = this.lateralColumns(distances, side);
+            const rows: Vec3[][] = [];
+            for (const offset of [-CITY_CROSS_HALF_M, 0, CITY_CROSS_HALF_M]) {
+                const row = this.world.sample(sCross + offset);
+                rows.push(
+                    laterals.map((lateral) =>
+                        this.point(
+                            row,
+                            lateral,
+                            this.world.sampleAt(sCross + offset, lateral).heightM + 0.17,
+                        ),
+                    ),
+                );
+            }
+            this.surface(`city-cross-${side}`, rows, this.materials.road, 1 / 6);
+
+            const centerRows: Vec3[][] = [];
+            for (const offset of [-0.16, 0.16]) {
+                const row = this.world.sample(sCross + offset);
+                centerRows.push(
+                    laterals.map((lateral) =>
+                        this.point(
+                            row,
+                            lateral,
+                            this.world.sampleAt(sCross + offset, lateral).heightM + 0.2,
+                        ),
+                    ),
+                );
+            }
+            this.surface(`city-cross-center-${side}`, centerRows, this.materials.markings, 1);
+
+            const stripeCount = Math.floor((road.halfWidthM * 2 - 1.4) / 1.3);
+            for (let index = 0; index <= stripeCount; index += 1) {
+                const lateral = -road.halfWidthM + 0.9 + index * 1.3;
+                for (const direction of [-1, 1] as const) {
+                    const s = sCross + direction * (CITY_CROSS_HALF_M + 1.7);
+                    const base = this.world.sampleAt(s, lateral).heightM + 0.07;
+                    this.addBox(
+                        "crosswalk-stripe",
+                        this.materials.markings,
+                        s,
+                        lateral,
+                        0.68,
+                        0.02,
+                        2.6,
+                        base,
+                    );
+                }
+            }
+            this.buildSignal(sCross + CITY_CROSS_HALF_M + 2.2, side);
+            this.buildSignal(sCross - CITY_CROSS_HALF_M - 2.2, -side);
+        }
+    }
+
+    private buildParallelAvenue(side: number): void {
+        const rows: Vec3[][] = [];
+        const centerRows: Vec3[][] = [];
+        const nearSidewalk: Vec3[][] = [];
+        const farSidewalk: Vec3[][] = [];
+        for (let offset = 0; offset <= this.lengthM + 0.001; offset += 20) {
+            const s = this.startS + offset;
+            const road = this.world.sample(s);
+            const center = road.halfWidthM + CITY_AVENUE_OFFSET_M;
+            const laterals = this.lateralColumns(
+                [center - CITY_AVENUE_HALF_M, center, center + CITY_AVENUE_HALF_M],
+                side,
+            );
+            rows.push(
+                laterals.map((lateral) =>
+                    this.point(road, lateral, this.world.sampleAt(s, lateral).heightM + 0.05),
+                ),
+            );
+            const centerLine = this.lateralColumns([center - 0.12, center + 0.12], side);
+            centerRows.push(
+                centerLine.map((lateral) =>
+                    this.point(road, lateral, this.world.sampleAt(s, lateral).heightM + 0.08),
+                ),
+            );
+            nearSidewalk.push(
+                this.lateralColumns(
+                    [center - CITY_AVENUE_HALF_M - 2.6, center - CITY_AVENUE_HALF_M],
+                    side,
+                ).map((lateral) =>
+                    this.point(road, lateral, this.world.sampleAt(s, lateral).heightM + 0.15),
+                ),
+            );
+            farSidewalk.push(
+                this.lateralColumns(
+                    [center + CITY_AVENUE_HALF_M, center + CITY_AVENUE_HALF_M + 2.6],
+                    side,
+                ).map((lateral) =>
+                    this.point(road, lateral, this.world.sampleAt(s, lateral).heightM + 0.15),
+                ),
+            );
+        }
+        this.surface(`city-avenue-${side}`, rows, this.materials.road, 1 / 6);
+        this.surface(`city-avenue-center-${side}`, centerRows, this.materials.markings, 1);
+        this.surface(`city-avenue-sidewalk-${side}`, nearSidewalk, this.materials.sidewalk, 1 / 3);
+        this.surface(
+            `city-avenue-sidewalk-far-${side}`,
+            farSidewalk,
+            this.materials.sidewalk,
+            1 / 3,
+        );
+    }
+
+    private buildFarBlocks(side: number): void {
+        for (const s of this.slots(26, 9)) {
+            if (!this.isTheme(s, "city")) continue;
+            if (this.distanceToCrossStreet(s) < 13) continue;
+            const random = this.slotRandom(s, side === 1 ? 0x91a1 : 0x92a2);
+            if (random() < 0.15) continue;
+            this.buildBlockTower(s, side, random);
+        }
+    }
+
+    private buildBlockTower(s: number, side: number, random: () => number): void {
+        const road = this.world.sample(s);
+        const frontage = 13 + random() * 10;
+        const depth = 10 + random() * 8;
+        const floors =
+            5 + Math.floor(random() * 16) + (random() < 0.25 ? 8 + Math.floor(random() * 12) : 0);
+        const floorHeight = 3.2;
+        const height = floors * floorHeight;
+        const inner = road.halfWidthM + CITY_AVENUE_OFFSET_M + CITY_AVENUE_HALF_M + 3.4;
+        const lateral = side * (inner + depth * 0.5);
+        const { base, bottom } = this.footprint(s, frontage, side, inner, depth);
+        const walls = [this.materials.wallA, this.materials.wallB, this.materials.wallC];
+        const wall = walls[Math.floor(random() * walls.length)]!;
+
+        this.addBox(
+            "block-tower-foundation",
+            this.materials.foundation,
+            s,
+            lateral,
+            depth + 0.2,
+            base - bottom + 1.5,
+            frontage + 0.2,
+            bottom - 1.5,
+        );
+        this.addBox("block-tower-wall", wall, s, lateral, depth, height, frontage, base);
+        this.addBox(
+            "block-tower-roof",
+            this.materials.roof,
+            s,
+            lateral,
+            depth + 0.6,
+            0.34,
+            frontage + 0.6,
+            base + height,
+        );
+
+        const face = side * (inner - 0.06);
+        for (let floor = 2; floor < floors; floor += 2) {
+            const centerY = base + floor * floorHeight;
+            this.addBox(
+                "block-tower-window-band",
+                this.materials.window,
+                s,
+                face,
+                0.14,
+                1.35,
+                Math.max(2, frontage - 2.6),
+                centerY,
+            );
+        }
+        if (random() < 0.3) {
+            this.addBox(
+                "block-tower-tank",
+                this.materials.tank,
+                s + (random() - 0.5) * frontage * 0.4,
+                lateral,
+                2.2,
+                2.6,
+                2.2,
+                base + height + 0.34,
+            );
+        }
+    }
+
+    private lateralColumns(distances: number[], side: number): number[] {
+        const laterals = distances.map((distance) => side * distance);
+        return side < 0 ? laterals.slice().sort((a, b) => a - b) : laterals;
     }
 
     private buildBuilding(s: number, side: number, random: () => number): void {
         const road = this.world.sample(s);
         const frontage = 9 + random() * 11;
         const depth = 8 + random() * 9;
-        const floors = 2 + Math.floor(random() * 9);
+        const floors =
+            3 + Math.floor(random() * 12) + (random() < 0.28 ? 8 + Math.floor(random() * 10) : 0);
         const floorHeight = 3.1 + random() * 0.5;
         const height = floors * floorHeight;
         const inner = road.halfWidthM + 6.4;
@@ -388,6 +597,7 @@ export class ThemeBuilder {
     private buildSidewalkTrees(side: number): void {
         for (const s of this.slots(23, 7)) {
             if (!this.isTheme(s, "city")) continue;
+            if (this.distanceToCrossStreet(s) < 11) continue;
             const random = this.slotRandom(s, side === 1 ? 0x61a1 : 0x62a2);
             if (random() < 0.25) continue;
             const road = this.world.sample(s);
@@ -424,6 +634,7 @@ export class ThemeBuilder {
         const bodies = [this.materials.carBodyA, this.materials.carBodyB, this.materials.carBodyC];
         for (const s of this.slots(13, 5)) {
             if (!this.isTheme(s, "city")) continue;
+            if (this.distanceToCrossStreet(s) < 10) continue;
             const random = this.slotRandom(s, side === 1 ? 0x71b1 : 0x72b2);
             if (random() < 0.45) continue;
             const road = this.world.sample(s);
@@ -461,53 +672,47 @@ export class ThemeBuilder {
         for (const s of this.slots(54, 10)) {
             if (!this.isTheme(s, "city")) continue;
             const random = this.slotRandom(s, 0x5a5a);
-            const side = random() < 0.5 ? -1 : 1;
-            const road = this.world.sample(s);
-            const postLateral = side * (road.halfWidthM + 1.1);
-            const base = this.world.sampleAt(s, postLateral).heightM + 0.13;
-            const tip = side * (road.halfWidthM - 1.3);
-            this.addCylinder("signal-post", this.materials.fence, s, postLateral, 0.18, 6, base, 8);
-            this.addBox(
-                "signal-arm",
-                this.materials.fence,
-                s,
-                side * (road.halfWidthM - 0.1),
-                2.4,
-                0.12,
-                0.12,
-                base + 5.7,
-            );
-            this.addBox(
-                "signal-housing",
-                this.materials.roof,
-                s,
-                tip,
-                0.34,
-                0.95,
-                0.4,
-                base + 4.75,
-            );
-            this.addBox(
-                "signal-red",
-                this.materials.signalRed,
-                s,
-                tip - side * 0.19,
-                0.06,
-                0.28,
-                0.24,
-                base + 5.3,
-            );
-            this.addBox(
-                "signal-green",
-                this.materials.signalGreen,
-                s,
-                tip - side * 0.19,
-                0.06,
-                0.28,
-                0.24,
-                base + 4.85,
-            );
+            this.buildSignal(s, random() < 0.5 ? -1 : 1);
         }
+    }
+
+    private buildSignal(s: number, side: number): void {
+        const road = this.world.sample(s);
+        const postLateral = side * (road.halfWidthM + 1.1);
+        const base = this.world.sampleAt(s, postLateral).heightM + 0.13;
+        const tip = side * (road.halfWidthM - 1.3);
+        this.addCylinder("signal-post", this.materials.fence, s, postLateral, 0.18, 6, base, 8);
+        this.addBox(
+            "signal-arm",
+            this.materials.fence,
+            s,
+            side * (road.halfWidthM - 0.1),
+            2.4,
+            0.12,
+            0.12,
+            base + 5.7,
+        );
+        this.addBox("signal-housing", this.materials.roof, s, tip, 0.34, 0.95, 0.4, base + 4.75);
+        this.addBox(
+            "signal-red",
+            this.materials.signalRed,
+            s,
+            tip - side * 0.19,
+            0.06,
+            0.28,
+            0.24,
+            base + 5.3,
+        );
+        this.addBox(
+            "signal-green",
+            this.materials.signalGreen,
+            s,
+            tip - side * 0.19,
+            0.06,
+            0.28,
+            0.24,
+            base + 4.85,
+        );
     }
 
     private buildSidewalks(): void {
@@ -553,6 +758,7 @@ export class ThemeBuilder {
     private buildStreetlights(side: number): void {
         for (const s of this.slots(36, 10)) {
             if (!this.isTheme(s, "city")) continue;
+            if (this.distanceToCrossStreet(s) < 10) continue;
             const road = this.world.sample(s);
             const lateral = side * (road.halfWidthM + 4.4);
             const base = this.world.sampleAt(s, lateral).heightM;
