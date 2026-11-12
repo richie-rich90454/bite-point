@@ -22,7 +22,7 @@ test("switches between the curved and straight endless modes", async ({ page }) 
     });
 
     await page.goto("/");
-    await page.locator('[data-setup-tab="session"]').click();
+    await page.locator('[data-setup-tab="drive"]').click();
     await page.locator('[data-scenario-card="endless-straight"]').click();
     await page.locator('[data-ui="start"]').click();
     await page.waitForTimeout(1500);
