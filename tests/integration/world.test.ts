@@ -49,6 +49,14 @@ describe("map catalog", () => {
 });
 
 describe("themed endless generation", () => {
+    it("starts the industrial, city, forest and tunnel maps on their own theme", () => {
+        expect(worldFor(getMap("industrial-district")!).segmentAt(500).theme).toBe("industrial");
+        expect(worldFor(getMap("city-center")!).segmentAt(500).theme).toBe("city");
+        expect(worldFor(getMap("forest-run")!).segmentAt(500).theme).toBe("forest");
+        expect(worldFor(getMap("tunnel-run")!).segmentAt(500).theme).toBe("tunnel");
+        expect(worldFor(getMap("bridge-crossing")!).segmentAt(500).theme).toBe("bridge");
+    });
+
     it("is deterministic for every map", () => {
         for (const map of MAPS) {
             const first = worldFor(map);

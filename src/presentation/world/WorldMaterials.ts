@@ -61,6 +61,17 @@ export class WorldMaterials {
     readonly containerB: PBRMaterial;
     readonly containerC: PBRMaterial;
     readonly fence: PBRMaterial;
+    readonly storefrontGlass: PBRMaterial;
+    readonly awning: PBRMaterial;
+    readonly signLit: PBRMaterial;
+    readonly carBodyA: PBRMaterial;
+    readonly carBodyB: PBRMaterial;
+    readonly carBodyC: PBRMaterial;
+    readonly tank: PBRMaterial;
+    readonly pipe: PBRMaterial;
+    readonly hazard: PBRMaterial;
+    readonly signalRed: PBRMaterial;
+    readonly signalGreen: PBRMaterial;
     readonly palmFrond: PBRMaterial;
     readonly pine: PBRMaterial;
     readonly treeTrunk: Mesh;
@@ -109,10 +120,49 @@ export class WorldMaterials {
         this.containerC = this.metal("endless-container-c", "#3f6b45", 0.62);
         this.fence = this.metal("endless-fence", "#6d7378", 0.5);
 
+        this.storefrontGlass = this.pbr("endless-storefront-glass");
+        this.storefrontGlass.albedoColor = new Color3(0.05, 0.08, 0.11);
+        this.storefrontGlass.emissiveColor = new Color3(0.03, 0.05, 0.07);
+        this.storefrontGlass.roughness = 0.08;
+        this.storefrontGlass.metallic = 0.7;
+
+        this.awning = this.pbr("endless-awning");
+        this.awning.albedoColor = new Color3(0.42, 0.11, 0.13);
+        this.awning.roughness = 0.88;
+
+        this.signLit = this.pbr("endless-sign-lit");
+        this.signLit.albedoColor = new Color3(0.95, 0.9, 0.74);
+        this.signLit.emissiveColor = new Color3(0.88, 0.74, 0.42);
+        this.signLit.roughness = 0.42;
+
+        this.carBodyA = this.metal("endless-car-a", "#b8bcc0", 0.34);
+        this.carBodyB = this.metal("endless-car-b", "#2c4f76", 0.34);
+        this.carBodyC = this.metal("endless-car-c", "#7a2f2a", 0.34);
+
+        this.tank = this.metal("endless-tank", "#cfd4d6", 0.45);
+        this.pipe = this.metal("endless-pipe", "#8f7a5e", 0.55);
+
+        this.hazard = this.pbr("endless-hazard");
+        this.hazard.albedoColor = new Color3(0.9, 0.7, 0.16);
+        this.hazard.emissiveColor = new Color3(0.24, 0.15, 0.02);
+        this.hazard.roughness = 0.58;
+
+        this.signalRed = this.pbr("endless-signal-red");
+        this.signalRed.albedoColor = new Color3(0.9, 0.2, 0.2);
+        this.signalRed.emissiveColor = new Color3(0.82, 0.08, 0.06);
+        this.signalRed.roughness = 0.4;
+
+        this.signalGreen = this.pbr("endless-signal-green");
+        this.signalGreen.albedoColor = new Color3(0.32, 0.85, 0.42);
+        this.signalGreen.emissiveColor = new Color3(0.16, 0.72, 0.26);
+        this.signalGreen.roughness = 0.4;
+
         this.roof = this.pbr("endless-roof");
         this.roof.albedoColor = new Color3(0.19, 0.2, 0.21);
         this.roof.roughness = 0.9;
         this.roof.metallic = 0.15;
+        // Sawtooth roofs are generated as one-sided surfaces; keep both faces lit.
+        this.roof.backFaceCulling = false;
 
         this.window = this.pbr("endless-window");
         this.window.albedoColor = new Color3(0.09, 0.13, 0.18);

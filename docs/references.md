@@ -59,3 +59,5 @@ Style note: inline citations in code comments, docs and commit messages use the 
 [R24] Creative Commons. _CC0 1.0 Universal Public Domain Dedication_. <https://creativecommons.org/publicdomain/zero/1.0/>
 
 [R25] Babylon.js contributors. _Babylon.js 9.35.0 KTX2 decoder and MSC Basis transcoder_. Apache License 2.0. <https://github.com/BabylonJS/Babylon.js> and <https://www.apache.org/licenses/LICENSE-2.0>
+
+[R26] Grab3D. _Free 3D models_ (CC0 1.0 Universal). Car roster models: 1990s Compact Car, 1990s Sedan, Hatchback, Muscle Car, Rally Car, 1990s Sports Car, Electric Car and Coupe. <https://grab3d.com/models/vehicles/> and <https://grab3d.com/license/>

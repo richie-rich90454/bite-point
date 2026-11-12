@@ -625,6 +625,102 @@
             "licenseUrl": "https://www.apache.org/licenses/LICENSE-2.0",
             "sha256": "29becbf0eef2ce9f6d72109ad217704ec3799c432da0c26e3893b793ecab6bdc",
             "processing": "Vendored unmodified from the Babylon.js 9.35.0 KTX2 transcoder distribution for local offline decoding."
+        },
+        {
+            "path": "src/assets/models/1990s-compact-car.glb",
+            "kind": "model",
+            "title": "1990s Compact Car",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/1990s-compact-car/",
+            "download": "https://grab3d.com/dl/1990s-compact-car/1990s-compact-car.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "e499009a4920598a6d0cfd6f5d388eb8561adc007a7badea1336aef95aef925d"
+        },
+        {
+            "path": "src/assets/models/1990s-sedan.glb",
+            "kind": "model",
+            "title": "1990s Sedan",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/1990s-sedan/",
+            "download": "https://grab3d.com/dl/1990s-sedan/1990s-sedan.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "91e8486ffbe598da286439b9dabefbd6663a1fc33f7cc9c247b316534b5ef4b5"
+        },
+        {
+            "path": "src/assets/models/hatchback-vehicle-kit.glb",
+            "kind": "model",
+            "title": "Hatchback (Cozy Vehicles Kit)",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/hatchback/",
+            "download": "https://grab3d.com/dl/hatchback/hatchback.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "1ec155c3d9ea994947719423e9bdf66ae6998b75253740f5dbd07e02c1030ec8"
+        },
+        {
+            "path": "src/assets/models/muscle-car.glb",
+            "kind": "model",
+            "title": "Muscle Car",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/muscle-car/",
+            "download": "https://grab3d.com/dl/muscle-car/muscle-car.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "d3409591ad13f8f43914e44c9e504a3acb19b21560029ee3231894dffb278502"
+        },
+        {
+            "path": "src/assets/models/rally-car.glb",
+            "kind": "model",
+            "title": "Rally Car",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/rally-car/",
+            "download": "https://grab3d.com/dl/rally-car/rally-car.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "96301ed4a42b05ce21913b91a4180b249275f1c9c8b8f3957916e5d114be78a8"
+        },
+        {
+            "path": "src/assets/models/1990s-sports-car.glb",
+            "kind": "model",
+            "title": "1990s Sports Car",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/1990s-sports-car/",
+            "download": "https://grab3d.com/dl/1990s-sports-car/1990s-sports-car.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "d42cbc1c71c7d6c91b85315196f8633ad0053de465377d46c7af3c7982e6fa51"
+        },
+        {
+            "path": "src/assets/models/electric-car.glb",
+            "kind": "model",
+            "title": "Electric Car",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/electric-car/",
+            "download": "https://grab3d.com/dl/electric-car/electric-car.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "8153199eac19abe67fc035c3b457fe635a5c41ed04478f8eeaf4d0b9c43329f2"
+        },
+        {
+            "path": "src/assets/models/coupe.glb",
+            "kind": "model",
+            "title": "Coupe",
+            "author": "Grab3D",
+            "source": "https://grab3d.com/models/vehicles/coupe/",
+            "download": "https://grab3d.com/dl/coupe/coupe.glb",
+            "license": "CC0-1.0",
+            "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+            "processing": "Downloaded GLB unmodified; contains no manufacturer logos or branding. Used as a selectable car body.",
+            "sha256": "916abde62feaf95f1a0171277013c6adbe84461967016ad1900b508b0094c4b1"
         }
     ]
 }

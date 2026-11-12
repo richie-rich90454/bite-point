@@ -1,0 +1,39 @@
+Grab3D vehicle models
+=====================
+
+All models in src/assets/models are by Grab3D, released under CC0 1.0
+Universal (public domain dedication). No attribution is required.
+
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Source site: https://grab3d.com/
+Model license page: https://grab3d.com/license/
+
+Models and sources:
+
+- 1990s-compact-car.glb
+  https://grab3d.com/models/vehicles/1990s-compact-car/
+  https://grab3d.com/dl/1990s-compact-car/1990s-compact-car.glb
+- 1990s-sedan.glb
+  https://grab3d.com/models/vehicles/1990s-sedan/
+  https://grab3d.com/dl/1990s-sedan/1990s-sedan.glb
+- hatchback-vehicle-kit.glb
+  https://grab3d.com/models/vehicles/hatchback/
+  https://grab3d.com/dl/hatchback/hatchback.glb
+- muscle-car.glb
+  https://grab3d.com/models/vehicles/muscle-car/
+  https://grab3d.com/dl/muscle-car/muscle-car.glb
+- rally-car.glb
+  https://grab3d.com/models/vehicles/rally-car/
+  https://grab3d.com/dl/rally-car/rally-car.glb
+- 1990s-sports-car.glb
+  https://grab3d.com/models/vehicles/1990s-sports-car/
+  https://grab3d.com/dl/1990s-sports-car/1990s-sports-car.glb
+- electric-car.glb
+  https://grab3d.com/models/vehicles/electric-car/
+  https://grab3d.com/dl/electric-car/electric-car.glb
+- coupe.glb
+  https://grab3d.com/models/vehicles/coupe/
+  https://grab3d.com/dl/coupe/coupe.glb
+
+The models are stylised, original designs. They contain no manufacturer
+logos or copyrighted branding.
