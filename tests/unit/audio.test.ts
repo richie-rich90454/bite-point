@@ -28,7 +28,7 @@ describe("EngineAudio", () => {
         expect(engine.activeSoundSet).toBe("electric");
         expect(engine.usesStarter).toBe(false);
 
-        expect(() => engine.update(renderState(), 0.8)).not.toThrow();
+        expect(() => engine.update(renderState(), 0.8, 1 / 60)).not.toThrow();
         expect(() => engine.dispose()).not.toThrow();
     });
 });
@@ -41,7 +41,9 @@ describe("AudioDirector", () => {
         director.setEnabled(true);
         director.setVolume(0.5);
         director.setSoundSet("turbo");
+        director.setCabin(true);
         director.update(renderState(), 1 / 60);
+        director.setCabin(false);
         director.playGearClunk(2);
         director.playStall();
         director.suspend();
