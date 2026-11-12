@@ -92,6 +92,26 @@ export class TerrainProfile {
         const beyond = distance - halfWidthM - SHOULDER_WIDTH_M;
         const base =
             edgeHeight - SHOULDER_DROP_M - Math.min(beyond * VERGE_SLOPE, VERGE_DROP_LIMIT_M);
+        if (theme === "mountain" || theme === "summit" || theme === "alpine") {
+            const rise = smoothstep(0, 16, beyond);
+            const ridge = smoothstep(28, 100, beyond);
+            const noise = this.noise.fbm2(worldX * 0.018, worldY * 0.018);
+            if (lateralM > 0) {
+                return (
+                    edgeHeight -
+                    SHOULDER_DROP_M +
+                    rise * (4 + beyond * 0.34) +
+                    ridge * 18 +
+                    noise * (2 + beyond * 0.08)
+                );
+            }
+            return (
+                edgeHeight -
+                SHOULDER_DROP_M -
+                smoothstep(6, 52, beyond) * Math.min(50, beyond * 0.8) +
+                noise * 2
+            );
+        }
         const noiseAmplitude = Math.min(1, beyond / 25) * 5;
         if (noiseAmplitude === 0) return base;
         return base + noiseAmplitude * this.noise.fbm2(worldX * 0.012, worldY * 0.012);
