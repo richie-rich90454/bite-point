@@ -22,6 +22,8 @@ test("streams the endless world and renders exterior terrain", async ({ page }) 
         );
     });
     await page.goto("/");
+    await page.locator('[data-setup-tab="drive"]').click();
+    await page.locator('[data-map-card="endless-curves"]').click();
     await page.locator('[data-ui="start"]').click();
     await expect(page.locator(".start-overlay")).toBeHidden();
     await page.waitForTimeout(2500);
