@@ -36,11 +36,10 @@ async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
     });
 
     await page.goto("/");
-    await page.locator('[data-setup-tab="map"]').click();
+    await page.locator('[data-setup-tab="drive"]').click();
 
     for (const mapId of mapIds) {
         await page.locator(`[data-map-card="${mapId}"]`).click();
-        await page.locator('[data-setup-tab="session"]').click();
         await page.locator('[data-scenario-card="endless"]').click();
         await page.locator('[data-ui="start"]').click();
         await page.waitForTimeout(700);
@@ -56,7 +55,7 @@ async function checkMaps(page: Page, mapIds: string[]): Promise<void> {
         await page.waitForTimeout(150);
         await page.locator('[data-ui="garage"]').click();
         await page.waitForTimeout(150);
-        await page.locator('[data-setup-tab="map"]').click();
+        await page.locator('[data-setup-tab="drive"]').click();
     }
     expect(errors).toEqual([]);
 }
