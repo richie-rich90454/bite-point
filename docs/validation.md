@@ -21,7 +21,7 @@ The deterministic suite currently covers:
 | Driveline | Wheel/engine speed relationships, reflected inertia, torque multiplication, FWD/RWD/AWD torque split |
 | Catalog | Twelve validated cars, unique ids, tier and engine-type coverage, simulated 0-100 km/h times |
 | Car models | Every car maps to a defined CC0 model, eight detailed bodies, default fallback |
-| Maps | Map catalog validation, endless and legacy map kinds, deterministic generation, theme cycling, start-theme coverage, finite heights and normals, chunk continuity, grid-city geometry |
+| Maps | Map catalog validation, endless and legacy map kinds, route and grid layouts, deterministic generation, theme cycling, start-theme coverage, finite heights and normals, chunk continuity, open city surface and building collision |
 | Audio | Engine profile construction, safe sound-set switching without an AudioContext, cabin filtering |
 | Settings | Default car/map selection, valid selections, fallback on invalid values |
 | Wheels/tires | Free roll, grip saturation, braking force and lock behavior, load sensitivity, wet μ, friction ellipse |
@@ -30,10 +30,10 @@ The deterministic suite currently covers:
 | Configuration | Valid reference, invalid mass/fields, ratio ordering, bite geometry, provenance |
 | Telemetry | Ring buffer wrapping/order, sample rate, JSON export |
 | Input | Defaults, duplicate detection, layout labels, calibration, pedal ramps, focus-loss safety, repeat timing, rebinding conflicts, recovery hold |
-| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, launch-control phases and rev hold, auto-clutch creep and upshift, FWD/RWD/AWD wheel drive, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
+| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, launch-control phases and rev hold, auto-clutch creep and upshift, FWD/RWD/AWD wheel drive, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming, grid-city surface classification, building collision and guardrail contact |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
-Latest local result after implementation: all 151 deterministic tests pass across 26 files. Nine Playwright tests boot the production build, start sessions, engage gears, launch, steer, shift, change car and map, verify the industrial, city, forest, tunnel and bridge start themes, run the launch-control tutorial from armed to moving, open pause, open the input test and settings, check telemetry export/replay, and verify there are no uncaught page errors.
+Latest local result after implementation: all 155 deterministic tests pass across 27 files. Eleven Playwright tests boot the production build, start sessions, engage gears, launch, steer, shift, change car and map, verify the industrial, city, forest, tunnel and bridge start themes, drive and turn on the open city grid, run the launch-control tutorial from armed to moving, exercise the touch controls on a phone viewport, open pause, open the input test and settings, check telemetry export/replay, and verify there are no uncaught page errors.
 
 ## What is not yet validated
 
