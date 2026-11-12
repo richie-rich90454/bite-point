@@ -52,6 +52,19 @@ export interface UIUpdate {
     rendererMode: string;
 }
 
+export type TouchAction =
+    | "throttle"
+    | "brake"
+    | "steerLeft"
+    | "steerRight"
+    | "clutchIn"
+    | "clutchOut"
+    | "shiftUp"
+    | "shiftDown"
+    | "handbrake"
+    | "engine"
+    | "camera";
+
 export interface AppUICallbacks {
     onStart: (scenarioId: string) => void;
     onResume: () => void;
@@ -60,6 +73,7 @@ export interface AppUICallbacks {
     onCarSelect: (carId: string) => void;
     onMapSelect: (mapId: string) => void;
     onRecovery: () => void;
+    onTouch: (action: TouchAction, active: boolean) => void;
     onSettings: (settings: Partial<UserSettings>) => void;
     onRebind: (action: InputAction) => Promise<RebindResult>;
     onResetBindings: () => void;
@@ -533,6 +547,10 @@ export class AppUI {
         this.selectedCarId = getCar(settings.selectedCarId)?.id ?? DEFAULT_CAR_ID;
         this.selectedMapId = getMap(settings.selectedMapId)?.id ?? DEFAULT_MAP_ID;
         root.innerHTML = this.template();
+        const touchCapable =
+            (typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches) ||
+            (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+        root.classList.toggle("touch-capable", touchCapable);
         this.startOverlay = this.query(".start-overlay");
         this.pauseOverlay = this.query(".pause-overlay");
         this.helpOverlay = this.query(".help-overlay");
@@ -901,6 +919,25 @@ export class AppUI {
         </section>
 
         <button class="pause-button" data-ui="pause" aria-label="Pause">II</button>
+        <div class="touch-controls" aria-label="Touch driving controls">
+          <div class="touch-steer">
+            <button class="touch-button" data-touch="steerLeft" aria-label="Steer left">Left</button>
+            <button class="touch-button" data-touch="steerRight" aria-label="Steer right">Right</button>
+          </div>
+          <div class="touch-actions">
+            <button class="touch-button small" data-touch="shiftUp">Shift up</button>
+            <button class="touch-button small" data-touch="shiftDown">Shift down</button>
+            <button class="touch-button small" data-touch="handbrake">Handbrake</button>
+            <button class="touch-button small" data-touch="engine">Engine</button>
+            <button class="touch-button small" data-touch="camera">Camera</button>
+          </div>
+          <div class="touch-pedals">
+            <button class="touch-button small" data-touch="clutchIn">Clutch</button>
+            <button class="touch-button small" data-touch="clutchOut">Release</button>
+            <button class="touch-button" data-touch="brake">Brake</button>
+            <button class="touch-button throttle" data-touch="throttle">Throttle</button>
+          </div>
+        </div>
         <div class="toast-stack"></div>
       </div>
 
@@ -936,12 +973,12 @@ export class AppUI {
             </div>
             <p class="eyebrow">Manual transmission simulator</p>
             <h1>Bite<br><em>point</em></h1>
-            <p class="start-lead">Feel the bite. Nail the shift. Drive an endless procedural highway with a manual gearbox and no artificial speed ceiling.</p>
+            <p class="start-lead">Feel the bite. Nail the shift. Drive an open city grid and endless routes with a manual gearbox and no speed ceiling.</p>
             <div class="start-actions">
               <button class="button primary" data-ui="start">Start driving</button>
               <button class="button ghost" data-ui="help-start">Controls</button>
             </div>
-            <div class="start-footnote">Six speeds, 250 Hz physics, endless road</div>
+            <div class="start-footnote">Six speeds, 250 Hz physics, open city and endless routes</div>
           </div>
           <div class="start-select">
             <div class="panel-label">Choose your setup</div>
@@ -1027,6 +1064,29 @@ export class AppUI {
             this.setupTab = button.dataset.setupTab as SetupTab;
             this.renderSetup();
         });
+        const holdActions = new Set<TouchAction>(["throttle", "brake", "steerLeft", "steerRight"]);
+        for (const button of this.root.querySelectorAll<HTMLButtonElement>("[data-touch]")) {
+            const action = button.dataset.touch as TouchAction;
+            const release = (): void => {
+                if (!holdActions.has(action)) return;
+                button.classList.remove("active");
+                this.callbacks.onTouch(action, false);
+            };
+            button.addEventListener("pointerdown", (event) => {
+                event.preventDefault();
+                try {
+                    button.setPointerCapture?.(event.pointerId);
+                } catch {
+                    // Synthetic pointer events have no active pointer to capture.
+                }
+                button.classList.add("active");
+                this.callbacks.onTouch(action, true);
+            });
+            button.addEventListener("pointerup", release);
+            button.addEventListener("pointercancel", release);
+            button.addEventListener("pointerleave", release);
+            button.addEventListener("contextmenu", (event) => event.preventDefault());
+        }
         this.pauseOverlay.addEventListener("click", (event) => {
             if ((event.target as HTMLElement).classList.contains("pause-overlay"))
                 this.closePause();
@@ -1076,7 +1136,7 @@ export class AppUI {
         for (const option of MAPS.filter((candidate) => candidate.kind === "legacy")) {
             this.appendMapOption(container, option);
         }
-        appendLabel(`Session · ${map.name}`);
+        appendLabel(`Session: ${map.name}`);
         for (const scenario of compatible) {
             const button = document.createElement("button");
             button.className = "scenario-option";
@@ -1108,11 +1168,15 @@ export class AppUI {
         const meta = document.createElement("span");
         meta.className = "map-kind";
         meta.textContent =
-            map.kind === "legacy"
-                ? "Practice lot"
-                : map.routeMode === "straight"
-                  ? "Endless straight"
-                  : "Endless road";
+            map.layout === "grid"
+                ? "Open city grid"
+                : map.kind === "legacy"
+                  ? "Practice lot"
+                  : map.id === "serpentine-pass" || map.id === "alpine-pass" || map.id === "summit"
+                    ? "Mountain pass"
+                    : map.routeMode === "straight"
+                      ? "Endless straight"
+                      : "Endless road";
         button.append(title, description, meta);
         button.addEventListener("click", () => {
             this.selectedMapId = map.id;
