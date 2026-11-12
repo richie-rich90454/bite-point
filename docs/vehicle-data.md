@@ -12,7 +12,7 @@ The game ships a twelve-car manual-transmission roster in `src/data/cars.json`, 
 - independent front suspension with a reference-based rear suspension;
 - optional stability assist and traction control for predictable high-speed handling.
 
-The other tiers cover naturally aspirated, turbo, hybrid and electric powertrains with front-, rear- and all-wheel drive. Every car is manual: electric cars use a single-speed manual.
+The other tiers cover naturally aspirated, turbo, hybrid and electric powertrains with front-, rear- and all-wheel drive. Every car uses the six-speed H-pattern in this build. The Bite Point Mach 1 electric is the record car: low drag, tall gearing and a 3,000 Nm peak take it beyond 900 km/h and through Mach 1 on the endless straight.
 
 The rendered cars use eight original CC0 Grab3D bodies: 1990s compact, 1990s sedan, hatchback, muscle car, rally car, 1990s sports car, electric car and coupe. Each keeps its authored body texture and colour, with animated wheel pivots and a shared detailed cockpit. No manufacturer logos or copyrighted branding are included. Model sources, hashes and licences are recorded in `src/assets/assets.json` and `src/assets/LICENSE-grab3d-models.txt`.
 
@@ -83,4 +83,4 @@ Until that work is complete, the bundled values are a playable, internally consi
 
 The reference configuration uses a 0.84 sixth-gear ratio and an estimated 0.58 m² drag area. These are gameplay calibration estimates, not measurements from a production car. The shorter sixth keeps the engine nearer its useful power band at high speed. Optional downforce and lift coefficients are estimated and validated only for finite, bounded behaviour, not for production-car accuracy. Rolling resistance opposes velocity in both forward and reverse.
 
-The closed-course regression launches from rest, uses clutch-operated upshifts, exceeds 200 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. The endless regression verifies a benchmark 0-100 km/h run and a top speed beyond 500 km/h on the endless straight. A separate high-speed test forces 90 m/s and verifies finite loads and state. A neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
+The closed-course regression launches from rest, uses clutch-operated upshifts, exceeds 200 km/h in sixth, and brakes to rest before the end of the six-kilometre straight. The endless regression verifies a benchmark 0-100 km/h run and a top speed beyond 500 km/h on the endless straight, and the Mach 1 regression verifies a top speed beyond 900 km/h and a full-lock steering input at 500 km/h that stays finite and directional. A separate high-speed test forces 90 m/s and verifies finite loads and state. A neutral coast test verifies that rolling resistance removes speed in both directions. This checks internal consistency, not real-car accuracy.
