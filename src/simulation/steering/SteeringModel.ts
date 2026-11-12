@@ -22,8 +22,10 @@ export class SteeringModel {
 
     maxAngleAtSpeed(speedMps: number): number {
         const speedKph = Math.abs(speedMps) * 3.6;
-        const t = clamp(speedKph / this.params.speedSensitivityKph, 0, 1);
-        return this.params.maxAngleRad * (1 - t * (1 - this.params.highSpeedFactor));
+        // Exponential lock reduction keeps the car steerable at parking speed while
+        // making high-speed inputs tiny enough that a tap cannot spin the car.
+        const factor = Math.exp(-Math.max(0, speedKph) / this.params.speedSensitivityKph);
+        return Math.max(0.000015, this.params.maxAngleRad * factor);
     }
 
     update(dt: number, input: number, speedMps: number): number {
