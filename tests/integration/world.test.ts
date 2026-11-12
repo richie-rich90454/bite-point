@@ -21,6 +21,7 @@ describe("map catalog", () => {
             expect(map.name.length).toBeGreaterThan(0);
             expect(map.description.length).toBeGreaterThan(0);
             expect(map.kind === "endless" || map.kind === "legacy").toBe(true);
+            expect(map.layout === "route" || map.layout === "grid").toBe(true);
             expect(map.themeSequence.length).toBeGreaterThan(0);
             expect(Number.isFinite(map.seed)).toBe(true);
             expect(map.routeMode === "curved" || map.routeMode === "straight").toBe(true);
@@ -44,12 +45,16 @@ describe("map catalog", () => {
             "endless-straight",
             "endless-curves",
             "world-tour",
+            "serpentine-pass",
             "proving-ground",
         ]) {
             expect(ids.has(id)).toBe(true);
         }
         expect(getMap("proving-ground")?.kind).toBe("legacy");
+        expect(getMap("proving-ground")?.layout).toBe("route");
+        expect(getMap("city-center")?.layout).toBe("grid");
         expect(MAPS.filter((map) => map.kind === "legacy")).toHaveLength(1);
+        expect(MAPS.filter((map) => map.layout === "grid")).toHaveLength(1);
     });
 });
 
