@@ -38,6 +38,7 @@ import { DEFAULT_CAR_MODEL_ID, resolveCarModel, type CarModelDefinition } from "
 import { CockpitController, type CameraMode } from "./CockpitController";
 import { EnvironmentBuilder } from "./EnvironmentBuilder";
 import { WorldStreamer } from "./WorldStreamer";
+import { CityStreamer } from "./world/CityStreamer";
 
 interface WheelVisual {
     root: TransformNode;
@@ -51,7 +52,8 @@ export class VehicleRenderer {
     readonly environment: EnvironmentBuilder;
     readonly cockpit: CockpitController;
     readonly worldStreamer: WorldStreamer | null;
-    private worldMode: "legacy" | "endless" = "legacy";
+    readonly cityStreamer: CityStreamer;
+    private worldMode: "legacy" | "endless" | "city" = "legacy";
     private drawDistanceM = 1400;
     private speedoMaxKph: number;
     private adaptiveLevel = 0;
@@ -156,6 +158,11 @@ export class VehicleRenderer {
         this.worldStreamer = world
             ? new WorldStreamer(this.scene, world, this.environment.shadows)
             : null;
+        this.cityStreamer = new CityStreamer(
+            this.scene,
+            this.environment.shadows,
+            this.worldStreamer?.sharedMaterials,
+        );
         this.setWorldMode("legacy");
         this.carRoot = new TransformNode("car-root", this.scene);
         this.exteriorCabin = new TransformNode("exterior-cabin", this.scene);
@@ -280,8 +287,14 @@ export class VehicleRenderer {
         return this.adaptiveLevel;
     }
 
-    get activeWorldMode(): "legacy" | "endless" {
+    get activeWorldMode(): "legacy" | "endless" | "city" {
         return this.worldMode;
+    }
+
+    get activeChunks(): number {
+        return this.worldMode === "city"
+            ? this.cityStreamer.activeChunks
+            : (this.worldStreamer?.activeChunks ?? 0);
     }
 
     get worldDiagnostics(): {
@@ -295,6 +308,23 @@ export class VehicleRenderer {
         roadVertices: number;
         terrainVertices: number;
     } {
+        if (this.worldMode === "city") {
+            const material = this.scene.getMaterialByName(
+                "city-road-aligned",
+            ) as PBRMaterial | null;
+            const albedo = material?.albedoTexture ?? null;
+            return {
+                material: material?.name ?? null,
+                albedo: albedo?.name ?? null,
+                albedoReady: albedo?.isReady() ?? false,
+                textures: this.scene.textures.length,
+                chunks: this.cityStreamer.activeChunks,
+                roadMaterial: material?.name ?? null,
+                terrainMaterial: this.scene.getMaterialByName("city-ground")?.name ?? null,
+                roadVertices: 0,
+                terrainVertices: 0,
+            };
+        }
         const material = this.scene.getMaterialByName("endless-asphalt") as PBRMaterial | null;
         const albedo = material?.albedoTexture ?? null;
         const road = this.scene.getMeshByName("endless-road");
@@ -312,10 +342,19 @@ export class VehicleRenderer {
         };
     }
 
-    setWorldMode(mode: "legacy" | "endless"): void {
+    setWorldMode(mode: "legacy" | "endless" | "city"): void {
         this.worldMode = mode;
         this.environment.setLegacyMode(mode === "legacy");
         this.worldStreamer?.setEnabled(mode === "endless");
+        this.cityStreamer?.setEnabled(mode === "city");
+        if (mode === "legacy") {
+            this.scene.fogColor.set(0.72, 0.8, 0.86);
+            this.scene.fogDensity = 0.00085;
+        }
+    }
+
+    setCitySeed(seed: number): void {
+        this.cityStreamer?.setSeed(seed);
     }
 
     setDrawDistance(distanceM: number): void {
@@ -444,11 +483,15 @@ export class VehicleRenderer {
             -pose.roll,
         );
         this.carRoot.computeWorldMatrix(true);
-        this.worldStreamer?.update(
-            { x: pose.x, y: pose.y },
-            state.speedMps,
-            this.worldMode === "endless" ? this.drawDistanceM : 0,
-        );
+        if (this.worldMode === "city") {
+            this.cityStreamer.update(pose.x, pose.y, Math.min(this.drawDistanceM, 640));
+        } else {
+            this.worldStreamer?.update(
+                { x: pose.x, y: pose.y },
+                state.speedMps,
+                this.worldMode === "endless" ? this.drawDistanceM : 0,
+            );
+        }
 
         for (let index = 0; index < this.wheels.length; index += 1) {
             const wheel = this.wheels[index]!;
@@ -502,6 +545,7 @@ export class VehicleRenderer {
         this.disposed = true;
         window.removeEventListener("resize", this.resizeHandler);
         this.worldStreamer?.dispose();
+        this.cityStreamer?.dispose();
         this.cockpit.dispose();
         this.scene.dispose();
         this.engine.dispose();
@@ -1236,7 +1280,7 @@ export class VehicleRenderer {
         const badgeContext = badgeTexture.getContext() as unknown as CanvasRenderingContext2D;
         badgeContext.clearRect(0, 0, 512, 128);
         badgeContext.fillStyle = "#c9d0d4";
-        badgeContext.font = '700 92px "Noto Sans", sans-serif';
+        badgeContext.font = '700 92px "Noto Sans"';
         badgeContext.textAlign = "center";
         badgeContext.textBaseline = "middle";
         badgeContext.fillText("Golf", 256, 66);
@@ -1777,13 +1821,13 @@ export class VehicleRenderer {
         leather.clearCoat.isEnabled = true;
         leather.clearCoat.intensity = 0.35;
         leather.clearCoat.roughness = 0.38;
-        leather.albedoColor.scaleInPlace(0.3);
+        leather.albedoColor.scaleInPlace(0.55);
         leather.emissiveColor = new Color3(0.014, 0.011, 0.009);
         const softTrim = this.material("cockpit-soft-trim", "#33373b", 0.06, 0.62);
-        softTrim.albedoColor.scaleInPlace(0.33);
+        softTrim.albedoColor.scaleInPlace(0.6);
         softTrim.emissiveColor = new Color3(0.012, 0.013, 0.015);
-        const headliner = this.material("cockpit-headliner", "#3f4347", 0.02, 0.88);
-        headliner.albedoColor.scaleInPlace(0.45);
+        const headliner = this.material("cockpit-headliner", "#2f3337", 0.02, 0.88);
+        headliner.albedoColor.scaleInPlace(0.62);
         headliner.emissiveColor = new Color3(0.02, 0.021, 0.024);
         const brushedMetal = this.material("cockpit-brushed-metal", "#8b9197", 1, 0.32);
         const rubber = this.material("cockpit-rubber", "#141619", 0.02, 0.8);
@@ -1794,6 +1838,47 @@ export class VehicleRenderer {
         headliner.environmentIntensity = 0.5;
         brushedMetal.environmentIntensity = 1.05;
         rubber.environmentIntensity = 0.3;
+
+        const leatherGrain = new DynamicTexture(
+            "cockpit-leather-grain",
+            { width: 256, height: 256 },
+            this.scene,
+            true,
+        );
+        const grainContext = leatherGrain.getContext() as unknown as CanvasRenderingContext2D;
+        grainContext.fillStyle = "#c8c8c8";
+        grainContext.fillRect(0, 0, 256, 256);
+        let grainSeed = 7331;
+        for (let index = 0; index < 5200; index += 1) {
+            grainSeed = (grainSeed * 1664525 + 1013904223) >>> 0;
+            const shade = 170 + Math.floor((grainSeed / 4294967296) * 70);
+            grainContext.fillStyle = `rgba(${shade},${shade},${shade},0.28)`;
+            grainContext.fillRect((grainSeed >>> 8) % 256, (grainSeed >>> 16) % 256, 2, 1);
+        }
+        grainContext.strokeStyle = "rgba(150,150,150,0.3)";
+        grainContext.lineWidth = 1;
+        for (let line = 0; line < 8; line += 1) {
+            grainContext.beginPath();
+            grainContext.moveTo(0, line * 32);
+            grainContext.lineTo(256, line * 32);
+            grainContext.stroke();
+        }
+        leatherGrain.update(false);
+        leatherGrain.uScale = 4;
+        leatherGrain.vScale = 4;
+        leatherGrain.wrapU = Texture.WRAP_ADDRESSMODE;
+        leatherGrain.wrapV = Texture.WRAP_ADDRESSMODE;
+        leather.albedoTexture = leatherGrain;
+        softTrim.albedoTexture = leatherGrain;
+        seatMaterial.albedoTexture = leatherGrain;
+        const stitchMaterial = this.material("cockpit-stitch", "#b8a37d", 0, 0.9);
+        stitchMaterial.emissiveColor = new Color3(0.05, 0.042, 0.03);
+        const wheelLeather = this.material("cockpit-wheel-leather", "#463a34", 0.03, 0.46);
+        wheelLeather.clearCoat.isEnabled = true;
+        wheelLeather.clearCoat.intensity = 0.55;
+        wheelLeather.clearCoat.roughness = 0.28;
+        wheelLeather.albedoColor.scaleInPlace(0.62);
+        wheelLeather.albedoTexture = leatherGrain;
         for (const material of [
             leather,
             softTrim,
@@ -1830,21 +1915,21 @@ export class VehicleRenderer {
         screenContext.fillStyle = "rgba(90, 190, 220, 0.16)";
         screenContext.fillRect(0, 44, 512, 2);
         screenContext.fillStyle = "#dfe9ee";
-        screenContext.font = '600 30px "Noto Sans", sans-serif';
-        screenContext.fillText("BITE POINT", 26, 34);
+        screenContext.font = '600 30px "Noto Sans"';
+        screenContext.fillText("Bite Point", 26, 34);
         screenContext.fillStyle = "#6f8794";
-        screenContext.font = '400 17px "Noto Sans", sans-serif';
-        screenContext.fillText("DRIVE MODE  /  SPORT", 300, 32);
+        screenContext.font = '400 17px "Noto Sans"';
+        screenContext.fillText("Drive mode  /  Sport", 300, 32);
         for (let index = 0; index < 6; index += 1) {
             const height = 26 + ((index * 37) % 74);
             screenContext.fillStyle = index < 4 ? "#5fc0df" : "#2c4a59";
             screenContext.fillRect(40 + index * 46, 236 - height, 26, height);
         }
         screenContext.fillStyle = "#a8bcc7";
-        screenContext.font = '500 18px "Noto Sans", sans-serif';
+        screenContext.font = '500 18px "Noto Sans"';
         screenContext.fillText("21.5 C", 360, 132);
-        screenContext.fillText("TRIP  128.4 km", 360, 172);
-        screenContext.fillText("RANGE 412 km", 360, 212);
+        screenContext.fillText("Trip  128.4 km", 360, 172);
+        screenContext.fillText("Range 412 km", 360, 212);
         screenContext.fillStyle = "#e8b04b";
         screenContext.fillRect(360, 240, 108, 4);
         screenTexture.update(false);
@@ -1911,7 +1996,7 @@ export class VehicleRenderer {
         cabinLamp.parent = this.cockpitGroup;
         cabinLamp.diffuse = new Color3(1, 0.87, 0.71);
         cabinLamp.specular = new Color3(1, 0.85, 0.68);
-        cabinLamp.intensity = 0.5;
+        cabinLamp.intensity = 0.72;
         cabinLamp.range = 3.6;
         this.cockpitLight = cabinLamp;
 
@@ -1922,13 +2007,54 @@ export class VehicleRenderer {
         roofLampMaterial.disableLighting = true;
 
         // Main dashboard: a low, deep shelf rather than a vertical slab.
-        addBox("dashboard-lower", 1.4, 0.2, 0.18, 0, 0.78, 0.52, leather);
-        addBox("dashboard-main", 1.46, 0.16, 0.4, 0, 0.91, 0.7, leather);
-        addBox("dashboard-top", 1.48, 0.045, 0.5, 0, 1.0, 0.69, leather).rotation.x = -0.035;
-        addBox("dashboard-cowl", 1.42, 0.035, 0.16, 0, 1.015, 0.89, softTrim).rotation.x = -0.08;
-        addBox("dash-chrome-rule", 1.24, 0.012, 0.02, 0.0, 0.955, 0.492, brushedMetal);
-        addBox("dash-ambient-strip", 1.16, 0.006, 0.012, 0.02, 0.945, 0.4915, ambientStripMaterial);
-        addBox("dash-passenger-trim", 0.46, 0.03, 0.02, 0.36, 0.952, 0.492, softTrim);
+        addBox("dashboard-lower", 1.4, 0.2, 0.18, 0, 0.74, 0.52, leather);
+        addBox("dashboard-main", 1.46, 0.16, 0.4, 0, 0.85, 0.7, leather);
+        addBox("dashboard-top", 1.48, 0.045, 0.5, 0, 0.93, 0.69, leather).rotation.x = -0.035;
+        addBox("dashboard-cowl", 1.42, 0.035, 0.16, 0, 0.945, 0.89, softTrim).rotation.x = -0.08;
+        addBox("dash-chrome-rule", 1.24, 0.012, 0.02, 0.0, 0.895, 0.492, brushedMetal);
+        addBox("dash-ambient-strip", 1.16, 0.006, 0.012, 0.02, 0.885, 0.4915, ambientStripMaterial);
+        addBox("dash-passenger-trim", 0.46, 0.03, 0.02, 0.36, 0.892, 0.492, softTrim);
+        addBox("dash-stitch", 1.28, 0.005, 0.006, 0, 0.955, 0.62, stitchMaterial);
+        const dashRoll = CreateCylinder(
+            "dashboard-roll",
+            { diameter: 0.075, height: 1.43, tessellation: 18 },
+            this.scene,
+        );
+        dashRoll.rotation.z = Math.PI / 2;
+        dashRoll.position.set(0, 0.925, 0.9);
+        dashRoll.material = leather;
+        dashRoll.parent = this.cockpitGroup;
+        dashRoll.isPickable = false;
+        const binnacleHood = CreateCylinder(
+            "binnacle-hood",
+            { diameter: 0.17, height: 0.56, tessellation: 20 },
+            this.scene,
+        );
+        binnacleHood.rotation.z = Math.PI / 2;
+        binnacleHood.position.set(-0.36, 1.07, 0.6);
+        binnacleHood.scaling.z = 0.82;
+        binnacleHood.material = leather;
+        binnacleHood.parent = this.cockpitGroup;
+        binnacleHood.isPickable = false;
+        addBox("glovebox-seam", 0.42, 0.004, 0.006, 0.39, 0.82, 0.493, brushedMetal);
+        addBox("glovebox-handle", 0.11, 0.025, 0.018, 0.39, 0.85, 0.486, brushedMetal);
+        const mirror = addBox("rear-view-mirror", 0.21, 0.07, 0.024, 0.03, 1.34, 0.49, softTrim);
+        mirror.rotation.x = -0.08;
+        addBox("rear-view-stem", 0.014, 0.07, 0.014, 0.03, 1.39, 0.5, brushedMetal);
+        addBox("centre-stack", 0.22, 0.3, 0.1, 0.03, 0.7, 0.4, softTrim);
+        addBox("centre-stack-stitch", 0.19, 0.004, 0.004, 0.03, 0.83, 0.348, stitchMaterial);
+        for (const x of [-0.025, 0.085]) {
+            const dial = CreateCylinder(
+                "climate-dial",
+                { diameter: 0.055, height: 0.022, tessellation: 20 },
+                this.scene,
+            );
+            dial.rotation.x = Math.PI / 2;
+            dial.position.set(x, 0.65, 0.347);
+            dial.material = brushedMetal;
+            dial.parent = this.cockpitGroup;
+            dial.isPickable = false;
+        }
 
         for (const x of [-0.61, -0.45, 0.18, 0.34]) {
             const vent = addBox("dash-vent", 0.085, 0.05, 0.02, x, 0.925, 0.492, leather);
@@ -1937,12 +2063,12 @@ export class VehicleRenderer {
             addBox("dash-vent-slat", 0.072, 0.005, 0.006, x, 0.916, 0.481, brushedMetal);
         }
 
-        const binnacle = addBox("driver-binnacle", 0.53, 0.07, 0.3, -0.36, 1.058, 0.585, leather);
+        const binnacle = addBox("driver-binnacle", 0.53, 0.07, 0.3, -0.36, 1.06, 0.6, leather);
         binnacle.rotation.x = -0.14;
 
         const gaugeTilt = new TransformNode("gauge-tilt", this.scene);
         gaugeTilt.parent = this.cockpitGroup;
-        gaugeTilt.position.set(-0.36, 1.05, 0.53);
+        gaugeTilt.position.set(-0.36, 1.055, 0.56);
         gaugeTilt.rotation.x = -0.17;
         const tachMaterial = this.createDialMaterial(
             "gauge-tach",
@@ -2004,7 +2130,7 @@ export class VehicleRenderer {
             else this.speedNeedleNode = needlePivot;
         }
 
-        addBox("infotainment-bezel", 0.34, 0.2, 0.024, 0.04, 0.94, 0.478, softTrim).rotation.x =
+        addBox("infotainment-bezel", 0.34, 0.2, 0.024, 0.04, 0.865, 0.478, softTrim).rotation.x =
             -0.12;
         const infoScreen = this.createPanel(
             "infotainment-screen",
@@ -2013,10 +2139,10 @@ export class VehicleRenderer {
             screenMaterial,
             this.cockpitGroup,
         );
-        infoScreen.position.set(0.04, 0.94, 0.4645);
+        infoScreen.position.set(0.04, 0.865, 0.4645);
         infoScreen.rotation.x = -0.12;
-        addBox("hazard-button", 0.05, 0.022, 0.012, 0.04, 0.845, 0.465, this.brakeLightMaterial);
-        addBox("start-button", 0.032, 0.032, 0.012, 0.19, 0.865, 0.466, chrome).rotation.z = 0.1;
+        addBox("hazard-button", 0.05, 0.022, 0.012, 0.04, 0.78, 0.465, this.brakeLightMaterial);
+        addBox("start-button", 0.032, 0.032, 0.012, 0.19, 0.8, 0.466, chrome).rotation.z = 0.1;
 
         // Screen surround and windshield frame. These establish the cabin volume.
         addBox("windshield-header", 1.27, 0.022, 0.07, 0, 1.428, 0.35, headliner);
@@ -2133,6 +2259,37 @@ export class VehicleRenderer {
                 -0.69,
                 seatMaterial,
             ).rotation.x = 0.12;
+            addBox(
+                `${side}-seat-stitch-left`,
+                0.008,
+                0.4,
+                0.014,
+                x - 0.17,
+                0.73,
+                -0.79,
+                stitchMaterial,
+            ).rotation.x = 0.12;
+            addBox(
+                `${side}-seat-stitch-right`,
+                0.008,
+                0.4,
+                0.014,
+                x + 0.17,
+                0.73,
+                -0.79,
+                stitchMaterial,
+            ).rotation.x = 0.12;
+            addBox(`${side}-headrest-stitch`, 0.018, 0.18, 0.01, x, 1.1, -0.72, stitchMaterial);
+            addBox(
+                `${side}-seatbelt`,
+                0.05,
+                0.5,
+                0.012,
+                x + 0.16,
+                0.82,
+                -0.73,
+                softTrim,
+            ).rotation.z = 0.08;
         }
 
         const plaidTexture = new DynamicTexture(
@@ -2195,32 +2352,42 @@ export class VehicleRenderer {
         column.isPickable = false;
         const wheel = CreateTorus(
             "steering-wheel",
-            { diameter: 0.335, thickness: 0.033, tessellation: 36 },
+            { diameter: 0.36, thickness: 0.042, tessellation: 48 },
             this.scene,
         );
         wheel.rotation.x = Math.PI / 2;
-        wheel.material = leather;
+        wheel.material = wheelLeather;
         wheel.parent = steeringSpin;
         wheel.isPickable = false;
-        for (const angle of [0, Math.PI, Math.PI * 1.5]) {
-            const spoke = CreateBox(
+        const rimStitch = CreateTorus(
+            "steering-rim-stitch",
+            { diameter: 0.363, thickness: 0.007, tessellation: 48 },
+            this.scene,
+        );
+        rimStitch.rotation.x = Math.PI / 2;
+        rimStitch.position.z = 0.022;
+        rimStitch.material = stitchMaterial;
+        rimStitch.parent = steeringSpin;
+        rimStitch.isPickable = false;
+        for (const angle of [0.04, Math.PI - 0.04, Math.PI * 1.5]) {
+            const spoke = CreateCylinder(
                 "steering-spoke",
-                { width: 0.132, height: 0.027, depth: 0.03 },
+                { diameter: 0.026, height: 0.145, tessellation: 12 },
                 this.scene,
             );
-            spoke.rotation.z = angle;
-            spoke.position.set(Math.cos(angle) * 0.068, Math.sin(angle) * 0.068, 0);
-            spoke.material = angle === Math.PI * 1.5 ? softTrim : brushedMetal;
+            spoke.rotation.z = angle - Math.PI / 2;
+            spoke.position.set(Math.cos(angle) * 0.085, Math.sin(angle) * 0.085, 0.004);
+            spoke.material = brushedMetal;
             spoke.parent = steeringSpin;
             spoke.isPickable = false;
         }
         const hub = CreateCylinder(
             "steering-hub",
-            { diameter: 0.09, height: 0.036, tessellation: 24 },
+            { diameter: 0.112, height: 0.048, tessellation: 28 },
             this.scene,
         );
         hub.rotation.x = Math.PI / 2;
-        hub.material = softTrim;
+        hub.material = wheelLeather;
         hub.parent = steeringSpin;
         hub.isPickable = false;
         const hubBadge = CreateCylinder(
@@ -2229,12 +2396,36 @@ export class VehicleRenderer {
             this.scene,
         );
         hubBadge.rotation.x = Math.PI / 2;
-        hubBadge.position.z = 0.02;
+        hubBadge.position.z = 0.026;
         hubBadge.material = brushedMetal;
         hubBadge.parent = steeringSpin;
         hubBadge.isPickable = false;
-        addBox("stalk-left", 0.12, 0.018, 0.02, -0.49, 0.84, 0.36, softTrim);
-        addBox("stalk-right", 0.1, 0.018, 0.02, -0.24, 0.81, 0.36, softTrim);
+        for (const side of [-1, 1]) {
+            addBox(
+                "steering-horn",
+                0.035,
+                0.026,
+                0.012,
+                -0.36 + side * 0.048,
+                0.878,
+                0.31,
+                softTrim,
+            );
+        }
+        const columnShroud = CreateCylinder(
+            "steering-shroud",
+            { diameterTop: 0.06, diameterBottom: 0.115, height: 0.26, tessellation: 18 },
+            this.scene,
+        );
+        columnShroud.rotation.x = Math.PI / 2;
+        columnShroud.position.set(-0.36, 0.845, 0.465);
+        columnShroud.material = softTrim;
+        columnShroud.parent = this.cockpitGroup;
+        columnShroud.isPickable = false;
+        addBox("stalk-left", 0.13, 0.018, 0.02, -0.48, 0.875, 0.42, softTrim);
+        addBox("stalk-left-cap", 0.018, 0.028, 0.028, -0.545, 0.875, 0.42, brushedMetal);
+        addBox("stalk-right", 0.11, 0.018, 0.02, -0.24, 0.845, 0.42, softTrim);
+        addBox("stalk-right-cap", 0.018, 0.028, 0.028, -0.188, 0.845, 0.42, brushedMetal);
 
         const leverBoot = CreateCylinder(
             "gear-boot",
@@ -2477,7 +2668,7 @@ export class VehicleRenderer {
             const fraction = major / majorCount;
             const [x, y] = pointAt(fraction, radius - 48);
             context.fillStyle = "#e8ebed";
-            context.font = '600 25px "Noto Sans", sans-serif';
+            context.font = '600 25px "Noto Sans"';
             context.fillText(String(Math.round(maxValue * fraction)), x, y);
         }
         context.beginPath();
@@ -2491,7 +2682,7 @@ export class VehicleRenderer {
         context.strokeStyle = "#c8331d";
         context.stroke();
         context.fillStyle = "#8d959c";
-        context.font = '500 16px "Noto Sans", sans-serif';
+        context.font = '500 16px "Noto Sans"';
         context.fillText(label, cx, cy + 54);
         context.fillStyle = "#0b0d0f";
         context.beginPath();
