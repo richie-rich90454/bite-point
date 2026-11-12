@@ -15,7 +15,7 @@ import { DrivingInstructor } from "../instructor/DrivingInstructor";
 import { ScenarioManager } from "../scenarios/ScenarioManager";
 import { SettingsRepository } from "../settings/SettingsRepository";
 import { AudioDirector } from "../audio/AudioDirector";
-import { AppUI, type AppUICallbacks, type UIUpdate } from "../ui/AppUI";
+import { AppUI, type AppUICallbacks, type TouchAction, type UIUpdate } from "../ui/AppUI";
 import { clamp, lerpAngle, wrapAngle } from "../simulation/core/MathUtils";
 import { CARS, DEFAULT_CAR_ID, getCar } from "../data/CarCatalog";
 import { DEFAULT_MAP_ID, getMap } from "../data/MapCatalog";
@@ -60,6 +60,9 @@ export class SimulatorApplication {
     private wasPointerLocked = false;
     private headlights = false;
     private wipers = 0;
+    private touchSteerLeft = false;
+    private touchSteerRight = false;
+    private touchHandbrake = false;
 
     constructor(canvas: HTMLCanvasElement, uiRoot: HTMLElement) {
         this.canvas = canvas;
@@ -108,6 +111,7 @@ export class SimulatorApplication {
             onCarSelect: (carId) => this.selectCar(carId),
             onMapSelect: (mapId) => this.selectMap(mapId),
             onRecovery: () => this.recoverVehicle(),
+            onTouch: (action, active) => this.handleTouch(action, active),
             onSettings: (partial) => this.updateSettings(partial),
             onRebind: (action) => this.rebind(action),
             onResetBindings: () => {
@@ -125,10 +129,21 @@ export class SimulatorApplication {
         this.ui = new AppUI(uiRoot, this.scenarios.all, settings, callbacks);
         this.applyDashboardLimits();
 
-        this.road.setWorld(this.selectedMap.kind === "endless" ? this.world : null);
-        this.renderer.setWorldMode(this.selectedMap.kind === "endless" ? "endless" : "legacy");
-        const previewStart =
-            this.selectedMap.kind === "endless" ? this.world.sample(500) : this.selectedMap.start;
+        this.road.setWorld(
+            this.selectedMap.kind === "endless" && this.selectedMap.layout === "route"
+                ? this.world
+                : null,
+        );
+        if (this.selectedMap.layout === "grid") {
+            this.road.setCityGrid(this.selectedMap.seed);
+            this.renderer.setCitySeed(this.selectedMap.seed);
+            this.renderer.setWorld(null);
+            this.renderer.setWorldMode("city");
+        } else {
+            this.road.setCityGrid(null);
+            this.renderer.setWorldMode(this.selectedMap.kind === "endless" ? "endless" : "legacy");
+        }
+        const previewStart = this.previewStartFor(this.selectedMap);
         const initialScenario = this.selectedMap.kind === "endless" ? "endless" : "free-drive";
         this.scenarios.start(initialScenario, this.simulation, {
             x: previewStart.x,
@@ -171,7 +186,7 @@ export class SimulatorApplication {
                     replaying: this.replay !== null,
                     worldMode: this.renderer.activeWorldMode,
                     roadDistance: this.renderer.worldStreamer?.distanceAlongRoad ?? 0,
-                    activeChunks: this.renderer.worldStreamer?.activeChunks ?? 0,
+                    activeChunks: this.renderer.activeChunks,
                     fps: this.renderer.getFps(),
                     stepsLastFrame: this.clock.stats().stepsLastFrame,
                     simulatedTimeS: this.clock.stats().simulatedTimeS,
@@ -373,15 +388,29 @@ export class SimulatorApplication {
             this.settingsRepository.save({ selectedMapId: this.selectedMap.id });
             this.ui.setMapSelection(this.selectedMap.id);
         }
-        const world = endless
-            ? definition.routeMode === "straight"
-                ? this.worldStraight
-                : this.world
-            : null;
-        this.road.setWorld(world);
-        this.renderer.setWorld(world);
-        this.renderer.setWorldMode(endless ? "endless" : "legacy");
-        const startSample = world ? world.sample(500) : null;
+        const grid = endless && this.selectedMap.layout === "grid";
+        const world =
+            endless && !grid
+                ? definition.routeMode === "straight"
+                    ? this.worldStraight
+                    : this.world
+                : null;
+        if (grid) {
+            this.road.setCityGrid(this.selectedMap.seed);
+            this.renderer.setWorld(null);
+            this.renderer.setCitySeed(this.selectedMap.seed);
+            this.renderer.setWorldMode("city");
+        } else {
+            this.road.setCityGrid(null);
+            this.road.setWorld(world);
+            this.renderer.setWorld(world);
+            this.renderer.setWorldMode(endless ? "endless" : "legacy");
+        }
+        const startSample = grid
+            ? this.selectedMap.start
+            : world
+              ? this.rightHandStart(world.sample(500))
+              : null;
         const scenario = this.scenarios.start(
             id,
             this.simulation,
@@ -394,6 +423,9 @@ export class SimulatorApplication {
         this.input.releaseAllForReset();
         this.input.setIgnition(true);
         this.input.setHandbrake(false);
+        this.touchSteerLeft = false;
+        this.touchSteerRight = false;
+        this.touchHandbrake = false;
         this.ui.setScenarioSelection(scenario.id);
         this.ui.hideStart();
         this.ui.closePause();
@@ -439,8 +471,9 @@ export class SimulatorApplication {
         this.renderer.setConfig(this.config);
         this.renderer.setCarModel(car.modelId, car.paintColor);
         const endless = this.selectedMap.kind === "endless";
-        this.renderer.setWorld(endless ? this.world : null);
-        this.renderer.setWorldMode(endless ? "endless" : "legacy");
+        const grid = this.selectedMap.layout === "grid";
+        this.renderer.setWorld(endless && !grid ? this.world : null);
+        this.renderer.setWorldMode(grid ? "city" : endless ? "endless" : "legacy");
         this.renderer.applySettings(this.settingsRepository.current);
         this.renderer.setDrawDistance(this.settingsRepository.current.drawDistance * 1400);
         this.input.setClutchZone(car.config.clutch.bitePoint, car.config.clutch.engagementWidth);
@@ -453,7 +486,7 @@ export class SimulatorApplication {
         if (driving) {
             this.startScenario(this.scenarios.current.id);
         } else {
-            const preview = endless ? this.world.sample(500) : this.selectedMap.start;
+            const preview = this.previewStartFor(this.selectedMap);
             this.simulation.reset({
                 x: preview.x,
                 y: preview.y,
@@ -482,15 +515,39 @@ export class SimulatorApplication {
         );
     }
 
+    private rightHandStart(sample: {
+        x: number;
+        y: number;
+        normalX: number;
+        normalY: number;
+        heading: number;
+    }): { x: number; y: number; heading: number } {
+        const lateral = -6.95;
+        return {
+            x: sample.x + sample.normalX * lateral,
+            y: sample.y + sample.normalY * lateral,
+            heading: sample.heading,
+        };
+    }
+
+    private previewStartFor(map: MapDefinition): { x: number; y: number; heading: number } {
+        if (map.layout === "grid") return map.start;
+        if (map.kind === "endless") return this.rightHandStart(this.world.sample(500));
+        return map.start;
+    }
+
     private selectMap(mapId: string): void {
         const map = getMap(mapId);
         if (!map || map.id === this.selectedMap.id) return;
         this.selectedMap = map;
         this.rebuildWorlds();
         const endless = map.kind === "endless";
-        this.road.setWorld(endless ? this.world : null);
-        this.renderer.setWorld(endless ? this.world : null);
-        this.renderer.setWorldMode(endless ? "endless" : "legacy");
+        const grid = map.layout === "grid";
+        this.road.setCityGrid(grid ? map.seed : null);
+        this.road.setWorld(endless && !grid ? this.world : null);
+        this.renderer.setWorld(endless && !grid ? this.world : null);
+        this.renderer.setCitySeed(map.seed);
+        this.renderer.setWorldMode(grid ? "city" : endless ? "endless" : "legacy");
         this.settingsRepository.save({ selectedMapId: map.id });
         this.ui.updateSettings(this.settingsRepository.current);
         this.ui.showToast(`${map.name} selected.`, "success");
@@ -498,7 +555,7 @@ export class SimulatorApplication {
         if (this.started && !this.ui.startOpen && compatible) {
             this.startScenario(this.scenarios.current.id);
         } else {
-            const preview = endless ? this.world.sample(500) : map.start;
+            const preview = this.previewStartFor(map);
             this.simulation.reset({
                 x: preview.x,
                 y: preview.y,
@@ -693,6 +750,73 @@ export class SimulatorApplication {
         this.renderer.cycleCamera();
         this.syncCabinAudio();
         this.ui.showToast(`Camera: ${this.renderer.cameraModeLabel}.`, "info");
+    }
+
+    private handleTouch(action: TouchAction, active: boolean): void {
+        switch (action) {
+            case "throttle":
+                this.input.setVirtualThrottle(active ? 1 : 0);
+                return;
+            case "brake":
+                this.input.setVirtualBrake(active ? 1 : 0);
+                return;
+            case "steerLeft":
+                this.touchSteerLeft = active;
+                this.updateTouchSteering();
+                return;
+            case "steerRight":
+                this.touchSteerRight = active;
+                this.updateTouchSteering();
+                return;
+            case "clutchIn":
+                if (active) this.input.setVirtualClutch(1);
+                return;
+            case "clutchOut":
+                if (active) this.input.setVirtualClutch(0);
+                return;
+            case "shiftUp":
+                if (active) this.touchShift(1);
+                return;
+            case "shiftDown":
+                if (active) this.touchShift(-1);
+                return;
+            case "handbrake":
+                if (!active) return;
+                this.touchHandbrake = !this.touchHandbrake;
+                this.input.setVirtualHandbrake(this.touchHandbrake);
+                this.ui.showToast(
+                    this.touchHandbrake ? "Handbrake applied." : "Handbrake released.",
+                    "info",
+                );
+                return;
+            case "engine":
+                if (!active) return;
+                this.input.setIgnition(true);
+                this.input.setVirtualStarter(true);
+                window.setTimeout(() => this.input.setVirtualStarter(false), 1400);
+                return;
+            case "camera":
+                if (active) this.cycleCamera();
+                return;
+            default:
+                return;
+        }
+    }
+
+    private updateTouchSteering(): void {
+        const steering = (this.touchSteerRight ? 1 : 0) - (this.touchSteerLeft ? 1 : 0);
+        this.input.setVirtualSteering(steering);
+    }
+
+    private touchShift(direction: number): void {
+        const current = this.simulation.gearbox.gear;
+        const target = current === 0 ? (direction > 0 ? 1 : -1) : current + direction;
+        if (target < -1 || target > 6) return;
+        this.input.setVirtualClutch(1);
+        window.setTimeout(() => {
+            this.simulation.selectGearDirect(target);
+            this.input.setVirtualClutch(0);
+        }, 420);
     }
 
     private syncCabinAudio(): void {
