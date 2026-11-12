@@ -268,6 +268,88 @@ describe("vehicle integration", () => {
         expect(sim.getRenderState(0).launchControlActive).toBe(false);
     });
 
+    it("holds a stable launch RPM with the clutch fully open", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 2.5, () => ({
+            ...baseControls(),
+            throttle: 1,
+            brake: 1,
+            clutchPedal: 1,
+        }));
+        const state = sim.getRenderState(0);
+        expect(state.launchControlPhase).toBe("holding");
+        expect(state.clutchPedal).toBe(1);
+        expect(sim.engine.rpm).toBeGreaterThan(3000);
+        expect(sim.engine.rpm).toBeLessThan(5600);
+        expect(sim.speedMps).toBeLessThan(0.5);
+    });
+
+    it("walks through armed, release and launched without stalling", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 1.5, () => ({
+            ...baseControls(),
+            throttle: 1,
+            brake: 1,
+            clutchPedal: 1,
+        }));
+        expect(sim.getRenderState(0).launchControlPhase).toBe("holding");
+
+        stepFor(sim, 0.2, () => ({ ...baseControls(), throttle: 1, brake: 0, clutchPedal: 1 }));
+        expect(sim.getRenderState(0).launchControlPhase).toBe("releasing");
+
+        stepFor(sim, 2, () => ({ ...baseControls(), throttle: 1, brake: 0, clutchPedal: 0 }));
+        const state = sim.getRenderState(0);
+        expect(state.launchControlPhase).toBe("launched");
+        expect(state.clutchPedal).toBe(0);
+        expect(sim.engine.running).toBe(true);
+        expect(sim.gearbox.gear).toBe(1);
+        expect(sim.speedMps).toBeGreaterThan(5);
+    });
+
+    it("aborts launch control when the throttle lifts", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        stepFor(sim, 1.5, () => ({
+            ...baseControls(),
+            throttle: 1,
+            brake: 1,
+            clutchPedal: 1,
+        }));
+        expect(sim.getRenderState(0).launchControlPhase).toBe("holding");
+        stepFor(sim, 0.3, () => ({ ...baseControls(), throttle: 0, brake: 1, clutchPedal: 1 }));
+        expect(sim.getRenderState(0).launchControlPhase).toBe("idle");
+        expect(sim.gearbox.gear).toBe(1);
+    });
+
+    it("creeps in first gear with the automatic clutch", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        sim.autoClutch = true;
+        stepFor(sim, 3, () => ({ ...baseControls(), throttle: 0 }));
+        expect(sim.engine.running).toBe(true);
+        expect(sim.speedMps).toBeGreaterThan(0.4);
+        expect(sim.engine.rpm).toBeLessThan(sim.config.engine.idleRpm * 2.4);
+    });
+
+    it("launches and upshifts smoothly with the automatic clutch", () => {
+        const sim = makeSimulation();
+        startWarm(sim, { gear: 1 });
+        sim.autoClutch = true;
+        stepFor(sim, 2.5, () => ({ ...baseControls(), throttle: 1 }));
+        const firstGearSpeed = sim.speedMps;
+        expect(sim.engine.running).toBe(true);
+        expect(firstGearSpeed).toBeGreaterThan(10);
+
+        sim.selectGearDirect(2);
+        stepFor(sim, 2, () => ({ ...baseControls(), throttle: 1 }));
+        expect(sim.engine.running).toBe(true);
+        expect(sim.gearbox.gear).toBe(2);
+        expect(sim.speedMps).toBeGreaterThan(firstGearSpeed);
+        expect(sim.engine.rpm).toBeLessThan(sim.config.engine.redlineRpm * 1.06);
+    });
+
     it("launches with the automatic clutch", () => {
         const sim = makeSimulation();
         startWarm(sim, { gear: 1 });
