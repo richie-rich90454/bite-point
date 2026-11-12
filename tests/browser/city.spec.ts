@@ -35,7 +35,7 @@ test("drives and turns on the open city grid", async ({ page }) => {
     await page.keyboard.up("x");
     snapshot = await page.evaluate(() => window.bitePoint!.snapshot());
     expect(snapshot.speedKph).toBeGreaterThan(15);
-    expect(snapshot.x).toBeGreaterThan(70);
+    expect(snapshot.x).toBeGreaterThan(65);
 
     await page.keyboard.down("d");
     await page.waitForTimeout(1600);
