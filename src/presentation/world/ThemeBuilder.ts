@@ -1523,6 +1523,57 @@ export class ThemeBuilder {
                 }
             }
         }
+        // A rock cut on the uphill side and distant snow peaks make the pass read
+        // as a mountain rather than a wide road with boulders.
+        for (const s of this.slots(38, 12)) {
+            if (!this.isTheme(s, "alpine", "mountain", "summit")) continue;
+            const random = this.slotRandom(s, 0x7a5b);
+            const road = this.world.sample(s);
+            const lateral = road.halfWidthM + 4 + random() * 7;
+            const base = this.world.sampleAt(s, lateral).heightM;
+            const height = 6 + random() * 15;
+            this.place(
+                this.materials.rock,
+                s,
+                lateral,
+                base + height * 0.4,
+                4 + random() * 5,
+                height,
+                6 + random() * 7,
+                random() * Math.PI * 2,
+            );
+        }
+        for (const side of [-1, 1] as const) {
+            for (const s of this.slots(90, 30)) {
+                if (!this.isTheme(s, "alpine", "mountain", "summit")) continue;
+                const random = this.slotRandom(s, side === 1 ? 0x4a11 : 0x4b22);
+                if (random() < 0.45) continue;
+                const lateral = side * (130 + random() * 150);
+                const base = this.world.sampleAt(s, lateral).heightM;
+                const height = 45 + random() * 95;
+                const width = 55 + random() * 70;
+                this.place(
+                    this.materials.rock,
+                    s,
+                    lateral,
+                    base + height * 0.1,
+                    width,
+                    height,
+                    width,
+                    random() * Math.PI * 2,
+                );
+                this.place(
+                    this.materials.coneSource("snow-cap", this.materials.snow, 9),
+                    s,
+                    lateral,
+                    base + height * 0.75,
+                    width * 0.72,
+                    height * 0.4,
+                    width * 0.72,
+                    random() * Math.PI * 2,
+                );
+            }
+        }
     }
 
     private buildChevronSigns(): void {
