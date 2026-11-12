@@ -23,6 +23,9 @@ export class WorldChunk {
         this.buildMarkings(startS, rows);
         this.buildShoulders(startS, rows);
         this.buildTerrain(startS, rows);
+        if (this.world.sample(startS + lengthM * 0.5).halfWidthM > 11) {
+            this.buildMedian(startS, rows);
+        }
         const theme = this.world.sample(startS + lengthM * 0.5).segment.theme;
         if (theme !== "city" && theme !== "bridge" && theme !== "tunnel") {
             this.buildRails(startS, rows);
@@ -94,15 +97,38 @@ export class WorldChunk {
                 indices.push(a, b, c, b, d, c);
             }
         }
-        for (let dash = Math.ceil(startS / 12) * 12; dash < startS + this.lengthM; dash += 12) {
-            const s0 = Math.max(startS, dash);
-            const s1 = Math.min(startS + this.lengthM, dash + 4);
-            if (s1 - s0 < 0.5) continue;
-            const a = addVertex(s0, -0.08);
-            const b = addVertex(s0, 0.08);
-            const c = addVertex(s1, -0.08);
-            const d = addVertex(s1, 0.08);
-            indices.push(a, b, c, b, d, c);
+        const wide = this.world.sample(startS + this.lengthM * 0.5).halfWidthM > 11;
+        if (wide) {
+            for (const side of [-1, 1]) {
+                for (const lateral of [1.55, 5.15, 8.75, 12.35]) {
+                    const offset = side * lateral;
+                    for (
+                        let dash = Math.ceil(startS / 12) * 12;
+                        dash < startS + this.lengthM;
+                        dash += 12
+                    ) {
+                        const s0 = Math.max(startS, dash);
+                        const s1 = Math.min(startS + this.lengthM, dash + 4);
+                        if (s1 - s0 < 0.5) continue;
+                        const a = addVertex(s0, offset - 0.1);
+                        const b = addVertex(s0, offset + 0.1);
+                        const c = addVertex(s1, offset - 0.1);
+                        const d = addVertex(s1, offset + 0.1);
+                        indices.push(a, b, c, b, d, c);
+                    }
+                }
+            }
+        } else {
+            for (let dash = Math.ceil(startS / 12) * 12; dash < startS + this.lengthM; dash += 12) {
+                const s0 = Math.max(startS, dash);
+                const s1 = Math.min(startS + this.lengthM, dash + 4);
+                if (s1 - s0 < 0.5) continue;
+                const a = addVertex(s0, -0.08);
+                const b = addVertex(s0, 0.08);
+                const c = addVertex(s1, -0.08);
+                const d = addVertex(s1, 0.08);
+                indices.push(a, b, c, b, d, c);
+            }
         }
         const mesh = this.buildMesh("endless-markings", positions, [], indices);
         mesh.material = this.materials.markings;
@@ -143,6 +169,34 @@ export class WorldChunk {
             mesh.receiveShadows = true;
             mesh.isPickable = false;
         }
+    }
+
+    private buildMedian(startS: number, rows: number): void {
+        const positions: number[] = [];
+        const uvs: number[] = [];
+        const indices: number[] = [];
+        for (let row = 0; row <= rows; row += 1) {
+            const s = startS + (row / rows) * this.lengthM;
+            for (const lateral of [-1.5, 1.5]) {
+                const road = this.world.sample(s);
+                const terrain = this.world.sampleAt(s, lateral);
+                const x = road.x + road.normalX * lateral;
+                const y = road.y + road.normalY * lateral;
+                positions.push(y, terrain.heightM + 0.14, x);
+                uvs.push(lateral, s);
+            }
+        }
+        for (let row = 0; row < rows; row += 1) {
+            const a = row * 2;
+            const b = a + 1;
+            const c = a + 2;
+            const d = a + 3;
+            indices.push(a, b, c, b, d, c);
+        }
+        const mesh = this.buildMesh("endless-median", positions, uvs, indices);
+        mesh.material = this.materials.curb;
+        mesh.receiveShadows = true;
+        mesh.isPickable = false;
     }
 
     private buildTerrain(startS: number, rows: number): void {
