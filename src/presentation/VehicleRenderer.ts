@@ -121,7 +121,7 @@ export class VehicleRenderer {
             3.6;
         this.speedoMaxKph = Math.max(
             500,
-            Math.min(600, Math.ceil((redlineSpeedKph * 1.15) / 20) * 20),
+            Math.min(1500, Math.ceil((redlineSpeedKph * 1.15) / 20) * 20),
         );
         this.tachMaxRpm = Math.ceil((config.engine.redlineRpm * 1.15) / 1000) * 1000;
         this.engine = new Engine(
