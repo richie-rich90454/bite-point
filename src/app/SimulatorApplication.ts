@@ -455,7 +455,7 @@ export class SimulatorApplication {
             maxRpm: this.config.engine.redlineRpm,
             speedometerMaxKph: Math.max(
                 200,
-                Math.min(600, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
+                Math.min(1500, Math.ceil((redlineSpeedKph * 1.1) / 20) * 20),
             ),
         });
     }
