@@ -2,13 +2,17 @@
 
 [![Quality checks](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml/badge.svg)](https://github.com/richie-rich90454/bite-point/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-dfa85d.svg)](LICENSE)
 
-**Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, an endless procedural highway and no artificial top-speed ceiling.
+**Feel the bite. Nail the shift.** An open-source six-speed manual driving simulator with a 250 Hz vehicle model, clutch heat and wear, H-pattern shifting, an open city grid, endless mountain and coastal routes, and no artificial top-speed ceiling.
 
 [Report a bug](https://github.com/richie-rich90454/bite-point/issues/new/choose) · [Contribute](CONTRIBUTING.md) · [Physics](docs/physics.md) · [Validation](docs/validation.md)
 
-A browser-based manual-transmission driving simulator built around a custom, testable vehicle simulation. Drive one reference compact car across a training lot, two hill grades and a closed high-speed proving straight. Babylon.js renders the scene; TypeScript and Vite run the application; the powertrain, tires and chassis are simulated independently of the renderer.
+A browser-based manual-transmission driving simulator built around a custom, testable vehicle simulation. Drive a twelve-car roster through an open city grid, a training lot and endless road and mountain routes. Babylon.js renders the scene; TypeScript and Vite run the application; the powertrain, tires and chassis are simulated independently of the renderer.
 
 ![Bite Point on the closed proving straight](docs/images/proving-ground.png)
+
+![Bite Point on the open city grid](docs/images/city-exterior.png)
+
+![Bite Point on Serpentine Pass](docs/images/mountain-exterior.png)
 
 ## Requirements
 
@@ -43,17 +47,17 @@ pnpm exec playwright install chromium
 - Clutch capacity from pedal position, clamp force, temperature and wear; slip torque, bounded coupling, slip energy, heating and cooling.
 - H-pattern shifter state machine driven by `Enter` and the arrow keys. No numpad and no simultaneous arrow combinations are required. Gears are not engaged until the lever is released.
 - Optional automatic clutch with RPM-aware bite control, smooth launches, creep and clutchless upshifts. Stability assist damps high-speed slides, and the steering angle falls with speed for a more predictable car.
-- Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API.
+- Keyboard bindings by physical key code, remapping screen, input tester, focus-loss safety, tab-hidden pause, gamepad/wheel support through the Gamepad API, and touch driving controls on phones and tablets.
 - Photographic HDR sky and image-based lighting, plus scanned PBR asphalt with normal and packed occlusion/roughness maps. CC0 assets from Poly Haven are bundled locally.
 - Four-sample MSAA on High quality, FXAA at every quality level, device-pixel-aware render resolution, 16× road texture filtering and stabilized cascaded shadows on supported hardware. Authored vehicle textures are preserved.
-- Selectable endless maps: City Center (a true grid downtown with cross streets, intersections, crosswalks, parallel avenues and dense blocks), Industrial District, Coastal Highway, Alpine Pass, Forest Run, Tunnel Run, Bridge Crossing, Summit, Endless Straight, Endless Curves and World Tour. The original Proving Ground training lot is the legacy practice map. Every map generates deterministically from its seed and streams 160 m chunks with road, markings, guardrails, terrain and theme content.
-- Real generated city blocks with building footprints, varied heights, window grids, roofs, entrances, sidewalks, curbs, streetlights and signage. Industrial, tunnel, bridge, coast, forest, alpine and summit themes add warehouses, containers, chimneys, tunnels, bridge decks, water, beaches, trees, rocks and snow.
+- Selectable maps: City Center (an open grid downtown that you can drive and turn through at every intersection), Industrial District, Coastal Highway, Alpine Pass, Serpentine Pass, Forest Run, Tunnel Run, Bridge Crossing, Summit, Endless Straight, Endless Curves and World Tour. The original Proving Ground training lot is the legacy practice map. Route maps generate deterministically from their seed and stream 160 m chunks; the city streams 120 m blocks around the car.
+- Dual carriageways with four lanes per direction, a central median and right-hand traffic. The city has cross streets, crosswalks, traffic signals, sidewalks, curbs, parallel avenues and dense blocks; the mountain maps add rock walls, valley drop-offs, snow, pines, chevrons and pass markers. Buildings and walls collide with the car.
 - Twelve manual-transmission cars across five tiers with naturally aspirated, turbo, hybrid and electric power, FWD, RWD and AWD drivetrains, measured 0-100 km/h times and distinct engine sounds. The merged DRIVE setup tab combines map selection with the sessions that the chosen map supports.
 - Deterministic world seed, O(1) road tracking, bounded chunk caches and a streaming budget designed to hold 60 fps at 1080p on a mid-tier discrete GPU.
-- Cockpit, hood and exterior cameras, a dedicated exterior speed, gear, rpm and shift display with live pedals, mouse look with pointer lock, dashboard instruments, pedals, steering wheel, gear lever, wipers, headlights and a day-lit training environment.
+- Cockpit, hood and exterior cameras, a dedicated exterior speed, gear, rpm and shift display with live pedals, mouse look with pointer lock, a leather-grained dashboard with gauge binnacle, a three-spoke wheel with stitching and stalks, pedals, gear lever, wipers, headlights and a day-lit training environment.
 - Eight CC0 Grab3D car bodies with animated wheel pivots and a detailed cockpit interior. Each car uses its own authored body and colour: compact, sedan, hatchback, muscle car, rally car, sports car, electric car and coupe. The performance reference revs to 9,000 rpm, runs 0-100 km/h in benchmark time and reaches beyond 500 km/h on the endless straight. An optional 500 km/h limiter is off by default.
 - Real CC0 asphalt, grass, gravel, rock, concrete and metal texture sets with 2K sources, local KTX2 runtime decoding and JPEG fallback.
-- Noto Sans-only interface with a redesigned settings surface, sentence-case labels, per-section resets, units, HUD scale, colorblind and reduced-motion support.
+- Noto Sans-only interface with a redesigned settings surface, sentence-case labels, per-section resets, units, HUD scale, colorblind and reduced-motion support. The start screen, HUD and pause menu scale down to phone landscape and portrait with large touch targets.
 - Web Audio engine, intake, exhaust, turbo spool and blow-off, overrun crackle, rev-limiter stutter, wind, tire, starter, gearbox and stall sounds, with a cockpit filter that muffles the cabin. Engine profiles for naturally aspirated, turbo, hybrid and electric cars are synthesised; no unlicensed samples are bundled.
 - Launch control tutorial: hold the brake and throttle in first gear, launch control holds the launch RPM with the clutch open, then release the brake for a clean launch and an upshift prompt.
 - Lessons for moving off, hill starts, upshifts, braking, reverse parking, a 0-100 km/h sprint and a guided launch-control start; an instructor that explains stalls, rollback, clutch slip, lugging and over-revving from measured simulation state.
@@ -80,6 +84,8 @@ pnpm exec playwright install chromium
 | `1`–`6`             | Quick-select gears only when enabled in Settings               |
 
 All bindings can be changed in **Pause → Controls**. The H-pattern is the default because it teaches the actual gate layout: `1` is left-forward, `2` left-rear, `3` centre-forward, `4` centre-rear, `5` right-forward and `6` right-rear. Neutral is the horizontal corridor.
+
+On a phone or tablet, the driving screen shows touch controls: steering left and right, throttle, brake, clutch and release, shift up and down, handbrake, engine start and camera. The interface uses safe-area insets and scales the instrument cluster and touch targets for small screens.
 
 ## Driving technique
 
