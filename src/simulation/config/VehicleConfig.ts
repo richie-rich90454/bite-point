@@ -206,8 +206,13 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
         errors.push("gearRatios must contain exactly six forward ratios.");
     } else {
         ratios.forEach((ratio, index) => {
-            if (typeof ratio !== "number" || !Number.isFinite(ratio) || ratio <= 0.4 || ratio > 8) {
-                errors.push(`gearRatios[${index}] must be between 0.4 and 8.`);
+            if (
+                typeof ratio !== "number" ||
+                !Number.isFinite(ratio) ||
+                ratio <= 0.2 ||
+                ratio > 10
+            ) {
+                errors.push(`gearRatios[${index}] must be between 0.2 and 10.`);
             }
             if (
                 index > 0 &&
@@ -254,7 +259,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
                     errors.push("engine.torqueCurve rpm values must be strictly increasing.");
                 if (point[0] < 300 || point[0] > 12000)
                     errors.push(`engine.torqueCurve[${index}] rpm is out of range.`);
-                if (point[1] < 0 || point[1] > 1500)
+                if (point[1] < 0 || point[1] > 4000)
                     errors.push(`engine.torqueCurve[${index}] torque is out of range.`);
                 previousRpm = point[0];
             }
@@ -271,7 +276,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
 
     if (!isRecord(raw.clutch)) errors.push("clutch section is required.");
     else {
-        num("clutch.maxCapacityNm", 20, 3000);
+        num("clutch.maxCapacityNm", 20, 6000);
         num("clutch.frictionCoeff", 0.05, 1.5);
         num("clutch.effectiveRadiusM", 0.02, 0.3);
         num("clutch.frictionSurfaces", 1, 8);
@@ -349,7 +354,7 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
         num("steering.maxAngleRad", 0.1, 1.2);
         num("steering.rateRadPerSec", 0.2, 10);
         num("steering.returnRateRadPerSec", 0.2, 15);
-        num("steering.highSpeedFactor", 0.1, 1);
+        num("steering.highSpeedFactor", 0.02, 1);
         num("steering.speedSensitivityKph", 10, 300);
     }
 
@@ -372,9 +377,9 @@ export function validateVehicleConfig(raw: unknown): ConfigValidationResult {
 
     if (!isRecord(raw.aero)) errors.push("aero section is required.");
     else {
-        num("aero.dragAreaCdA", 0.1, 3);
+        num("aero.dragAreaCdA", 0.02, 3);
         num("aero.airDensity", 0.5, 2);
-        num("aero.maxSpeedKph", 50, 600);
+        num("aero.maxSpeedKph", 50, 1500);
         optionalNum("aero.downforceCoefficient", 0, 5, 0);
         optionalNum("aero.frontLiftCoefficient", -2, 2, 0);
         optionalNum("aero.rearLiftCoefficient", -2, 2, 0);
