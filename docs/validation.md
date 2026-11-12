@@ -15,14 +15,14 @@ The deterministic suite currently covers:
 | --- | --- |
 | Math/curves | PCHIP interpolation, no artificial overshoot, clamping, angle wrapping |
 | Engine | Cold start, idle stability, stall under load, fuel cut, ignition off |
-| Clutch | Pedal mapping, open/slipping/locked modes, capacity limit, heat, cooling, wear derating |
+| Clutch | Pedal mapping, open/slipping/locked modes, capacity limit, heat, cooling, wear derating, automatic-creep engagement, RPM-aware auto-clutch launch and upshift |
 | H-pattern | Neutral start, grab requirement, gate/corridor movement, first to second through neutral, reverse request |
 | Gearbox | Ratios, reverse, reverse lockout, clutch requirement, synchronized and rev-matched shifts, torque ramp |
 | Driveline | Wheel/engine speed relationships, reflected inertia, torque multiplication, FWD/RWD/AWD torque split |
 | Catalog | Twelve validated cars, unique ids, tier and engine-type coverage, simulated 0-100 km/h times |
 | Car models | Every car maps to a defined CC0 model, eight detailed bodies, default fallback |
-| Maps | Map catalog validation, deterministic generation, theme cycling, start-theme coverage, finite heights and normals, chunk continuity |
-| Audio | Engine profile construction and safe sound-set switching without an AudioContext |
+| Maps | Map catalog validation, endless and legacy map kinds, deterministic generation, theme cycling, start-theme coverage, finite heights and normals, chunk continuity, grid-city geometry |
+| Audio | Engine profile construction, safe sound-set switching without an AudioContext, cabin filtering |
 | Settings | Default car/map selection, valid selections, fallback on invalid values |
 | Wheels/tires | Free roll, grip saturation, braking force and lock behavior, load sensitivity, wet μ, friction ellipse |
 | Suspension/steering/brakes | Static compression, bump stop, damping, steering rate and speed sensitivity, handbrake split |
@@ -30,10 +30,10 @@ The deterministic suite currently covers:
 | Configuration | Valid reference, invalid mass/fields, ratio ordering, bite geometry, provenance |
 | Telemetry | Ring buffer wrapping/order, sample rate, JSON export |
 | Input | Defaults, duplicate detection, layout labels, calibration, pedal ramps, focus-loss safety, repeat timing, rebinding conflicts, recovery hold |
-| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, launch control, FWD/RWD/AWD wheel drive, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
+| Integration | Neutral idle, starter, gentle launch, clutch dump stall, hill rollback, handbrake hold, first-to-second shift, reverse lockout, reverse creep, braking, all six gear selections, clutch/wheel speed consistency, locked-clutch acceleration, launch-control phases and rev hold, auto-clutch creep and upshift, FWD/RWD/AWD wheel drive, 0-100 km/h benchmark, physical top speed above 500 km/h, high-speed finite-state stability, endless-world streaming and guardrail contact |
 | Numerical | Launches at 1/120, 1/250 and 1/500 s; finite state; bounded speed spread; friction limits; parked handbrake; brake lock recovery; determinism |
 
-Latest local result after implementation: all 145 deterministic tests pass across 26 files. Eight Playwright tests boot the production build, start sessions, engage gears, launch, steer, shift, change car and map, verify the industrial, city, forest, tunnel and bridge start themes, open pause, open the input test and settings, check telemetry export/replay, and verify there are no uncaught page errors.
+Latest local result after implementation: all 151 deterministic tests pass across 26 files. Nine Playwright tests boot the production build, start sessions, engage gears, launch, steer, shift, change car and map, verify the industrial, city, forest, tunnel and bridge start themes, run the launch-control tutorial from armed to moving, open pause, open the input test and settings, check telemetry export/replay, and verify there are no uncaught page errors.
 
 ## What is not yet validated
 
