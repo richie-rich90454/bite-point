@@ -54,6 +54,10 @@ export class WorldStreamer {
         return this.chunks.size;
     }
 
+    get sharedMaterials(): WorldMaterials {
+        return this.materials;
+    }
+
     get distanceAlongRoad(): number {
         return this.lastS;
     }

@@ -2,12 +2,13 @@
     {
         "id": "city-center",
         "name": "City Center",
-        "description": "Endless downtown grid: cross streets, blocks, intersections and towers on both sides.",
+        "description": "Endless downtown grid: cross streets, intersections and towers on both sides.",
         "kind": "endless",
+        "layout": "grid",
         "seed": 1101,
         "routeMode": "curved",
         "themeSequence": ["city"],
-        "start": { "x": 0, "y": 0, "heading": 0 }
+        "start": { "x": 60, "y": -7, "heading": 0 }
     },
     {
         "id": "industrial-district",
@@ -119,6 +120,16 @@
             "descent",
             "summit"
         ],
+        "start": { "x": 0, "y": 0, "heading": 0 }
+    },
+    {
+        "id": "serpentine-pass",
+        "name": "Serpentine Pass",
+        "description": "A high alpine pass with long climbs, tight switchbacks, rock walls, viaducts and snow-line views.",
+        "kind": "endless",
+        "seed": 2127,
+        "routeMode": "curved",
+        "themeSequence": ["climb", "esses", "summit", "descent", "esses"],
         "start": { "x": 0, "y": 0, "heading": 0 }
     },
     {

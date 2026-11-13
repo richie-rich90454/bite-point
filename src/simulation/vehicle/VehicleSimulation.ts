@@ -12,7 +12,7 @@ import { SuspensionModel } from "../suspension/SuspensionModel";
 import { WheelModel } from "./WheelModel";
 import { VehicleBodyModel } from "./VehicleBodyModel";
 import { RoadContactProvider } from "../road/RoadContactProvider";
-import { clamp, clamp01, GRAVITY, ShapePreservingCurve } from "../core/MathUtils";
+import { clamp, clamp01, GRAVITY, moveTowards, ShapePreservingCurve } from "../core/MathUtils";
 import { TelemetryRecorder, type TelemetrySample } from "../telemetry/TelemetryRecorder";
 import { gearLabel, type VehicleRenderState } from "./VehicleTypes";
 
@@ -466,6 +466,25 @@ export class VehicleSimulation {
             slopeLateral,
             steerAngleRad: steerAngle,
         });
+        if (this.stabilityAssist) {
+            const stabilitySpeed = Math.abs(this.body.state.vx);
+            const maxYawRate = clamp(15 / Math.max(5, stabilitySpeed), 0.03, 3.2);
+            if (Math.abs(this.body.state.yawRate) > maxYawRate) {
+                this.body.state.yawRate = moveTowards(
+                    this.body.state.yawRate,
+                    Math.sign(this.body.state.yawRate) * maxYawRate,
+                    24 * dt,
+                );
+            }
+            const maxLateralSpeed = clamp(0.4 + stabilitySpeed * 0.12, 1, 8);
+            if (Math.abs(this.body.state.vy) > maxLateralSpeed) {
+                this.body.state.vy = moveTowards(
+                    this.body.state.vy,
+                    Math.sign(this.body.state.vy) * maxLateralSpeed,
+                    16 * dt,
+                );
+            }
+        }
         // No default top-speed clamp: maximum road speed emerges from engine power,
         // aerodynamic drag, gearing, rolling resistance and the rev limiter. The
         // optional limiter exists only for players who explicitly enable it.
@@ -496,6 +515,7 @@ export class VehicleSimulation {
                 }
             }
         }
+        if (this.road.cityMode) this.resolveCityCollision();
 
         const pose = this.wheelPositions();
         const finalHeights = pose.map((position) => this.road.heightAt(position.x, position.y));
@@ -695,6 +715,43 @@ export class VehicleSimulation {
             return;
         }
         this.controls.clutchPedal = 0;
+    }
+
+    private resolveCityCollision(): void {
+        const heading = this.body.state.heading;
+        const cos = Math.cos(heading);
+        const sin = Math.sin(heading);
+        for (const offset of [-1.35, 0, 1.35]) {
+            const px = this.body.state.x + cos * offset;
+            const py = this.body.state.y + sin * offset;
+            const push = this.road.resolveCollision(px, py, 1.05);
+            if (!push) continue;
+            this.body.shiftPosition(push.x, push.y);
+            const worldVx = this.body.state.vx * cos - this.body.state.vy * sin;
+            const worldVy = this.body.state.vx * sin + this.body.state.vy * cos;
+            const length = Math.hypot(push.x, push.y) || 1;
+            const nx = push.x / length;
+            const ny = push.y / length;
+            const into = worldVx * nx + worldVy * ny;
+            let nextVx = worldVx;
+            let nextVy = worldVy;
+            if (into < 0) {
+                nextVx -= nx * into * 1.15;
+                nextVy -= ny * into * 1.15;
+                if (-into > 2) {
+                    this.pushEvent(
+                        "barrier",
+                        "Wall contact. Ease off the throttle and steer away.",
+                        1.5,
+                    );
+                }
+            }
+            nextVx *= 0.82;
+            nextVy *= 0.82;
+            this.body.state.vx = nextVx * cos + nextVy * sin;
+            this.body.state.vy = -nextVx * sin + nextVy * cos;
+            this.body.state.yawRate *= 0.6;
+        }
     }
 
     private outputShaftOmega(): number {

@@ -73,9 +73,9 @@
     },
     "steering": {
         "maxAngleRad": 0.58,
-        "rateRadPerSec": 2.1,
-        "returnRateRadPerSec": 3.4,
-        "highSpeedFactor": 0.32,
+        "rateRadPerSec": 1.35,
+        "returnRateRadPerSec": 2.4,
+        "highSpeedFactor": 0.3,
         "speedSensitivityKph": 75
     },
     "brakes": {

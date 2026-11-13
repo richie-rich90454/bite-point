@@ -1,6 +1,7 @@
 import { smoothstep } from "../core/MathUtils";
 import { isPavedSurface } from "./RoadLayout";
 import type { WorldGenerator } from "../world/WorldGenerator";
+import { cityCollision, citySurfaceAt, type CityPush } from "../world/CityLayout";
 
 export interface TerrainRamp {
     id: string;
@@ -63,13 +64,29 @@ export const TRAINING_GROUND_WET_AREA: WetArea = {
 export class RoadContactProvider {
     private wetAreas: WetArea[] = [TRAINING_GROUND_WET_AREA];
     private world: WorldGenerator | null = null;
+    private citySeed: number | null = null;
     private hintS = 0;
 
     constructor(readonly ramps: TerrainRamp[] = TRAINING_GROUND_RAMPS) {}
 
     setWorld(world: WorldGenerator | null): void {
         this.world = world;
+        this.citySeed = null;
         this.hintS = 0;
+    }
+
+    setCityGrid(seed: number | null): void {
+        this.citySeed = seed;
+        this.world = null;
+        this.hintS = 0;
+    }
+
+    get cityMode(): boolean {
+        return this.citySeed !== null;
+    }
+
+    resolveCollision(x: number, y: number, radius: number): CityPush | null {
+        return this.citySeed === null ? null : cityCollision(this.citySeed, x, y, radius);
     }
 
     syncHint(x: number, y: number): void {
@@ -81,6 +98,7 @@ export class RoadContactProvider {
     }
 
     heightAt(x: number, y: number): number {
+        if (this.citySeed !== null) return 0;
         if (this.world) return this.world.heightAt(x, y, this.hintS);
         let height = 0;
         for (const ramp of this.ramps) {
@@ -102,6 +120,7 @@ export class RoadContactProvider {
     }
 
     surfaceMuAt(x: number, y: number): number {
+        if (this.citySeed !== null) return citySurfaceAt(x, y).mu;
         if (this.world) {
             return this.world.surfaceMuAt(x, y, this.hintS);
         }
@@ -115,6 +134,7 @@ export class RoadContactProvider {
     }
 
     rollingResistanceScaleAt(x: number, y: number): number {
+        if (this.citySeed !== null) return citySurfaceAt(x, y).rollingResistance;
         if (this.world) {
             return this.world.rollingResistanceScaleAt(x, y, this.hintS);
         }
@@ -131,6 +151,7 @@ export class RoadContactProvider {
         normalX: number;
         normalY: number;
     } | null {
+        if (this.citySeed !== null) return null;
         if (!this.world) return null;
         const projected = this.world.project(x, y, this.hintS);
         this.hintS = projected.s;
@@ -145,6 +166,19 @@ export class RoadContactProvider {
     }
 
     sample(x: number, y: number): RoadSample {
+        if (this.citySeed !== null) {
+            const surface = citySurfaceAt(x, y);
+            return {
+                heightM: 0,
+                normalX: 0,
+                normalY: 0,
+                normalZ: 1,
+                gradientX: 0,
+                gradientY: 0,
+                surfaceMu: surface.mu,
+                rampId: null,
+            };
+        }
         if (this.world) {
             const projected = this.world.project(x, y, this.hintS);
             this.hintS = projected.s;

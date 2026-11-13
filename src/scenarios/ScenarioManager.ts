@@ -60,7 +60,12 @@ const failOnStall = (context: ScenarioUpdate): ScenarioResult | null => {
 
 const endlessUpdate = (context: ScenarioUpdate): ScenarioResult => {
     const projected = context.sim.road.project(context.state.pose.x, context.state.pose.y);
-    const distance = projected ? Math.abs(projected.s) : Math.max(0, context.state.pose.x);
+    const distance = projected
+        ? Math.abs(projected.s)
+        : Math.hypot(
+              context.state.pose.x - context.stats.startX,
+              context.state.pose.y - context.stats.startY,
+          );
     const speed = context.stats.maxSpeedMps * 3.6;
     return {
         status: "running",
@@ -75,13 +80,13 @@ const endlessUpdate = (context: ScenarioUpdate): ScenarioResult => {
 export const SCENARIOS: ScenarioDefinition[] = [
     {
         id: "endless",
-        title: "Endless curves",
+        title: "Open drive",
         description:
-            "An endless procedural highway with sweeping curves, changing terrain and no artificial speed ceiling. Build speed, hold a gear and keep driving.",
+            "A generated world with no finish line. In the city you can turn at every intersection; on the route maps the road keeps going.",
         instructions: [
-            "The car starts in first gear on an open road.",
+            "The car starts in first gear on the road.",
             "Shift with the clutch and the H-pattern as usual.",
-            "Pick a gear that fits the corner ahead. The road keeps going.",
+            "Turn at intersections, pick a lane and keep driving.",
             "There is no finish line and no artificial speed cap.",
         ],
         world: "endless",

@@ -1854,7 +1854,7 @@
     },
     {
         "id": "electric-hypercar-1mt",
-        "name": "dual-motor electric hypercar 1MT",
+        "name": "Bite Point Mach 1 electric",
         "tier": 5,
         "engineType": "Electric",
         "drivetrain": "AWD",
@@ -1864,7 +1864,7 @@
         "config": {
             "schemaVersion": 1,
             "id": "electric-hypercar-1mt",
-            "name": "dual-motor electric hypercar 1MT",
+            "name": "Bite Point Mach 1 electric",
             "drivetrain": "AWD",
             "awdTorqueSplit": 0.5,
             "massKg": 1750,
@@ -1874,9 +1874,9 @@
             "frontWeightBias": 0.58,
             "wheelRadiusM": 0.34,
             "wheelInertiaKgM2": 1.3,
-            "finalDriveRatio": 4.1,
+            "finalDriveRatio": 2.2,
             "drivetrainEfficiency": 0.95,
-            "gearRatios": [2.2, 1.1, 0.9, 0.75, 0.62, 0.52],
+            "gearRatios": [2.6, 1.8, 1.3, 1, 0.7, 0.25],
             "reverseRatio": -2.2,
             "engine": {
                 "idleRpm": 900,
@@ -1889,25 +1889,25 @@
                 "frictionPerRadPerSec": 0.01,
                 "pumpingLossNm": 6,
                 "torqueCurve": [
-                    [800, 850],
-                    [4000, 850],
-                    [7000, 800],
-                    [9000, 720],
-                    [11000, 600]
+                    [800, 2400],
+                    [4000, 3000],
+                    [7000, 2900],
+                    [9000, 2700],
+                    [11000, 2300]
                 ]
             },
             "clutch": {
-                "maxCapacityNm": 2000,
+                "maxCapacityNm": 6000,
                 "frictionCoeff": 0.35,
                 "effectiveRadiusM": 0.095,
                 "frictionSurfaces": 2,
                 "bitePoint": 0.4,
                 "engagementWidth": 0.5,
-                "thermalMassJK": 12000,
+                "thermalMassJK": 60000,
                 "ambientTempC": 30,
                 "maxTempC": 520,
-                "coolingPerSecond": 0.018,
-                "wearRatePerJoule": 1.2e-7
+                "coolingPerSecond": 0.05,
+                "wearRatePerJoule": 1e-9
             },
             "gearbox": {
                 "shiftTimeS": 0.08,
@@ -1957,19 +1957,19 @@
                 ]
             },
             "tires": {
-                "mu": 1.9,
+                "mu": 2,
                 "peakSlip": 0.1,
-                "peakSlipAngleRad": 0.22,
+                "peakSlipAngleRad": 0.24,
                 "loadSensitivity": 0.1,
                 "rollingResistance": 0.009,
-                "lateralStiffnessFactor": 1.7
+                "lateralStiffnessFactor": 2
             },
             "steering": {
-                "maxAngleRad": 0.58,
-                "rateRadPerSec": 2.1,
-                "returnRateRadPerSec": 3.4,
-                "highSpeedFactor": 0.32,
-                "speedSensitivityKph": 75
+                "maxAngleRad": 0.52,
+                "rateRadPerSec": 1.3,
+                "returnRateRadPerSec": 2.2,
+                "highSpeedFactor": 0.05,
+                "speedSensitivityKph": 70
             },
             "brakes": {
                 "frontTorqueNm": 6600,
@@ -1985,10 +1985,10 @@
                 "bumpStopRateNm": 180000
             },
             "aero": {
-                "dragAreaCdA": 0.28,
+                "dragAreaCdA": 0.04,
                 "airDensity": 1.2,
-                "maxSpeedKph": 330,
-                "downforceCoefficient": 2.2,
+                "maxSpeedKph": 1500,
+                "downforceCoefficient": 3.2,
                 "frontLiftCoefficient": 0,
                 "rearLiftCoefficient": 0
             },

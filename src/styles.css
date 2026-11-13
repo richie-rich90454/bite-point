@@ -25,7 +25,7 @@
     --info: #90c2d6;
     --radius-sm: 3px;
     --radius-md: 10px;
-    --font: "Noto Sans", system-ui, sans-serif;
+    --font: "Noto Sans";
     --hud-scale: 1;
     --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
     --hairline: rgba(255, 255, 255, 0.06);
@@ -136,8 +136,8 @@ button {
     align-items: center;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--accent);
 }
 
@@ -168,8 +168,8 @@ button {
 .scenario-status {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     padding: 4px 9px;
     border-radius: 999px;
     border: 1px solid var(--border);
@@ -277,8 +277,8 @@ button {
     margin-bottom: 8px;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--text-muted);
 }
 
@@ -295,7 +295,7 @@ button {
     font-size: 10px;
     font-weight: 650;
     letter-spacing: 0.06em;
-    text-transform: uppercase;
+    text-transform: none;
     padding: 5px 8px;
     border-radius: 999px;
     border: 1px solid var(--border);
@@ -442,8 +442,8 @@ button {
 .prompt-key {
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--accent);
     border-right: 1px solid var(--border);
     padding-right: 12px;
@@ -761,8 +761,8 @@ button {
     margin: 0 0 16px;
     font-size: 10px;
     font-weight: 700;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--accent);
 }
 
@@ -806,8 +806,8 @@ button {
     border-top: 1px solid rgba(255, 255, 255, 0.09);
     font-size: 10.5px;
     font-weight: 600;
-    letter-spacing: 0.09em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--text-faint);
     max-width: 520px;
     line-height: 1.8;
@@ -1031,8 +1031,8 @@ button {
     border-radius: 999px;
     font-size: 9px;
     font-weight: 700;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--text-faint);
 }
 
@@ -1056,7 +1056,7 @@ button {
     font-size: 12px;
     font-weight: 600;
     letter-spacing: 0.04em;
-    text-transform: uppercase;
+    text-transform: none;
     padding: 8px 6px;
     border-radius: var(--radius-sm);
     cursor: pointer;
@@ -1083,8 +1083,8 @@ button {
     padding: 0 8px;
     font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-transform: none;
     color: var(--text-faint);
 }
 
@@ -2009,6 +2009,155 @@ button {
     .hud.view-exterior .prompt {
         left: 16px;
         max-width: calc(100vw - 100px);
+    }
+}
+
+.touch-controls {
+    display: none;
+    position: absolute;
+    inset: auto 0 0 0;
+    z-index: 3;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 10px;
+    padding: 12px calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom))
+        calc(12px + env(safe-area-inset-left));
+    pointer-events: none;
+}
+
+.touch-capable .touch-controls {
+    display: flex;
+}
+
+.touch-steer,
+.touch-pedals {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.touch-actions {
+    position: absolute;
+    left: 50%;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    align-items: flex-end;
+}
+
+.touch-button {
+    width: 74px;
+    height: 74px;
+    border-radius: 50%;
+    border: 1px solid var(--border-strong);
+    background: rgba(12, 15, 17, 0.72);
+    color: var(--text-secondary);
+    font-family: var(--font);
+    font-size: 12px;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    backdrop-filter: blur(10px);
+    transition:
+        background 120ms var(--ease),
+        border-color 120ms var(--ease),
+        transform 120ms var(--ease);
+}
+
+.touch-button.small {
+    width: 58px;
+    height: 34px;
+    border-radius: 9px;
+    font-size: 10.5px;
+    padding: 0 4px;
+}
+
+.touch-button.throttle {
+    width: 92px;
+    height: 92px;
+    border-color: rgba(240, 182, 76, 0.45);
+}
+
+.touch-button.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-strong);
+    transform: scale(0.96);
+}
+
+.touch-capable .dashboard-panel {
+    width: min(430px, 50vw);
+    height: 132px;
+    bottom: 148px;
+}
+
+.touch-capable .pause-button {
+    top: 12px;
+    right: 12px;
+    bottom: auto;
+}
+
+.touch-capable .scenario-card {
+    width: min(220px, calc(100vw - 32px));
+    max-height: 128px;
+    padding: 12px 14px;
+}
+
+.touch-capable .scenario-title {
+    font-size: 16px;
+}
+
+.touch-capable .scenario-description,
+.touch-capable .scenario-steps {
+    display: none;
+}
+
+.touch-capable .instructor-panel,
+.touch-capable .prompt {
+    display: none;
+}
+
+.touch-capable .toast-stack {
+    top: 10px;
+    max-width: 56vw;
+}
+
+.touch-capable .warning-row {
+    top: 10px;
+    font-size: 11px;
+    padding: 6px 12px;
+}
+
+@media (max-width: 700px) {
+    .touch-button {
+        width: 64px;
+        height: 64px;
+        font-size: 11px;
+    }
+    .touch-button.small {
+        width: 52px;
+        height: 30px;
+        font-size: 10px;
+    }
+    .touch-button.throttle {
+        width: 80px;
+        height: 80px;
+    }
+    .touch-capable .dashboard-panel {
+        width: 58vw;
+        height: 118px;
+        bottom: 142px;
+    }
+    .start-copy h1 {
+        font-size: clamp(38px, 11vw, 56px);
+    }
+    .start-lead {
+        font-size: 14px;
     }
 }
 

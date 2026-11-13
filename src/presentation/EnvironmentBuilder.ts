@@ -674,10 +674,10 @@ export class EnvironmentBuilder {
             context.fillStyle = "#e8b04b";
             context.fillRect(0, 0, 18, 320);
             context.fillStyle = "#ede8dc";
-            context.font = '700 96px "Noto Sans", sans-serif';
+            context.font = '700 96px "Noto Sans"';
             context.fillText(title, 52, 152);
             context.fillStyle = "rgba(232,176,75,0.85)";
-            context.font = '600 42px "Noto Sans", sans-serif';
+            context.font = '600 42px "Noto Sans"';
             context.fillText(subtitle, 54, 236);
             texture.update();
             const material = new StandardMaterial(`${name}-material`, this.scene);

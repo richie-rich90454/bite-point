@@ -10,7 +10,7 @@ const TEXT_SECONDARY = "#c3cbd0";
 const MUTED = "rgba(195, 203, 208, 0.58)";
 const RED = "#e07a6a";
 const SAGE = "#86b58a";
-const FONT = "'Noto Sans', system-ui, sans-serif";
+const FONT = "'Noto Sans'";
 const DEFAULT_SPEEDOMETER_MAX_KPH = 260;
 
 export interface DashboardPresenterOptions {
@@ -121,7 +121,7 @@ export class DashboardPresenter {
             context.font = `700 6px ${FONT}`;
             context.textAlign = "center";
             context.textBaseline = "middle";
-            context.fillText("LIMITER", 280, 47);
+            context.fillText("Limiter", 280, 47);
         }
     }
 
@@ -308,7 +308,7 @@ export class DashboardPresenter {
             context.fillStyle = phase === "launched" ? SAGE : AMBER_BRIGHT;
             context.font = `700 7px ${FONT}`;
             context.fillText(
-                phase === "holding" ? "ARMED" : phase === "releasing" ? "LAUNCH" : "GO",
+                phase === "holding" ? "Armed" : phase === "releasing" ? "Launch" : "Go",
                 x,
                 y + 30,
             );

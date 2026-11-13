@@ -227,7 +227,7 @@ export class ProvingGround {
         ctx.strokeStyle = "#d8dfd7";
         ctx.lineWidth = 8;
         ctx.strokeRect(12, 12, 488, 168);
-        ctx.font = '600 52px "Noto Sans", sans-serif';
+        ctx.font = '600 52px "Noto Sans"';
         ctx.fillStyle = "#f2f3e9";
         ctx.fillText(label, (512 - ctx.measureText(label).width) / 2, 115);
         texture.update();
